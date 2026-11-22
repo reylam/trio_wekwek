@@ -110,11 +110,11 @@ Dengan waktu efektif **26 hari kalender**, 5 area berikut memiliki risiko keterl
 **Goal Sprint:** Seluruh siklus operasional dari *Live CCTV AI Detection* → *Incident Merging* → Penindakan Satpol PP (Desktop & Mobile) → Validasi *Split-View* & Relokasi 1-Klik Dinas UMKM → Unduh PDF 1 Halaman berjalan *end-to-end* di produksi.
 
 #### A. Backend REST API Inti (`BE-Patra`)
-- [ ] **`T2-01` `[Dev 1 - Fullstack]` — Endpoint Katalog CCTV (Pre-Synced + Edge Cache) & CRUD Zona Terlarang**
+- [x] **`T2-01` `[Dev 1 - Fullstack]` — Endpoint Katalog CCTV (Pre-Synced + Edge Cache) & CRUD Zona Terlarang**
   - **Target:** `BE-Patra/src/{routes,controller,service,repository}/{cctv,zone}.*`
   - **Dependency:** `T1-04`, `T1-05`
   - **Acceptance Criteria:** `GET /api/cctv` memfilter `regionId`, mengembalikan metadata + `hasActiveReport`, dan menyertakan header `Cache-Control: s-maxage=900, stale-while-revalidate=60`; CRUD `/api/zones` memvalidasi poligon anti *self-intersecting* via Turf.js dan terkunci per kota; `seed.ts` meng-upsert penuh `AI-Patra/cctv_catalog/cctv_snapshot.json`.
-- [ ] **`T2-02` `[Dev 1 - Fullstack]` — Endpoint Laporan: Auto/Manual Capture (*Incident Merging*), List, Detail (+ 3 Lokasi Terdekat) & Upload *After***
+- [x] **`T2-02` `[Dev 1 - Fullstack]` — Endpoint Laporan: Auto/Manual Capture (*Incident Merging*), List, Detail (+ 3 Lokasi Terdekat) & Upload *After***
   - **Target:** `BE-Patra/src/{routes,controller,service,repository}/report.*`, `BE-Patra/src/service/{storage.service.ts,geo.service.ts}`
   - **Dependency:** `T2-01`
   - **Acceptance Criteria:**

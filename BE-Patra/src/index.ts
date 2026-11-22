@@ -6,6 +6,9 @@ import logger from './middlewares/logger.js';
 import errorHandler from './middlewares/errorHandler.js';
 import healthRoute from './routes/health.route.js';
 import authRoute from './routes/auth.route.js';
+import cctvRoute from './routes/cctv.route.js';
+import zoneRoute from './routes/zone.route.js';
+import reportRoute from './routes/report.route.js';
 
 // Utamakan IPv4 untuk mencegah ECONNRESET/fetch failed ke Supabase di jaringan IPv6/NAT64.
 dns.setDefaultResultOrder('ipv4first');
@@ -33,6 +36,9 @@ app.use(express.json());
 
 app.use('/', healthRoute);
 app.use('/api/auth', authRoute);
+app.use('/api/cctv', cctvRoute);
+app.use('/api/zones', zoneRoute);
+app.use('/api/reports', reportRoute);
 
 // Error handler terpusat: WAJIB paling akhir setelah semua route.
 app.use(errorHandler);
