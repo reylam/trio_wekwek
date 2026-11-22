@@ -120,6 +120,41 @@ export interface SubmitActionUpdateData {
   actionSubmittedAt: Date;
 }
 
+export interface ValidateUpdateData {
+  status: ReportStatus;
+  validatedByUserId?: string;
+  validatedAt?: Date;
+  revisionReason?: string | null;
+}
+
+export interface AssignRelocationUpdateData {
+  relocationSiteId: string;
+  relocationAssignedAt: Date;
+}
+
+export interface RelocationSiteLookupRecord {
+  id: string;
+  regionId: string;
+  name: string;
+  address: string;
+  lat: number;
+  lng: number;
+  tradeCategories: string[];
+  facilities: string[];
+  isActive: boolean;
+}
+
+export interface ReportPdfContextRecord extends ReportDetailRecord {
+  region: {
+    city: string;
+    satpolAgencyName: string;
+    umkmAgencyName: string;
+  };
+  relocationSite: RelocationSiteLookupRecord | null;
+  actionByUserName: string | null;
+  validatedByUserName: string | null;
+}
+
 export interface CreateAuditLogInputData {
   actorId: string | null;
   actorRole: string;
@@ -213,6 +248,74 @@ function buildAuditCreateFields(data: CreateAuditLogInputData) {
     ...(data.metadata !== null
       ? { metadata: data.metadata as Prisma.InputJsonValue }
       : {}),
+  };
+}
+
+function toStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
+}
+
+function isRecordNotFoundError(err: unknown): boolean {
+  return (err as { code?: unknown })?.code === 'P2025';
+}
+
+/**
+ * Guarded update + append AuditLog dalam SATU operasi Prisma (nested write = atomik).
+ * - Filter status pada `where` menjamin transisi hanya terjadi bila status masih sesuai (EC-008).
+ * - Bila status sudah berubah, Prisma melempar P2025 -> dikembalikan `null` -> service melempar 409.
+ * - Tidak memakai interactive transaction (aman untuk Supabase PgBouncer pooler).
+ */
+async function guardedUpdateWithAudit(
+  where: Prisma.ViolationReportWhereUniqueInput,
+  data: Prisma.ViolationReportUncheckedUpdateInput,
+  auditLogData: CreateAuditLogInputData,
+): Promise<ReportDetailRecord | null> {
+  const prisma = getPrisma();
+  try {
+    const row = await prisma.violationReport.update({
+      where,
+      data: {
+        ...data,
+        auditLogs: {
+          create: buildAuditCreateFields(auditLogData),
+        },
+      },
+      include: detailInclude,
+    });
+    return mapPrismaDetail(row);
+  } catch (err) {
+    if (isRecordNotFoundError(err)) {
+      return null;
+    }
+    throw err;
+  }
+}
+
+const relocationSiteLookupSelect = {
+  id: true,
+  regionId: true,
+  name: true,
+  address: true,
+  lat: true,
+  lng: true,
+  tradeCategories: true,
+  facilities: true,
+  isActive: true,
+} as const;
+
+function mapRelocationSiteLookup(
+  row: Prisma.RelocationSiteGetPayload<{ select: typeof relocationSiteLookupSelect }>,
+): RelocationSiteLookupRecord {
+  return {
+    id: row.id,
+    regionId: row.regionId,
+    name: row.name,
+    address: row.address,
+    lat: row.lat,
+    lng: row.lng,
+    tradeCategories: toStringArray(row.tradeCategories),
+    facilities: toStringArray(row.facilities),
+    isActive: row.isActive,
   };
 }
 
@@ -383,33 +486,77 @@ export const ReportRepository = {
     updateData: SubmitActionUpdateData,
     auditLogData: CreateAuditLogInputData,
   ): Promise<ReportDetailRecord | null> {
+    return guardedUpdateWithAudit(
+      { id, status: { in: expectedStatuses } },
+      updateData,
+      auditLogData,
+    );
+  },
+
+  async findRelocationSiteById(id: string): Promise<RelocationSiteLookupRecord | null> {
     const prisma = getPrisma();
-    const res = await prisma.violationReport.updateMany({
-      where: {
-        id,
-        status: { in: expectedStatuses },
-      },
-      data: updateData,
+    const row = await prisma.relocationSite.findUnique({
+      where: { id },
+      select: relocationSiteLookupSelect,
     });
+    return row ? mapRelocationSiteLookup(row) : null;
+  },
 
-    if (res.count === 0) {
-      return null;
-    }
+  async guardedValidate(
+    id: string,
+    expectedStatus: ReportStatus,
+    updateData: ValidateUpdateData,
+    auditLogData: CreateAuditLogInputData,
+  ): Promise<ReportDetailRecord | null> {
+    return guardedUpdateWithAudit({ id, status: expectedStatus }, updateData, auditLogData);
+  },
 
-    const [, detail] = await prisma.$transaction([
-      prisma.auditLog.create({
-        data: {
-          reportId: id,
-          ...buildAuditCreateFields(auditLogData),
+  async guardedAssignRelocation(
+    id: string,
+    updateData: AssignRelocationUpdateData,
+    auditLogData: CreateAuditLogInputData,
+  ): Promise<ReportDetailRecord | null> {
+    return guardedUpdateWithAudit(
+      {
+        id,
+        status: 'VALIDATED',
+        relocationRequested: true,
+        relocationSiteId: null,
+      },
+      {
+        relocationSiteId: updateData.relocationSiteId,
+        relocationAssignedAt: updateData.relocationAssignedAt,
+      },
+      auditLogData,
+    );
+  },
+
+  async findPdfContextById(id: string): Promise<ReportPdfContextRecord | null> {
+    const prisma = getPrisma();
+    const row = await prisma.violationReport.findUnique({
+      where: { id },
+      include: {
+        ...detailInclude,
+        region: {
+          select: { city: true, satpolAgencyName: true, umkmAgencyName: true },
         },
-      }),
-      prisma.violationReport.findUnique({
-        where: { id },
-        include: detailInclude,
-      }),
-    ]);
-
-    return detail ? mapPrismaDetail(detail) : null;
+        relocationSite: { select: relocationSiteLookupSelect },
+        actionByUser: { select: { fullName: true } },
+        validatedByUser: { select: { fullName: true } },
+      },
+    });
+    if (!row) return null;
+    return {
+      ...mapPrismaReport(row),
+      cameraName: row.camera?.name,
+      zoneName: row.zone?.name ?? null,
+      relocationSiteName: row.relocationSite?.name ?? null,
+      auditLogs: row.auditLogs.map(mapPrismaAuditLog),
+      region: row.region,
+      relocationSite: row.relocationSite ? mapRelocationSiteLookup(row.relocationSite) : null,
+      actionByUserName: row.actionByUser?.fullName ?? null,
+      validatedByUserName: row.validatedByUser?.fullName ?? null,
+    };
   },
 };
 

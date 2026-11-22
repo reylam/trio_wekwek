@@ -9,6 +9,8 @@ import authRoute from './routes/auth.route.js';
 import cctvRoute from './routes/cctv.route.js';
 import zoneRoute from './routes/zone.route.js';
 import reportRoute from './routes/report.route.js';
+import dinasRoute from './routes/dinas.route.js';
+import relocationSiteRoute from './routes/relocationSite.route.js';
 
 // Utamakan IPv4 untuk mencegah ECONNRESET/fetch failed ke Supabase di jaringan IPv6/NAT64.
 dns.setDefaultResultOrder('ipv4first');
@@ -39,6 +41,8 @@ app.use('/api/auth', authRoute);
 app.use('/api/cctv', cctvRoute);
 app.use('/api/zones', zoneRoute);
 app.use('/api/reports', reportRoute);
+app.use('/api/dinas', dinasRoute);
+app.use('/api/relocation-sites', relocationSiteRoute);
 
 // Error handler terpusat: WAJIB paling akhir setelah semua route.
 app.use(errorHandler);

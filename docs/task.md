@@ -122,7 +122,7 @@ Dengan waktu efektif **26 hari kalender**, 5 area berikut memiliki risiko keterl
     - `GET /api/reports` mendukung filter multi-status (`?status=NEED_ACTION,NEEDS_REVISION`), `relocationRequested`, pencarian, dan pagination.
     - `GET /api/reports/:id` otomatis menyertakan `auditLogs` dan 3 `nearestRelocationSites` (Haversine, tanpa kuota).
     - `POST /api/reports/:id/action` mengunggah foto *After* ke Supabase Storage (retry 3x), memakai *guarded update* (`409 Conflict` jika status sudah berubah), menutup *incident* & mencatat `AuditLog`.
-- [ ] **`T2-03` `[Dev 1 - Fullstack]` — Endpoint Validasi Dinas, Relokasi 1-Klik, CRUD Lokasi Binaan, Analitik Dinas & PDF 1 Halaman**
+- [x] **`T2-03` `[Dev 1 - Fullstack]` — Endpoint Validasi Dinas, Relokasi 1-Klik, CRUD Lokasi Binaan, Analitik Dinas & PDF 1 Halaman**
   - **Target:** `BE-Patra/src/{routes,controller,service,repository}/{dinas,relocationSite}.*`, `BE-Patra/src/service/pdfBeritaAcara.service.ts`
   - **Dependency:** `T2-02`, `T1-09` (logo PNG)
   - **Acceptance Criteria:**

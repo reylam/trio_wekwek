@@ -1,8 +1,10 @@
 import express from 'express';
 import {
+  assignRelocationSchema,
   autoDetectPayloadSchema,
   listReportsQuerySchema,
   submitReportActionSchema,
+  validateReportSchema,
 } from '../interface/index.js';
 import {
   authenticate,
@@ -10,7 +12,11 @@ import {
   requireRole,
 } from '../middlewares/auth.js';
 import photoUpload from '../middlewares/upload.js';
-import { validateMultipartPayload, validateQuery } from '../middlewares/validate.js';
+import {
+  validateBody,
+  validateMultipartPayload,
+  validateQuery,
+} from '../middlewares/validate.js';
 import ReportController, {
   createReportController,
 } from '../controller/report.controller.js';
@@ -56,6 +62,29 @@ export function createReportRouter(options?: {
     photoUpload.single('afterPhoto'),
     validateMultipartPayload(submitReportActionSchema),
     controller.submitAction,
+  );
+
+  router.post(
+    '/:id/validate',
+    authGuard,
+    requireRole('DINAS_UMKM'),
+    validateBody(validateReportSchema),
+    controller.validate,
+  );
+
+  router.post(
+    '/:id/relocation',
+    authGuard,
+    requireRole('DINAS_UMKM'),
+    validateBody(assignRelocationSchema),
+    controller.assignRelocation,
+  );
+
+  router.get(
+    '/:id/pdf',
+    authGuard,
+    requireRole('DINAS_UMKM', 'SATPOL_PP'),
+    controller.downloadPdf,
   );
 
   return router;

@@ -21,6 +21,7 @@ import {
   haversineDistanceMeters,
 } from './geo.service.js';
 import type { StorageServicePort } from './storage.service.js';
+import { createPdfBeritaAcaraService } from './pdfBeritaAcara.service.js';
 import { createReportService } from './report.service.js';
 import { createReportController } from '../controller/report.controller.js';
 import { createReportRouter } from '../routes/report.route.js';
@@ -56,6 +57,17 @@ const SATPOL_SMG_TOKEN = signAuthToken(
     regionId: 'reg-smg',
     city: 'Kota Semarang',
     email: 'satpol.semarang@patra.demo',
+  },
+  TEST_JWT_SECRET,
+);
+
+const DINAS_SMG_TOKEN = signAuthToken(
+  {
+    sub: 'u-dinas-smg',
+    role: 'DINAS_UMKM',
+    regionId: 'reg-smg',
+    city: 'Kota Semarang',
+    email: 'dinas.semarang@patra.demo',
   },
   TEST_JWT_SECRET,
 );
@@ -165,7 +177,19 @@ function makeTestHarness(opts: { cooldownSec?: number; nowMs?: number } = {}) {
     },
   };
 
-  const repo: ReportRepositoryPort = {
+    relocationSites.push({
+      id: 'site-inactive',
+      regionId: 'reg-jkp',
+      name: 'Lokasi Arsip Lama',
+      address: 'Jl. Lama',
+      lat: -6.19,
+      lng: 106.82,
+      tradeCategories: ['Kuliner'],
+      facilities: ['Listrik'],
+    });
+    const inactiveSiteIds = new Set<string>(['site-inactive']);
+
+    const repo: ReportRepositoryPort = {
     async findCameraById(cameraId) {
       return cameras.find((c) => c.id === cameraId) ?? null;
     },
@@ -189,7 +213,17 @@ function makeTestHarness(opts: { cooldownSec?: number; nowMs?: number } = {}) {
       return zones.filter((z) => z.regionId === regionId);
     },
     async findActiveRelocationSitesByRegion(regionId) {
-      return relocationSites.filter((s) => s.regionId === regionId);
+      return relocationSites.filter(
+        (s) => s.regionId === regionId && !inactiveSiteIds.has(s.id),
+      );
+    },
+    async findRelocationSiteById(id) {
+      const s = relocationSites.find((item) => item.id === id);
+      if (!s) return null;
+      return {
+        ...s,
+        isActive: !inactiveSiteIds.has(s.id),
+      };
     },
     async createReportWithAuditLog(reportData, auditData) {
       const now = new Date(currentTimeMs);
@@ -298,6 +332,76 @@ function makeTestHarness(opts: { cooldownSec?: number; nowMs?: number } = {}) {
 
       return this.findDetailById(id);
     },
+    async guardedValidate(id, expectedStatus, updateData, auditData) {
+      const rec = reports.find((r) => r.id === id);
+      if (!rec || rec.status !== expectedStatus) {
+        return null;
+      }
+      rec.status = updateData.status;
+      if (updateData.validatedByUserId !== undefined) {
+        rec.validatedByUserId = updateData.validatedByUserId;
+      }
+      if (updateData.validatedAt !== undefined) {
+        rec.validatedAt = updateData.validatedAt;
+      }
+      if (updateData.revisionReason !== undefined) {
+        rec.revisionReason = updateData.revisionReason;
+      }
+      rec.updatedAt = new Date(currentTimeMs);
+      auditLogs.push({
+        id: `aud-${++auditCounter}`,
+        reportId: id,
+        ...auditData,
+        createdAt: new Date(currentTimeMs),
+      });
+      return this.findDetailById(id);
+    },
+    async guardedAssignRelocation(id, updateData, auditData) {
+      const rec = reports.find((r) => r.id === id);
+      if (
+        !rec ||
+        rec.status !== 'VALIDATED' ||
+        !rec.relocationRequested ||
+        rec.relocationSiteId !== null
+      ) {
+        return null;
+      }
+      rec.relocationSiteId = updateData.relocationSiteId;
+      rec.relocationAssignedAt = updateData.relocationAssignedAt;
+      rec.updatedAt = new Date(currentTimeMs);
+      auditLogs.push({
+        id: `aud-${++auditCounter}`,
+        reportId: id,
+        ...auditData,
+        createdAt: new Date(currentTimeMs),
+      });
+      return this.findDetailById(id);
+    },
+    async findPdfContextById(id) {
+      const detail = await this.findDetailById(id);
+      if (!detail) return null;
+      const site = detail.relocationSiteId
+        ? await this.findRelocationSiteById(detail.relocationSiteId)
+        : null;
+      return {
+        ...detail,
+        region:
+          detail.regionId === 'reg-jkp'
+            ? {
+                city: 'Kota Jakarta Pusat',
+                satpolAgencyName: 'Satpol PP Kota Administrasi Jakarta Pusat',
+                umkmAgencyName: 'Suku Dinas PPKUKM Jakarta Pusat',
+              }
+            : {
+                city: 'Kota Semarang',
+                satpolAgencyName: 'Satpol PP Kota Semarang',
+                umkmAgencyName: 'Dinas Koperasi dan Usaha Mikro Kota Semarang',
+              },
+        relocationSite: site,
+        actionByUserName: 'Petugas Satpol PP',
+        validatedByUserName: 'Admin Dinas UMKM',
+      };
+    },
   };
 
   const service = createReportService({
@@ -307,12 +411,19 @@ function makeTestHarness(opts: { cooldownSec?: number; nowMs?: number } = {}) {
     now: () => new Date(currentTimeMs),
   });
 
+  const pdfService = createPdfBeritaAcaraService({
+    repo,
+    now: () => new Date(currentTimeMs),
+    // Simulasikan gagal unduh gambar agar fallback placeholder PDF ikut teruji cepat tanpa jaringan
+    fetchImage: async () => ({ buffer: null, error: 'Batas waktu habis' }),
+  });
+
   const app = express();
   app.use(express.json());
   app.use(
     '/api/reports',
     createReportRouter({
-      controller: createReportController(service),
+      controller: createReportController(service, pdfService),
       jwtSecret: TEST_JWT_SECRET,
     }),
   );
@@ -701,6 +812,262 @@ test('GET /api/reports, GET /api/reports/:id, and POST /api/reports/:id/action e
     assert.equal(revJson.data.report.status, 'PENDING_VALIDATION');
     assert.equal(revJson.data.report.actionSubmittedAt, initialActionTime.toISOString());
     assert.equal(revJson.data.report.auditLogs.at(-1).action, 'REVISION_SUBMITTED');
+  } finally {
+    await new Promise<void>((resolve, reject) => server.close((e) => (e ? reject(e) : resolve())));
+  }
+});
+
+test('POST /api/reports/:id/validate, /relocation, and GET /:id/pdf enforce RBAC, region-lock, 409 guards, 1-click relocation, and 1-page A4 PDF', async () => {
+  const harness = makeTestHarness();
+  const server = harness.app.listen(0);
+  const baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+
+  try {
+    // Seed 2 laporan via auto-detect: repWithReloc (relocationRequested=true) & repNoReloc (false)
+    const create1 = await fetch(`${baseUrl}/api/reports/auto-detect`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${SATPOL_JKT_TOKEN}` },
+      body: makeSnapshotForm({
+        cameraId: 'cam-jkp-1',
+        source: 'AUTO_AI',
+        currentActiveViolators: 3,
+        maxConfidence: 0.91,
+        isSimulationMode: false,
+      }),
+    });
+    const repWithRelocId = ((await create1.json()) as any).data.report.id as string;
+
+    // Belum VALIDATED -> PDF harus mengembalikan 409 JSON (bukan PDF)
+    const earlyPdf = await fetch(`${baseUrl}/api/reports/${repWithRelocId}/pdf`, {
+      headers: { Authorization: `Bearer ${DINAS_JKT_TOKEN}` },
+    });
+    assert.equal(earlyPdf.status, 409);
+    assert.equal(((await earlyPdf.json()) as any).error.code, 'REPORT_NOT_VALIDATED');
+
+    // Satpol PP submit action dengan relocationRequested=true
+    harness.advanceSeconds(60);
+    const act1 = await fetch(`${baseUrl}/api/reports/${repWithRelocId}/action`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${SATPOL_JKT_TOKEN}` },
+      body: makeActionForm({
+        actionType: 'RELOCATION_ASSISTANCE',
+        actualPklCount: 3,
+        educationNotes: 'Pedagang telah diedukasi dan bersedia pindah ke Lokasi Binaan resmi.',
+        relocationRequested: true,
+      }),
+    });
+    assert.equal(act1.status, 200);
+
+    // Laporan kedua tanpa pengajuan relokasi
+    const create2 = await fetch(`${baseUrl}/api/reports/auto-detect`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${SATPOL_JKT_TOKEN}` },
+      body: makeSnapshotForm({
+        cameraId: 'cam-jkp-outside',
+        source: 'MANUAL',
+        currentActiveViolators: 1,
+        maxConfidence: 0.85,
+        isSimulationMode: true,
+      }),
+    });
+    const repNoRelocId = ((await create2.json()) as any).data.report.id as string;
+    await fetch(`${baseUrl}/api/reports/${repNoRelocId}/action`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${SATPOL_JKT_TOKEN}` },
+      body: makeActionForm({
+        actionType: 'EDUCATION_WARNING',
+        actualPklCount: 1,
+        educationNotes: 'Teguran persuasif selesai, area trotoar bersih.',
+        relocationRequested: false,
+      }),
+    });
+
+    // 1. Validate RBAC & Region-Lock
+    const satpolValidate = await fetch(`${baseUrl}/api/reports/${repWithRelocId}/validate`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${SATPOL_JKT_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ decision: 'APPROVE' }),
+    });
+    assert.equal(satpolValidate.status, 403);
+    assert.equal(((await satpolValidate.json()) as any).error.code, 'FORBIDDEN_ROLE');
+
+    const crossValidate = await fetch(`${baseUrl}/api/reports/${repWithRelocId}/validate`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${DINAS_SMG_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ decision: 'APPROVE' }),
+    });
+    assert.equal(crossValidate.status, 403);
+    assert.equal(((await crossValidate.json()) as any).error.code, 'REGION_ACCESS_DENIED');
+
+    // 2. REQUEST_REVISION alasan < 10 karakter -> 400 VALIDATION_ERROR
+    const shortReason = await fetch(`${baseUrl}/api/reports/${repWithRelocId}/validate`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${DINAS_JKT_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ decision: 'REQUEST_REVISION', revisionReason: 'Kurang' }),
+    });
+    assert.equal(shortReason.status, 400);
+
+    // 3. REQUEST_REVISION valid -> NEEDS_REVISION + AuditLog REVISION_REQUESTED menyimpan rejectedAfterImageUrl
+    const reqRev = await fetch(`${baseUrl}/api/reports/${repWithRelocId}/validate`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${DINAS_JKT_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        decision: 'REQUEST_REVISION',
+        revisionReason: 'Foto bukti After terlalu gelap, mohon ulangi pengambilan foto.',
+      }),
+    });
+    assert.equal(reqRev.status, 200);
+    const reqRevJson = (await reqRev.json()) as any;
+    assert.equal(reqRevJson.data.report.status, 'NEEDS_REVISION');
+    const revAudit = reqRevJson.data.report.auditLogs.at(-1);
+    assert.equal(revAudit.action, 'REVISION_REQUESTED');
+    assert.ok(revAudit.metadata.rejectedAfterImageUrl);
+
+    // Relokasi sebelum VALIDATED -> 409 REPORT_STATUS_CONFLICT
+    const earlyReloc = await fetch(`${baseUrl}/api/reports/${repWithRelocId}/relocation`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${DINAS_JKT_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ relocationSiteId: 'site-near' }),
+    });
+    assert.equal(earlyReloc.status, 409);
+
+    // Satpol PP submit revisi -> PENDING_VALIDATION, lalu Dinas APPROVE -> VALIDATED & revisionReason=null
+    harness.advanceSeconds(60);
+    await fetch(`${baseUrl}/api/reports/${repWithRelocId}/action`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${SATPOL_JKT_TOKEN}` },
+      body: makeActionForm({
+        actionType: 'RELOCATION_ASSISTANCE',
+        actualPklCount: 3,
+        educationNotes: 'Foto ulang trotoar sudah terang dan bersih tanpa gerobak.',
+        relocationRequested: true,
+      }),
+    });
+
+    const approve1 = await fetch(`${baseUrl}/api/reports/${repWithRelocId}/validate`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${DINAS_JKT_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ decision: 'APPROVE' }),
+    });
+    assert.equal(approve1.status, 200);
+    const approve1Json = (await approve1.json()) as any;
+    assert.equal(approve1Json.data.report.status, 'VALIDATED');
+    assert.equal(approve1Json.data.report.revisionReason, null);
+    assert.ok(approve1Json.data.report.validatedAt);
+    assert.equal(approve1Json.data.report.auditLogs.at(-1).action, 'REPORT_VALIDATED');
+
+    // Validasi ulang setelah VALIDATED -> 409 REPORT_STATUS_CONFLICT
+    const dupValidate = await fetch(`${baseUrl}/api/reports/${repWithRelocId}/validate`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${DINAS_JKT_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ decision: 'APPROVE' }),
+    });
+    assert.equal(dupValidate.status, 409);
+
+    // 4. Approve repNoRelocId lalu uji relokasi ditolak (400 RELOCATION_NOT_REQUESTED)
+    await fetch(`${baseUrl}/api/reports/${repNoRelocId}/validate`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${DINAS_JKT_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ decision: 'APPROVE' }),
+    });
+    const noReqReloc = await fetch(`${baseUrl}/api/reports/${repNoRelocId}/relocation`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${DINAS_JKT_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ relocationSiteId: 'site-near' }),
+    });
+    assert.equal(noReqReloc.status, 400);
+    assert.equal(((await noReqReloc.json()) as any).error.code, 'RELOCATION_NOT_REQUESTED');
+
+    // 5. Lokasi nonaktif/arsip ditolak (400 RELOCATION_SITE_INACTIVE)
+    const inactiveSiteReloc = await fetch(`${baseUrl}/api/reports/${repWithRelocId}/relocation`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${DINAS_JKT_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ relocationSiteId: 'site-inactive' }),
+    });
+    assert.equal(inactiveSiteReloc.status, 400);
+    assert.equal(((await inactiveSiteReloc.json()) as any).error.code, 'RELOCATION_SITE_INACTIVE');
+
+    // 6. Penetapan relokasi 1-klik sukses -> 200 + AuditLog RELOCATION_ASSIGNED
+    const okReloc = await fetch(`${baseUrl}/api/reports/${repWithRelocId}/relocation`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${DINAS_JKT_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ relocationSiteId: 'site-near' }),
+    });
+    assert.equal(okReloc.status, 200);
+    const okRelocJson = (await okReloc.json()) as any;
+    assert.equal(okRelocJson.data.report.relocationSiteId, 'site-near');
+    assert.ok(okRelocJson.data.report.relocationAssignedAt);
+    assert.equal(okRelocJson.data.report.auditLogs.at(-1).action, 'RELOCATION_ASSIGNED');
+
+    // Penetapan ulang -> 409 RELOCATION_ALREADY_ASSIGNED
+    const dupReloc = await fetch(`${baseUrl}/api/reports/${repWithRelocId}/relocation`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${DINAS_JKT_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ relocationSiteId: 'site-mid' }),
+    });
+    assert.equal(dupReloc.status, 409);
+    assert.equal(((await dupReloc.json()) as any).error.code, 'RELOCATION_ALREADY_ASSIGNED');
+
+    // 7. PDF Berita Acara 1 Halaman A4 (Dinas attachment, Satpol ?inline=1, lintas kota 403)
+    const crossPdf = await fetch(`${baseUrl}/api/reports/${repWithRelocId}/pdf`, {
+      headers: { Authorization: `Bearer ${DINAS_SMG_TOKEN}` },
+    });
+    assert.equal(crossPdf.status, 403);
+
+    const pdfAttachment = await fetch(`${baseUrl}/api/reports/${repWithRelocId}/pdf`, {
+      headers: { Authorization: `Bearer ${DINAS_JKT_TOKEN}` },
+    });
+    assert.equal(pdfAttachment.status, 200);
+    assert.equal(pdfAttachment.headers.get('content-type'), 'application/pdf');
+    assert.match(pdfAttachment.headers.get('content-disposition') ?? '', /^attachment; filename="Berita-Acara-PTR-/);
+    const pdfBuf = Buffer.from(await pdfAttachment.arrayBuffer());
+    const pdfText = pdfBuf.toString('latin1');
+    assert.ok(pdfText.startsWith('%PDF-'));
+    // Pastikan tepat 1 halaman A4
+    const pageObjects = pdfText.match(/\/Type\s*\/Page(?![a-zA-Z])/g) ?? [];
+    assert.equal(pageObjects.length, 1);
+
+    const pdfInline = await fetch(`${baseUrl}/api/reports/${repWithRelocId}/pdf?inline=1`, {
+      headers: { Authorization: `Bearer ${SATPOL_JKT_TOKEN}` },
+    });
+    assert.equal(pdfInline.status, 200);
+    assert.match(pdfInline.headers.get('content-disposition') ?? '', /^inline; filename="Berita-Acara-PTR-/);
   } finally {
     await new Promise<void>((resolve, reject) => server.close((e) => (e ? reject(e) : resolve())));
   }
