@@ -1,0 +1,14 @@
+{
+  "name": "patra-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PATRA (Pantauan Transparan Ruang Publik) — Monorepo (FE-Patra, BE-Patra, AI-Patra)",
+  "scripts": {
+    "install:all": "npm --prefix BE-Patra install && npm --prefix FE-Patra install",
+    "dev:be": "npm --prefix BE-Patra run dev",
+    "dev:fe": "npm --prefix FE-Patra run dev",
+    "typecheck": "npm --prefix BE-Patra run typecheck && npm --prefix FE-Patra run typecheck",
+    "build": "npm --prefix BE-Patra run build && npm --prefix FE-Patra run build",
+    "test": "npm --prefix FE-Patra run test --if-present && npm --prefix BE-Patra run test --if-present"
+  }
+}

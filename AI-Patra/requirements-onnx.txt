@@ -1,0 +1,3 @@
+# Dependency export & verifikasi ONNX (dijalankan offline, bukan runtime server)
+onnx>=1.15.0
+onnxruntime>=1.17.0

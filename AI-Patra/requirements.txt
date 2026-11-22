@@ -1,0 +1,5 @@
+# Dependency pelatihan YOLO26n (Python 3.11+, dijalankan offline di mesin dev/Colab)
+ultralytics>=8.4.0
+opencv-python-headless>=4.10.0
+numpy>=1.26.0
+requests>=2.32.0

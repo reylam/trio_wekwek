@@ -1,4 +1,26 @@
+# Dependencies & build outputs
 node_modules/
 dist/
+coverage/
+.vercel/
+
+# Environment variables (never commit secrets)
 .env
+.env.local
+.env.*.local
+
+# Generated Prisma client
+BE-Patra/generated/
+
+# Python virtualenvs, caches & YOLO training runs
+.venv/
+venv/
+__pycache__/
+*.pyc
+AI-Patra/runs/
+
+# Logs
 *.log
+
+# Local legacy reference only (DO NOT commit to competition submission repo)
+_legacy_ref/
