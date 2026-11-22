@@ -1,0 +1,242 @@
+// PATRA — Prisma Schema (PostgreSQL / Supabase Pooler)
+// Single Source of Truth: .agent/rules/data_contract.md Section 2
+// URL koneksi dikelola via BE-Patra/prisma.config.ts (DATABASE_URL pooler :6543, DIRECT_URL :5432 untuk migrate)
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  SATPOL_PP
+  DINAS_UMKM
+}
+
+enum StreamType {
+  hls
+  mjpeg
+  mp4
+}
+
+enum ReportSource {
+  AUTO_AI
+  MANUAL
+}
+
+enum ReportStatus {
+  NEED_ACTION
+  PENDING_VALIDATION
+  NEEDS_REVISION
+  VALIDATED
+}
+
+enum EnforcementActionType {
+  EDUCATION_WARNING
+  ADMINISTRATIVE_ACTION
+  RELOCATION_ASSISTANCE
+}
+
+enum AuditAction {
+  REPORT_CREATED
+  INCIDENT_ESCALATED
+  MANUAL_EVIDENCE_UPDATED
+  ACTION_SUBMITTED
+  REVISION_REQUESTED
+  REVISION_SUBMITTED
+  REPORT_VALIDATED
+  RELOCATION_ASSIGNED
+}
+
+model Region {
+  id               String            @id @default(uuid())
+  code             String            @unique // mis. "jkt-pusat", "semarang"
+  city             String            @unique // Exact match dengan CctvCamera.city, mis. "Kota Jakarta Pusat"
+  province         String
+  island           String            @default("Jawa")
+  satpolAgencyName String            // mis. "Satpol PP Kota Administrasi Jakarta Pusat"
+  umkmAgencyName   String            // mis. "Suku Dinas PPKUKM Jakarta Pusat" / "Dinas Koperasi & UKM Kota Semarang"
+  centerLat        Float
+  centerLng        Float
+  defaultZoom      Int               @default(13)
+  createdAt        DateTime          @default(now())
+
+  users            User[]
+  cameras          CctvCamera[]
+  zones            RestrictedZone[]
+  relocationSites  RelocationSite[]
+  reports          ViolationReport[]
+
+  @@index([province])
+}
+
+model User {
+  id               String            @id @default(uuid())
+  regionId         String
+  region           Region            @relation(fields: [regionId], references: [id], onDelete: Restrict)
+  email            String            @unique
+  passwordHash     String
+  fullName         String
+  role             UserRole
+  isDemo           Boolean           @default(false)
+  demoKey          String?           @unique // mis. "satpol-jkt-pusat", "dinas-jkt-pusat"
+  createdAt        DateTime          @default(now())
+
+  actionedReports  ViolationReport[] @relation("ReportActionedBy")
+  validatedReports ViolationReport[] @relation("ReportValidatedBy")
+  auditLogs        AuditLog[]
+
+  @@index([regionId, role])
+}
+
+model CctvCamera {
+  id               String            @id // ID deterministik dari katalog, mis. "jkt_035_JKP_POLRI_UOB_PLAZA_C01"
+  regionId         String
+  region           Region            @relation(fields: [regionId], references: [id], onDelete: Restrict)
+  name             String
+  city             String
+  province         String
+  island           String            @default("Jawa")
+  regionLabel      String            // field "region" dari katalog JSON (kelurahan, kecamatan, kota, provinsi)
+  district         String?
+  subdistrict      String?
+  facilityCategory String?
+  streamUrl        String
+  playbackUrl      String
+  streamType       StreamType        @default(hls)
+  lat              Float
+  lng              Float
+  coordsExact      Boolean           @default(false)
+  needsCorsProxy   Boolean           @default(false)
+  attribution      String
+  sourcePortal     String
+  // Poligon ROI ternormalisasi [[x, y], ...] dengan rentang 0..1; null = fallback FULL_FRAME
+  roiPolygon       Json?
+  thumbnailUrl     String?
+  fallbackVideoUrl String?           // mis. "/videos/demo-jakarta.mp4"
+  isActive         Boolean           @default(true)
+  syncedAt         DateTime          @default(now())
+
+  reports          ViolationReport[]
+
+  @@index([regionId, isActive])
+  @@index([city, isActive])
+  @@index([district])
+}
+
+model RestrictedZone {
+  id          String            @id @default(uuid())
+  regionId    String
+  region      Region            @relation(fields: [regionId], references: [id], onDelete: Restrict)
+  name        String
+  description String?
+  // GeoJSON ring terbuka [[lng, lat], ...] minimal 3 titik (divalidasi Turf.js anti self-intersecting)
+  points      Json
+  isActive    Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  reports     ViolationReport[]
+
+  @@index([regionId, isActive])
+}
+
+model RelocationSite {
+  id              String            @id @default(uuid())
+  regionId        String
+  region          Region            @relation(fields: [regionId], references: [id], onDelete: Restrict)
+  name            String
+  address         String
+  lat             Float
+  lng             Float
+  // Array string kategori dagangan, mis. ["Kuliner", "Minuman", "Kerajinan"]
+  tradeCategories Json
+  // Array string fasilitas, mis. ["Listrik", "Air Bersih", "Toilet", "Parkir"] — TANPA KUOTA
+  facilities      Json
+  isActive        Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  reports         ViolationReport[]
+
+  @@index([regionId, isActive])
+}
+
+model ViolationReport {
+  id                   String                 @id @default(uuid())
+  reportCode           String                 @unique // mis. "PTR-202611-0001"
+  regionId             String
+  region               Region                 @relation(fields: [regionId], references: [id], onDelete: Restrict)
+  cameraId             String
+  camera               CctvCamera             @relation(fields: [cameraId], references: [id], onDelete: Restrict)
+  zoneId               String?
+  zone                 RestrictedZone?        @relation(fields: [zoneId], references: [id], onDelete: SetNull)
+
+  source               ReportSource           @default(AUTO_AI)
+  status               ReportStatus           @default(NEED_ACTION)
+  address              String
+  lat                  Float
+  lng                  Float
+
+  // Data deteksi (Before) — menerapkan Peak Active Count saat Incident Merging
+  detectedCount        Int                    @default(1)
+  maxConfidence        Float                  @default(0.0)
+  beforeImageUrl       String
+  isSimulationMode     Boolean                @default(false)
+
+  // Data penindakan Satpol PP (After)
+  afterImageUrl        String?
+  actionType           EnforcementActionType?
+  actualPklCount       Int?
+  educationNotes       String?
+  relocationRequested  Boolean                @default(false)
+  actionByUserId       String?
+  actionByUser         User?                  @relation("ReportActionedBy", fields: [actionByUserId], references: [id], onDelete: SetNull)
+  actionSubmittedAt    DateTime?
+
+  // Data validasi & relokasi Dinas UMKM
+  validatedByUserId    String?
+  validatedByUser      User?                  @relation("ReportValidatedBy", fields: [validatedByUserId], references: [id], onDelete: SetNull)
+  validatedAt          DateTime?
+  revisionReason       String?
+  relocationSiteId     String?
+  relocationSite       RelocationSite?        @relation(fields: [relocationSiteId], references: [id], onDelete: SetNull)
+  relocationAssignedAt DateTime?
+
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+
+  auditLogs            AuditLog[]
+
+  // Optimasi Incident Merging & Cooldown lookup
+  @@index([cameraId, status, createdAt(sort: Desc)])
+  @@index([cameraId, actionSubmittedAt(sort: Desc)])
+  // Optimasi Dashboard, Portal Publik & Filter Laporan per Kota
+  @@index([regionId, status, createdAt(sort: Desc)])
+  @@index([regionId, relocationRequested, status])
+}
+
+// APPEND-ONLY IMMUTABLE AUDIT TRAIL (SDG 16)
+// Dilarang memiliki kolom updatedAt maupun operasi UPDATE/DELETE di lapisan service/API.
+model AuditLog {
+  id         String        @id @default(uuid())
+  reportId   String
+  report     ViolationReport @relation(fields: [reportId], references: [id], onDelete: Restrict)
+  actorId    String?
+  actor      User?         @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actorRole  String        // "SYSTEM_AI" | "SATPOL_PP" | "DINAS_UMKM"
+  actorName  String        // Snapshot nama instansi/petugas saat kejadian
+  action     AuditAction
+  fromStatus ReportStatus?
+  toStatus   ReportStatus
+  note       String?
+  // Menyimpan data preservasi bukti, mis. { previousBeforeImageUrl, previousCount, newCount, revisionReason, relocationSiteName }
+  metadata   Json?
+  createdAt  DateTime      @default(now())
+
+  @@index([reportId, createdAt(sort: Asc)])
+  @@index([createdAt(sort: Desc)])
+}

@@ -11,6 +11,8 @@ const config = {
   enableDemoLogin: process.env.ENABLE_DEMO_LOGIN === 'true',
   cameraCooldownSec: Number.parseInt(process.env.CAMERA_COOLDOWN_SEC || '30', 10),
   supabaseBucket: process.env.SUPABASE_BUCKET || 'patra-evidence',
+  jwtSecret: process.env.JWT_SECRET || '',
+  jwtExpiresIn: process.env.JWT_EXPIRES_IN || '12h',
 };
 
 export default config;

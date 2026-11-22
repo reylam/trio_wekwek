@@ -1,9 +1,11 @@
 import dns from 'node:dns';
-import express, { type Request, type Response } from 'express';
+import express from 'express';
 import cors from 'cors';
 import config from './config/config.js';
 import logger from './middlewares/logger.js';
 import errorHandler from './middlewares/errorHandler.js';
+import healthRoute from './routes/health.route.js';
+import authRoute from './routes/auth.route.js';
 
 // Utamakan IPv4 untuk mencegah ECONNRESET/fetch failed ke Supabase di jaringan IPv6/NAT64.
 dns.setDefaultResultOrder('ipv4first');
@@ -29,21 +31,13 @@ app.use(
 );
 app.use(express.json());
 
-app.get('/health', (_req: Request, res: Response) => {
-  res.json({
-    ok: true,
-    data: {
-      service: 'BE-Patra',
-      status: 'OK',
-      onVercel: Boolean(process.env.VERCEL),
-    },
-  });
-});
+app.use('/', healthRoute);
+app.use('/api/auth', authRoute);
 
 // Error handler terpusat: WAJIB paling akhir setelah semua route.
 app.use(errorHandler);
 
-if (!process.env.VERCEL) {
+if (!process.env.VERCEL && process.env.NODE_ENV !== 'test') {
   app.listen(config.port, () => {
     console.log(`[BE-Patra] Running on http://localhost:${config.port}`);
   });

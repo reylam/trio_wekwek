@@ -66,7 +66,7 @@ Dengan waktu efektif **26 hari kalender**, 5 area berikut memiliki risiko keterl
   - **Target:** `BE-Patra/src/interface/*`, `FE-Patra/src/types/*`
   - **Dependency:** `T1-01`
   - **Acceptance Criteria:** Seluruh enum, schema Zod request API, dan interface `CctvCameraDto` / `CctvPlayerWithAIProps` / `ViolationCapturePayload` persis sesuai `.agent/rules/data_contract.md` dan sinkron antara `BE-Patra` & `FE-Patra`.
-- [ ] **`T1-03` `[Dev 1 - Fullstack]` — Setup Prisma v7, Migrasi Supabase Pooler & Seed 2 Kota Pilot**
+- [x] **`T1-03` `[Dev 1 - Fullstack]` — Setup Prisma v7, Migrasi Supabase Pooler & Seed 2 Kota Pilot**
   - **Target:** `BE-Patra/prisma/{schema.prisma,seed.ts}`, `BE-Patra/prisma.config.ts`, `BE-Patra/src/config/{prisma.ts,supabase.ts}`
   - **Dependency:** `T1-01`
   - **Acceptance Criteria:** Migrasi 7 tabel berhasil di Supabase PostgreSQL; `prisma.ts` memakai `@prisma/adapter-pg` + global singleton + `dns.setDefaultResultOrder("ipv4first")`; `seed.ts` idempoten mengisi 2 `Region` (Jakarta Pusat & Semarang), 4 `User` demo, 6+ `CctvCamera`, 4 `RestrictedZone`, 6 `RelocationSite`, 8 `ViolationReport`, dan `AuditLog`.
