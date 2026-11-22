@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import config from '../config/config.js';
 import type {
+  AssignRelocationInput,
   AuditLogDto,
   AutoDetectPayload,
   AutoDetectResponseData,
@@ -8,6 +9,7 @@ import type {
   ListReportsQuery,
   ReportStatus,
   SubmitReportActionInput,
+  ValidateReportInput,
   ViolationReportDetailDto,
   ViolationReportDto,
 } from '../interface/index.js';
@@ -19,8 +21,16 @@ import ReportRepository, {
   type ReportRecord,
   type ReportRepositoryPort,
 } from '../repository/report.repository.js';
-import { findMatchingZoneId, findNearestRelocationSites } from './geo.service.js';
+import {
+  findMatchingZoneId,
+  findNearestRelocationSites,
+  formatDistanceLabel,
+  haversineDistanceMeters,
+} from './geo.service.js';
 import StorageService, { type StorageServicePort } from './storage.service.js';
+
+const STATUS_CONFLICT_MESSAGE =
+  'Status laporan sudah berubah atau sudah diproses petugas lain. Silakan muat ulang halaman.';
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
@@ -430,6 +440,166 @@ export function createReportService(deps: ReportServiceDeps = {}) {
           'REPORT_STATUS_CONFLICT',
           'Laporan ini sudah ditindaklanjuti atau statusnya telah berubah. Silakan muat ulang halaman.',
         );
+      }
+
+      const sites = await repo.findActiveRelocationSitesByRegion(updated.regionId);
+      return this.formatDetail(updated, sites);
+    },
+
+    /**
+     * FEAT-UMK-02 / BR-006: Dinas UMKM memvalidasi (APPROVE) atau meminta revisi (REQUEST_REVISION).
+     * Hanya laporan PENDING_VALIDATION pada kota akun yang dapat diproses (guarded -> 409).
+     */
+    async validate(
+      user: JwtUserPayload,
+      id: string,
+      input: ValidateReportInput,
+    ): Promise<ViolationReportDetailDto> {
+      const existing = await repo.findDetailById(id);
+      if (!existing) {
+        throw new AppError(404, 'REPORT_NOT_FOUND', 'Laporan pelanggaran tidak ditemukan.');
+      }
+      assertRegionAccess(user, existing.regionId);
+
+      if (existing.status !== 'PENDING_VALIDATION') {
+        throw new AppError(409, 'REPORT_STATUS_CONFLICT', STATUS_CONFLICT_MESSAGE);
+      }
+
+      const now = getNow();
+      const updated =
+        input.decision === 'APPROVE'
+          ? await repo.guardedValidate(
+              id,
+              'PENDING_VALIDATION',
+              {
+                status: 'VALIDATED',
+                validatedByUserId: user.sub,
+                validatedAt: now,
+                revisionReason: null,
+              },
+              {
+                actorId: user.sub,
+                actorRole: 'DINAS_UMKM',
+                actorName: user.email,
+                action: 'REPORT_VALIDATED',
+                fromStatus: 'PENDING_VALIDATION',
+                toStatus: 'VALIDATED',
+                note: 'Bukti penindakan diverifikasi valid oleh Dinas UMKM.',
+                metadata: {
+                  afterImageUrl: existing.afterImageUrl,
+                  relocationRequested: existing.relocationRequested,
+                },
+              },
+            )
+          : await repo.guardedValidate(
+              id,
+              'PENDING_VALIDATION',
+              {
+                status: 'NEEDS_REVISION',
+                revisionReason: input.revisionReason.trim(),
+              },
+              {
+                actorId: user.sub,
+                actorRole: 'DINAS_UMKM',
+                actorName: user.email,
+                action: 'REVISION_REQUESTED',
+                fromStatus: 'PENDING_VALIDATION',
+                toStatus: 'NEEDS_REVISION',
+                note: input.revisionReason.trim(),
+                metadata: {
+                  revisionReason: input.revisionReason.trim(),
+                  // EC-007: arsipkan foto After yang ditolak agar jejak revisi lengkap
+                  rejectedAfterImageUrl: existing.afterImageUrl,
+                },
+              },
+            );
+
+      if (!updated) {
+        throw new AppError(409, 'REPORT_STATUS_CONFLICT', STATUS_CONFLICT_MESSAGE);
+      }
+
+      const sites = await repo.findActiveRelocationSitesByRegion(updated.regionId);
+      return this.formatDetail(updated, sites);
+    },
+
+    /**
+     * FEAT-UMK-02 / BR-006: Penetapan Lokasi Binaan 1-Klik (tanpa kuota).
+     * Syarat: laporan VALIDATED, relocationRequested = true, belum ditetapkan, lokasi aktif di kota yang sama.
+     */
+    async assignRelocation(
+      user: JwtUserPayload,
+      id: string,
+      input: AssignRelocationInput,
+    ): Promise<ViolationReportDetailDto> {
+      const existing = await repo.findDetailById(id);
+      if (!existing) {
+        throw new AppError(404, 'REPORT_NOT_FOUND', 'Laporan pelanggaran tidak ditemukan.');
+      }
+      assertRegionAccess(user, existing.regionId);
+
+      if (existing.status !== 'VALIDATED') {
+        throw new AppError(
+          409,
+          'REPORT_STATUS_CONFLICT',
+          'Arahan relokasi hanya dapat ditetapkan pada laporan yang sudah tervalidasi.',
+        );
+      }
+      if (!existing.relocationRequested) {
+        throw new AppError(
+          400,
+          'RELOCATION_NOT_REQUESTED',
+          'Laporan ini tidak memiliki pengajuan relokasi dari Satpol PP.',
+        );
+      }
+      if (existing.relocationSiteId) {
+        throw new AppError(
+          409,
+          'RELOCATION_ALREADY_ASSIGNED',
+          'Lokasi relokasi untuk laporan ini sudah ditetapkan sebelumnya.',
+        );
+      }
+
+      const site = await repo.findRelocationSiteById(input.relocationSiteId);
+      if (!site) {
+        throw new AppError(404, 'RELOCATION_SITE_NOT_FOUND', 'Lokasi binaan tidak ditemukan.');
+      }
+      assertRegionAccess(user, site.regionId);
+      if (!site.isActive) {
+        throw new AppError(
+          400,
+          'RELOCATION_SITE_INACTIVE',
+          'Lokasi binaan ini sudah diarsipkan dan tidak dapat dipilih.',
+        );
+      }
+
+      const distanceMeters = haversineDistanceMeters(
+        existing.lat,
+        existing.lng,
+        site.lat,
+        site.lng,
+      );
+
+      const updated = await repo.guardedAssignRelocation(
+        id,
+        { relocationSiteId: site.id, relocationAssignedAt: getNow() },
+        {
+          actorId: user.sub,
+          actorRole: 'DINAS_UMKM',
+          actorName: user.email,
+          action: 'RELOCATION_ASSIGNED',
+          fromStatus: 'VALIDATED',
+          toStatus: 'VALIDATED',
+          note: `PKL diarahkan ke ${site.name} (${formatDistanceLabel(distanceMeters)}).`,
+          metadata: {
+            relocationSiteId: site.id,
+            relocationSiteName: site.name,
+            distanceMeters,
+          },
+        },
+      );
+
+      if (!updated) {
+        throw new AppError(409, 'REPORT_STATUS_CONFLICT', STATUS_CONFLICT_MESSAGE);
       }
 
       const sites = await repo.findActiveRelocationSitesByRegion(updated.regionId);

@@ -1,13 +1,19 @@
 import type { Request, Response } from 'express';
 import type {
+  AssignRelocationInput,
   AutoDetectPayload,
   ListReportsQuery,
   SubmitReportActionInput,
+  ValidateReportInput,
 } from '../interface/index.js';
 import { AppError } from '../middlewares/errorHandler.js';
+import PdfBeritaAcaraService from '../service/pdfBeritaAcara.service.js';
 import ReportService from '../service/report.service.js';
 
-export function createReportController(service = ReportService) {
+export function createReportController(
+  service = ReportService,
+  pdfService = PdfBeritaAcaraService,
+) {
   return {
     async autoDetect(req: Request, res: Response) {
       if (!req.user) {
@@ -60,6 +66,51 @@ export function createReportController(service = ReportService) {
         ok: true,
         data: { report },
       });
+    },
+
+    async validate(req: Request, res: Response) {
+      if (!req.user) {
+        throw new AppError(401, 'UNAUTHORIZED', 'Sesi tidak ditemukan.');
+      }
+      const input = res.locals.validatedBody as ValidateReportInput;
+      const report = await service.validate(req.user, String(req.params.id), input);
+      return res.status(200).json({
+        ok: true,
+        data: { report },
+      });
+    },
+
+    async assignRelocation(req: Request, res: Response) {
+      if (!req.user) {
+        throw new AppError(401, 'UNAUTHORIZED', 'Sesi tidak ditemukan.');
+      }
+      const input = res.locals.validatedBody as AssignRelocationInput;
+      const report = await service.assignRelocation(
+        req.user,
+        String(req.params.id),
+        input,
+      );
+      return res.status(200).json({
+        ok: true,
+        data: { report },
+      });
+    },
+
+    async downloadPdf(req: Request, res: Response) {
+      if (!req.user) {
+        throw new AppError(401, 'UNAUTHORIZED', 'Sesi tidak ditemukan.');
+      }
+      // Siapkan konteks & akses SEBELUM mengirim header PDF agar error tetap masuk errorHandler JSON
+      const prepared = await pdfService.prepare(req.user, String(req.params.id));
+      const isInline = req.query.inline === '1' || req.query.inline === 'true';
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        `${isInline ? 'inline' : 'attachment'}; filename="${prepared.filename}"`,
+      );
+      res.setHeader('Cache-Control', 'no-store');
+      await prepared.render(res);
     },
   };
 }
