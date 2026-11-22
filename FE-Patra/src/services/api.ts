@@ -93,15 +93,16 @@ export const cctvApi = {
     facilityCategory?: string;
   }): Promise<{ cameras: CctvCameraDto[]; total: number; city: string }> {
     if (!IS_BACKEND_ENABLED) {
+      await offlineMock.ensureCamerasLoaded();
       const mockUser = getMockSessionUser()!;
-      const cameras = offlineMock.listCameras(mockUser, params?.search);
+      const cameras = offlineMock.listCameras(mockUser, params);
       return { cameras, total: cameras.length, city: mockUser.region.city };
     }
 
     const qs = new URLSearchParams();
     if (params?.search) qs.set('search', params.search);
     if (params?.district) qs.set('district', params.district);
-    if (params?.facilityCategory) qs.set('facilityCategory', params.facilityCategory);
+    if (params?.facilityCategory) qs.set('category', params.facilityCategory);
     const suffix = qs.toString() ? `?${qs.toString()}` : '';
 
     const res = await apiFetch<
@@ -117,6 +118,7 @@ export const cctvApi = {
 
   async getById(id: string): Promise<CctvCameraDto> {
     if (!IS_BACKEND_ENABLED) {
+      await offlineMock.ensureCamerasLoaded();
       const mockUser = getMockSessionUser()!;
       const cam = offlineMock.getCameraById(mockUser, id);
       if (!cam) throw new Error('Kamera CCTV tidak ditemukan.');
@@ -129,10 +131,9 @@ export const cctvApi = {
 
   async updateRoi(id: string, roiPolygon: NormalizedPolygon | null): Promise<CctvCameraDto> {
     if (!IS_BACKEND_ENABLED) {
+      await offlineMock.ensureCamerasLoaded();
       const mockUser = getMockSessionUser()!;
-      const cam = offlineMock.getCameraById(mockUser, id);
-      if (!cam) throw new Error('Kamera CCTV tidak ditemukan.');
-      return { ...cam, roiPolygon };
+      return offlineMock.updateCameraRoi(mockUser, id, roiPolygon);
     }
 
     const res = await apiFetch<{ camera: CctvCameraDto }>(

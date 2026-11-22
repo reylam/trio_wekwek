@@ -64,3 +64,54 @@
   background: transparent;
   border: none;
 }
+
+/* Smooth PATRA UI & AI Vision animations */
+@keyframes patraFadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes patraScanline {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.75;
+  }
+  85% {
+    opacity: 0.75;
+  }
+  100% {
+    transform: translateY(600%);
+    opacity: 0;
+  }
+}
+
+@keyframes patraSoftGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(4, 63, 165, 0.28);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(4, 63, 165, 0);
+  }
+}
+
+.animate-patra-enter {
+  animation: patraFadeInUp 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-patra-scan {
+  animation: patraScanline 3.4s ease-in-out infinite;
+}
+
+.animate-patra-glow {
+  animation: patraSoftGlow 2.4s ease-in-out infinite;
+}

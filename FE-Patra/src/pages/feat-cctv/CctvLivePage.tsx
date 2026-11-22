@@ -1,15 +1,42 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertCircle, ArrowLeft, ExternalLink, MapPin, ShieldAlert } from 'lucide-react';
+import {
+  AlertCircle,
+  ArrowLeft,
+  Compass,
+  ExternalLink,
+  MapPin,
+  ShieldAlert,
+  Sparkles,
+} from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 import { cctvApi, reportApi } from '@/services/api';
 import { SatpolTopHeader } from '@/components/layout/SatpolLayout';
 import CctvPlayerWithAI from '@/components/cctv/CctvPlayerWithAI';
+import CameraThumbnail from '@/components/cctv/CameraThumbnail';
 import { useToast } from '@/components/ui/Toast';
-import type { CctvLiveTelemetry, ViolationCapturePayload } from '@/types';
+import type { CctvCameraDto, CctvLiveTelemetry, ViolationCapturePayload } from '@/types';
+
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const R = 6371;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function formatDistanceLabel(km: number): string {
+  if (km < 1) return `${Math.max(50, Math.round(km * 1000))} m`;
+  return `${km.toFixed(1)} km`;
+}
 
 export default function CctvLivePage() {
   const { cameraId } = useParams<{ cameraId: string }>();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { pushToast } = useToast();
@@ -21,10 +48,24 @@ export default function CctvLivePage() {
     message: string;
   } | null>(null);
 
+  // Gulir halus ke atas & reset banner setiap berpindah kamera
+  useEffect(() => {
+    setSavedReportBanner(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [cameraId]);
+
   const cameraQuery = useQuery({
-    queryKey: ['cctv', 'detail', cameraId],
+    queryKey: ['cctv', 'detail', user?.region.id, cameraId],
     queryFn: () => cctvApi.getById(cameraId!),
-    enabled: Boolean(cameraId),
+    enabled: Boolean(cameraId && user),
+  });
+
+  // Ambil daftar kamera sekota (Region-Locked) untuk Rekomendasi CCTV di bawah preview
+  const cityCamerasQuery = useQuery({
+    queryKey: ['cctv', 'list', user?.region.id],
+    queryFn: () => cctvApi.list(),
+    enabled: Boolean(user),
+    staleTime: 60_000,
   });
 
   const handleViolationCaptured = useCallback(
@@ -102,6 +143,46 @@ export default function CctvLivePage() {
 
   const camera = cameraQuery.data;
 
+  // Rekomendasi CCTV sekota (prioritas: pelanggaran aktif -> kecamatan sama & jarak terdekat -> kategori sama)
+  const recommendedCameras = useMemo<
+    Array<{ cam: CctvCameraDto; distanceKm: number; reason: string }>
+  >(() => {
+    if (!camera) return [];
+    const peers = (cityCamerasQuery.data?.cameras ?? []).filter(
+      (c) => c.id !== camera.id && c.city.trim().toLowerCase() === camera.city.trim().toLowerCase(),
+    );
+
+    return peers
+      .map((peer) => {
+        const dist = haversineKm(camera.lat, camera.lng, peer.lat, peer.lng);
+        const sameDistrict =
+          Boolean(camera.district && peer.district) &&
+          camera.district!.toLowerCase() === peer.district!.toLowerCase();
+        const sameCategory =
+          Boolean(camera.facilityCategory && peer.facilityCategory) &&
+          camera.facilityCategory!.toLowerCase() === peer.facilityCategory!.toLowerCase();
+
+        let score = dist;
+        if (peer.hasActiveReport) score -= 20;
+        if (sameDistrict) score -= 3;
+        if (peer.roiPolygon) score -= 1.5;
+        if (sameCategory) score -= 0.75;
+
+        const reason = peer.hasActiveReport
+          ? 'Pelanggaran Aktif'
+          : sameDistrict
+            ? `Sekecamatan • ${formatDistanceLabel(dist)}`
+            : `Terdekat • ${formatDistanceLabel(dist)}`;
+
+        return { cam: peer, distanceKm: dist, reason, score };
+      })
+      .sort((a, b) => a.score - b.score)
+      .slice(0, 6)
+      .map(({ cam, distanceKm, reason }) => ({ cam, distanceKm, reason }));
+  }, [camera, cityCamerasQuery.data?.cameras]);
+
+  const totalCityCameras = cityCamerasQuery.data?.cameras.length ?? 0;
+
   return (
     <div className="mx-auto max-w-6xl px-5 py-6 sm:px-8">
       <SatpolTopHeader
@@ -110,16 +191,21 @@ export default function CctvLivePage() {
             <button
               type="button"
               onClick={() => navigate('/satpol/cctv')}
-              className="inline-flex items-center gap-2 rounded-full bg-[#DCE8F8] px-4 py-2 text-xs font-bold text-primary transition hover:bg-primary hover:text-white"
+              className="inline-flex items-center gap-2 rounded-full bg-[#DCE8F8] px-4 py-2 text-xs font-bold text-primary transition duration-200 hover:-translate-x-0.5 hover:bg-primary hover:text-white"
             >
               <ArrowLeft className="h-4 w-4" />
               <span>Back to Cameras</span>
             </button>
             {camera && (
               <div className="min-w-0">
-                <h1 className="truncate text-lg font-extrabold text-primary sm:text-xl">
-                  {camera.name}
-                </h1>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="truncate text-lg font-extrabold text-primary sm:text-xl">
+                    {camera.name}
+                  </h1>
+                  <span className="rounded-full bg-[#E9F1FD] px-2.5 py-0.5 text-[11px] font-bold text-primary">
+                    {camera.city}
+                  </span>
+                </div>
                 <p className="truncate text-xs text-slate-500">{camera.regionLabel}</p>
               </div>
             )}
@@ -135,7 +221,7 @@ export default function CctvLivePage() {
       )}
 
       {cameraQuery.isError && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center">
+        <div className="animate-patra-enter rounded-2xl border border-red-200 bg-red-50 p-8 text-center">
           <AlertCircle className="mx-auto h-10 w-10 text-red-600" />
           <h2 className="mt-3 text-base font-bold text-red-800">
             Kamera tidak dapat diakses
@@ -143,22 +229,22 @@ export default function CctvLivePage() {
           <p className="mt-1 text-xs text-red-700">
             {cameraQuery.error instanceof Error
               ? cameraQuery.error.message
-              : 'Kamera tidak ditemukan atau berada di luar wilayah tugas Anda.'}
+              : 'Kamera tidak ditemukan atau berada di luar wilayah tugas kota Anda.'}
           </p>
           <button
             type="button"
             onClick={() => navigate('/satpol/cctv')}
             className="mt-4 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary/90"
           >
-            Kembali ke Daftar Kamera
+            Kembali ke Daftar Kamera {user?.region.city}
           </button>
         </div>
       )}
 
       {camera && (
-        <div className="space-y-5">
+        <div className="space-y-6">
           {savedReportBanner && (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/25 bg-white px-4 py-3 shadow-sm">
+            <div className="animate-patra-enter flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/25 bg-white px-4 py-3 shadow-sm">
               <div className="flex items-center gap-2.5 text-sm font-semibold text-primary">
                 <ShieldAlert className="h-4 w-4 shrink-0" />
                 <span>
@@ -192,8 +278,8 @@ export default function CctvLivePage() {
             }
           />
 
-          {/* Metadata & Sumber Kamera (Ringkas & Transparan) */}
-          <div className="grid grid-cols-1 gap-3 rounded-2xl border border-accent/45 bg-white p-4 text-xs sm:grid-cols-3">
+          {/* Metadata & Sumber Kamera */}
+          <div className="animate-patra-enter grid grid-cols-1 gap-3 rounded-2xl border border-accent/45 bg-white p-4 text-xs shadow-sm sm:grid-cols-3">
             <div>
               <p className="font-semibold text-slate-400">Sumber &amp; Atribusi</p>
               <p className="mt-1 font-semibold text-slate-800">{camera.attribution}</p>
@@ -216,11 +302,11 @@ export default function CctvLivePage() {
                 <MapPin className="h-3.5 w-3.5 text-primary" />
                 {camera.lat.toFixed(5)}, {camera.lng.toFixed(5)}
               </p>
-              {!camera.coordsExact && (
-                <p className="mt-0.5 text-[11px] text-slate-500">
-                  Perkiraan titik lokasi kamera
-                </p>
-              )}
+              <p className="mt-0.5 text-[11px] text-slate-500">
+                {camera.district ? `Kec. ${camera.district}, ` : ''}
+                {camera.city}
+                {!camera.coordsExact ? ' (perkiraan titik)' : ''}
+              </p>
             </div>
 
             <div>
@@ -236,6 +322,70 @@ export default function CctvLivePage() {
               </p>
             </div>
           </div>
+
+          {/* Rekomendasi CCTV Lainnya di Kota yang Sama (Region-Locked) */}
+          {recommendedCameras.length > 0 && (
+            <section className="animate-patra-enter pt-2">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <Sparkles className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <h2 className="text-base font-extrabold text-primary">
+                      Rekomendasi CCTV di {camera.city}
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      Kamera terdekat &amp; prioritas pantauan di wilayah hukum Satpol PP {camera.city}
+                    </p>
+                  </div>
+                </div>
+
+                <Link
+                  to="/satpol/cctv"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-primary/35 bg-[#EEF4FD] px-4 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary hover:text-white"
+                >
+                  <span>Lihat Semua ({totalCityCameras})</span>
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {recommendedCameras.map(({ cam, reason }, idx) => (
+                  <article
+                    key={cam.id}
+                    onClick={() => navigate(`/satpol/cctv/${encodeURIComponent(cam.id)}`)}
+                    style={{ animationDelay: `${idx * 60}ms` }}
+                    className="animate-patra-enter group cursor-pointer overflow-hidden rounded-2xl border border-accent/50 bg-[#E6EFFC] shadow-sm transition duration-300 hover:-translate-y-1 hover:border-primary/55 hover:shadow-lg"
+                  >
+                    <div className="relative aspect-video w-full overflow-hidden bg-video-frame">
+                      <CameraThumbnail camera={cam} />
+                      {cam.hasActiveReport && (
+                        <span className="absolute bottom-0 right-0 rounded-tl-xl bg-[#B91C1C] px-2.5 py-1 text-[10px] font-bold text-white shadow">
+                          Active Violation
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="px-3.5 py-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <h3 className="truncate text-sm font-bold text-primary transition group-hover:text-[#00266D]">
+                          {cam.name}
+                        </h3>
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                          <Compass className="h-3 w-3 text-secondary" />
+                          {reason}
+                        </span>
+                      </div>
+                      <p className="mt-1 truncate text-xs text-primary/70">
+                        {cam.facilityCategory ?? 'Koridor Publik'}
+                        {cam.district ? ` • Kec. ${cam.district}` : ''}
+                      </p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       )}
     </div>

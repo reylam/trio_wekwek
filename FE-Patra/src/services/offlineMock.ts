@@ -8,6 +8,7 @@ import type {
   CctvCameraDto,
   CreateZoneInput,
   NearestRelocationSiteDto,
+  NormalizedPolygon,
   RegionDto,
   ReportStatus,
   RestrictedZoneDto,
@@ -25,8 +26,8 @@ const REGIONS: Record<string, RegionDto> = {
     island: 'Jawa',
     satpolAgencyName: 'Satpol PP Kota Administrasi Jakarta Pusat',
     umkmAgencyName: 'Suku Dinas PPKUKM Jakarta Pusat',
-    centerLat: -6.1885,
-    centerLng: 106.8245,
+    centerLat: -6.1925,
+    centerLng: 106.8185,
     defaultZoom: 13,
   },
   semarang: {
@@ -38,10 +39,213 @@ const REGIONS: Record<string, RegionDto> = {
     satpolAgencyName: 'Satpol PP Kota Semarang',
     umkmAgencyName: 'Dinas Koperasi dan Usaha Mikro Kota Semarang',
     centerLat: -6.984049,
-    centerLng: 110.422,
+    centerLng: 110.4175,
+    defaultZoom: 13,
+  },
+  yogyakarta: {
+    id: 'reg-yog',
+    code: 'yogyakarta',
+    city: 'Kota Yogyakarta',
+    province: 'DI Yogyakarta',
+    island: 'Jawa',
+    satpolAgencyName: 'Satpol PP Kota Yogyakarta',
+    umkmAgencyName: 'Dinas Perdagangan & Koperasi UMKM Kota Yogyakarta',
+    centerLat: -7.79963,
+    centerLng: 110.37152,
+    defaultZoom: 13,
+  },
+  pekanbaru: {
+    id: 'reg-pku',
+    code: 'pekanbaru',
+    city: 'Kota Pekanbaru',
+    province: 'Riau',
+    island: 'Sumatera',
+    satpolAgencyName: 'Satpol PP Kota Pekanbaru',
+    umkmAgencyName: 'Dinas Koperasi dan UMKM Kota Pekanbaru',
+    centerLat: 0.5072,
+    centerLng: 101.44767,
+    defaultZoom: 13,
+  },
+  pekalongan: {
+    id: 'reg-pkl',
+    code: 'pekalongan',
+    city: 'Kota Pekalongan',
+    province: 'Jawa Tengah',
+    island: 'Jawa',
+    satpolAgencyName: 'Satpol PP Kota Pekalongan',
+    umkmAgencyName: 'Dindagkop UKM Kota Pekalongan',
+    centerLat: -6.89521,
+    centerLng: 109.67294,
+    defaultZoom: 13,
+  },
+  cianjur: {
+    id: 'reg-cjr',
+    code: 'cianjur',
+    city: 'Kabupaten Cianjur',
+    province: 'Jawa Barat',
+    island: 'Jawa',
+    satpolAgencyName: 'Satpol PP Kabupaten Cianjur',
+    umkmAgencyName: 'Diskumdagin Kabupaten Cianjur',
+    centerLat: -6.79982,
+    centerLng: 107.12414,
+    defaultZoom: 12,
+  },
+  magelang: {
+    id: 'reg-mgl',
+    code: 'magelang',
+    city: 'Kota Magelang',
+    province: 'Jawa Tengah',
+    island: 'Jawa',
+    satpolAgencyName: 'Satpol PP Kota Magelang',
+    umkmAgencyName: 'Disperindagkop UKM Kota Magelang',
+    centerLat: -7.47156,
+    centerLng: 110.21771,
     defaultZoom: 14,
   },
+  'banda-aceh': {
+    id: 'reg-bna',
+    code: 'banda-aceh',
+    city: 'Kota Banda Aceh',
+    province: 'Aceh',
+    island: 'Sumatera',
+    satpolAgencyName: 'Satpol PP dan WH Kota Banda Aceh',
+    umkmAgencyName: 'Diskopukmdag Kota Banda Aceh',
+    centerLat: 5.54904,
+    centerLng: 95.31116,
+    defaultZoom: 13,
+  },
+  bandung: {
+    id: 'reg-bdg',
+    code: 'bandung',
+    city: 'Kota Bandung',
+    province: 'Jawa Barat',
+    island: 'Jawa',
+    satpolAgencyName: 'Satpol PP Kota Bandung',
+    umkmAgencyName: 'Dinas Koperasi dan UKM Kota Bandung',
+    centerLat: -6.9261,
+    centerLng: 107.62107,
+    defaultZoom: 13,
+  },
+  palembang: {
+    id: 'reg-plg',
+    code: 'palembang',
+    city: 'Kota Palembang',
+    province: 'Sumatera Selatan',
+    island: 'Sumatera',
+    satpolAgencyName: 'Satpol PP Kota Palembang',
+    umkmAgencyName: 'Dinas Koperasi dan UKM Kota Palembang',
+    centerLat: -2.98371,
+    centerLng: 104.75023,
+    defaultZoom: 13,
+  },
+  mataram: {
+    id: 'reg-mtr',
+    code: 'mataram',
+    city: 'Kota Mataram',
+    province: 'Nusa Tenggara Barat',
+    island: 'Bali & Nusa Tenggara',
+    satpolAgencyName: 'Satpol PP Kota Mataram',
+    umkmAgencyName: 'Dinas Perindustrian, Koperasi & UKM Kota Mataram',
+    centerLat: -8.5879,
+    centerLng: 116.11257,
+    defaultZoom: 13,
+  },
+  'jkt-selatan': {
+    id: 'reg-jks',
+    code: 'jkt-selatan',
+    city: 'Kota Jakarta Selatan',
+    province: 'DKI Jakarta',
+    island: 'Jawa',
+    satpolAgencyName: 'Satpol PP Kota Administrasi Jakarta Selatan',
+    umkmAgencyName: 'Suku Dinas PPKUKM Jakarta Selatan',
+    centerLat: -6.235,
+    centerLng: 106.82,
+    defaultZoom: 13,
+  },
+  tasikmalaya: {
+    id: 'reg-tsm',
+    code: 'tasikmalaya',
+    city: 'Kota Tasikmalaya',
+    province: 'Jawa Barat',
+    island: 'Jawa',
+    satpolAgencyName: 'Satpol PP Kota Tasikmalaya',
+    umkmAgencyName: 'Dinas KUMKM Perindag Kota Tasikmalaya',
+    centerLat: -7.32638,
+    centerLng: 108.22062,
+    defaultZoom: 13,
+  },
+  bengkulu: {
+    id: 'reg-bkl',
+    code: 'bengkulu',
+    city: 'Kota Bengkulu',
+    province: 'Bengkulu',
+    island: 'Sumatera',
+    satpolAgencyName: 'Satpol PP Kota Bengkulu',
+    umkmAgencyName: 'Dinas Koperasi dan UKM Kota Bengkulu',
+    centerLat: -3.80604,
+    centerLng: 102.28475,
+    defaultZoom: 13,
+  },
+  padang: {
+    id: 'reg-pdg',
+    code: 'padang',
+    city: 'Kota Padang',
+    province: 'Sumatera Barat',
+    island: 'Sumatera',
+    satpolAgencyName: 'Satpol PP Kota Padang',
+    umkmAgencyName: 'Dinas Koperasi dan UKM Kota Padang',
+    centerLat: -0.92147,
+    centerLng: 100.38818,
+    defaultZoom: 13,
+  },
+  'jkt-barat': {
+    id: 'reg-jkb',
+    code: 'jkt-barat',
+    city: 'Kota Jakarta Barat',
+    province: 'DKI Jakarta',
+    island: 'Jawa',
+    satpolAgencyName: 'Satpol PP Kota Administrasi Jakarta Barat',
+    umkmAgencyName: 'Suku Dinas PPKUKM Jakarta Barat',
+    centerLat: -6.17799,
+    centerLng: 106.79264,
+    defaultZoom: 13,
+  },
+  'jkt-timur': {
+    id: 'reg-jkt',
+    code: 'jkt-timur',
+    city: 'Kota Jakarta Timur',
+    province: 'DKI Jakarta',
+    island: 'Jawa',
+    satpolAgencyName: 'Satpol PP Kota Administrasi Jakarta Timur',
+    umkmAgencyName: 'Suku Dinas PPKUKM Jakarta Timur',
+    centerLat: -6.22951,
+    centerLng: 106.90083,
+    defaultZoom: 13,
+  },
 };
+
+export const EXTRA_PUBLIC_CITY_ACCOUNTS: Array<{
+  demoKey: string;
+  city: string;
+  province: string;
+  cameraCount: number;
+}> = [
+  { demoKey: 'satpol-yogyakarta', city: 'Kota Yogyakarta', province: 'DI Yogyakarta', cameraCount: 87 },
+  { demoKey: 'satpol-pekanbaru', city: 'Kota Pekanbaru', province: 'Riau', cameraCount: 86 },
+  { demoKey: 'satpol-pekalongan', city: 'Kota Pekalongan', province: 'Jawa Tengah', cameraCount: 58 },
+  { demoKey: 'satpol-cianjur', city: 'Kabupaten Cianjur', province: 'Jawa Barat', cameraCount: 56 },
+  { demoKey: 'satpol-magelang', city: 'Kota Magelang', province: 'Jawa Tengah', cameraCount: 45 },
+  { demoKey: 'satpol-banda-aceh', city: 'Kota Banda Aceh', province: 'Aceh', cameraCount: 39 },
+  { demoKey: 'satpol-bandung', city: 'Kota Bandung', province: 'Jawa Barat', cameraCount: 35 },
+  { demoKey: 'satpol-palembang', city: 'Kota Palembang', province: 'Sumatera Selatan', cameraCount: 30 },
+  { demoKey: 'satpol-mataram', city: 'Kota Mataram', province: 'Nusa Tenggara Barat', cameraCount: 16 },
+  { demoKey: 'satpol-jkt-selatan', city: 'Kota Jakarta Selatan', province: 'DKI Jakarta', cameraCount: 14 },
+  { demoKey: 'satpol-tasikmalaya', city: 'Kota Tasikmalaya', province: 'Jawa Barat', cameraCount: 14 },
+  { demoKey: 'satpol-bengkulu', city: 'Kota Bengkulu', province: 'Bengkulu', cameraCount: 7 },
+  { demoKey: 'satpol-padang', city: 'Kota Padang', province: 'Sumatera Barat', cameraCount: 7 },
+  { demoKey: 'satpol-jkt-barat', city: 'Kota Jakarta Barat', province: 'DKI Jakarta', cameraCount: 4 },
+  { demoKey: 'satpol-jkt-timur', city: 'Kota Jakarta Timur', province: 'DKI Jakarta', cameraCount: 2 },
+];
 
 const DEMO_USERS: Record<string, AuthUserDto> = {
   'satpol-jkt-pusat': {
@@ -77,6 +281,21 @@ const DEMO_USERS: Record<string, AuthUserDto> = {
     region: REGIONS.semarang!,
   },
 };
+
+for (const item of EXTRA_PUBLIC_CITY_ACCOUNTS) {
+  const code = item.demoKey.replace(/^satpol-/, '');
+  const region = REGIONS[code];
+  if (region) {
+    DEMO_USERS[item.demoKey] = {
+      id: `u-${item.demoKey}`,
+      email: `satpol.${code}@patra.demo`,
+      fullName: `Petugas ${region.satpolAgencyName}`,
+      role: 'SATPOL_PP',
+      isDemo: true,
+      region,
+    };
+  }
+}
 
 const MOCK_CAMERAS: CctvCameraDto[] = [
   {
@@ -576,15 +795,15 @@ let mockReports: ViolationReportDetailDto[] = [
     id: 'rep-smg-01',
     reportCode: 'PTR-202611-SMG01',
     regionId: 'reg-smg',
-    cameraId: 'smg_001_SIMPANG_LIMA_UTARA',
-    cameraName: 'SIMPANG LIMA SISI UTARA',
+    cameraId: 'smg_337_SIMPANG_LIMA_1_360',
+    cameraName: 'SIMPANG LIMA 1 360',
     zoneId: 'zone-smg-1',
     zoneName: 'Pedestrian Kawasan Simpang Lima',
     source: 'AUTO_AI',
     status: 'NEED_ACTION',
-    address: 'Jl. Pandanaran / Simpang Lima Sisi Utara, Semarang Tengah',
-    lat: -6.99018,
-    lng: 110.42292,
+    address: 'Jl. Pandanaran / Simpang Lima, Semarang Tengah',
+    lat: -6.98945,
+    lng: 110.42248,
     detectedCount: 2,
     maxConfidence: 0.86,
     beforeImageUrl: BEFORE_PLACEHOLDER,
@@ -625,15 +844,15 @@ let mockReports: ViolationReportDetailDto[] = [
     id: 'rep-smg-02',
     reportCode: 'PTR-202611-SMG03',
     regionId: 'reg-smg',
-    cameraId: 'smg_014_KOTA_LAMA_LETJEN_SUPRAPTO',
-    cameraName: 'KOTA LAMA JL. LETJEN SUPRAPTO',
+    cameraId: 'smg_9103_METRO_JOHAR',
+    cameraName: 'METRO JOHAR',
     zoneId: 'zone-smg-2',
     zoneName: 'Koridor Pasar Johar - Aloon-Aloon',
     source: 'MANUAL',
     status: 'NEEDS_REVISION',
-    address: 'Jl. Letjen Suprapto (Kawasan Kota Lama), Semarang Utara',
-    lat: -6.96824,
-    lng: 110.42758,
+    address: 'Koridor Metro Pasar Johar, Semarang Tengah',
+    lat: -6.9711,
+    lng: 110.42277,
     detectedCount: 1,
     maxConfidence: 0.82,
     beforeImageUrl: BEFORE_PLACEHOLDER,
@@ -762,7 +981,32 @@ let mockReports: ViolationReportDetailDto[] = [
   },
 ];
 
+let catalogCameras: CctvCameraDto[] = [...MOCK_CAMERAS];
+let catalogLoadPromise: Promise<void> | null = null;
+
+async function loadPublicCatalogOnce(): Promise<void> {
+  if (typeof fetch !== 'function') return;
+  try {
+    const res = await fetch('/data/cctv_catalog.json', { cache: 'default' });
+    if (!res.ok) return;
+    const json = (await res.json()) as { cameras?: CctvCameraDto[] } | CctvCameraDto[];
+    const items = Array.isArray(json) ? json : Array.isArray(json?.cameras) ? json.cameras : [];
+    if (items.length > 0) {
+      catalogCameras = items;
+    }
+  } catch {
+    // Tetap gunakan fallback MOCK_CAMERAS apabila file katalog lokal belum tersedia
+  }
+}
+
 export const offlineMock = {
+  async ensureCamerasLoaded(): Promise<void> {
+    if (!catalogLoadPromise) {
+      catalogLoadPromise = loadPublicCatalogOnce();
+    }
+    await catalogLoadPromise;
+  },
+
   getUserByDemoKey(demoKey: string): AuthUserDto {
     return DEMO_USERS[demoKey] ?? DEMO_USERS['satpol-semarang']!;
   },
@@ -788,9 +1032,20 @@ export const offlineMock = {
     return { token: `mock:${key}`, user: DEMO_USERS[key]! };
   },
 
-  listCameras(user: AuthUserDto, search?: string): CctvCameraDto[] {
-    const q = search?.trim().toLowerCase() ?? '';
-    return MOCK_CAMERAS.filter((c) => c.city === user.region.city)
+  listCameras(
+    user: AuthUserDto,
+    params?:
+      | string
+      | { search?: string; district?: string; facilityCategory?: string },
+  ): CctvCameraDto[] {
+    const filter = typeof params === 'string' ? { search: params } : (params ?? {});
+    const q = filter.search?.trim().toLowerCase() ?? '';
+    const dist = filter.district?.trim().toLowerCase() ?? '';
+    const cat = filter.facilityCategory?.trim().toLowerCase() ?? '';
+    const userCity = user.region.city.trim().toLowerCase();
+
+    return catalogCameras
+      .filter((c) => c.city.trim().toLowerCase() === userCity)
       .map((c) => ({
         ...c,
         hasActiveReport: mockReports.some(
@@ -799,18 +1054,35 @@ export const offlineMock = {
             (r.status === 'NEED_ACTION' || r.status === 'NEEDS_REVISION'),
         ),
       }))
-      .filter(
-        (c) =>
-          !q ||
+      .filter((c) => {
+        if (dist && (c.district ?? '').trim().toLowerCase() !== dist) return false;
+        if (cat && (c.facilityCategory ?? '').trim().toLowerCase() !== cat) return false;
+        if (!q) return true;
+        return (
           c.name.toLowerCase().includes(q) ||
           c.regionLabel.toLowerCase().includes(q) ||
           (c.district ?? '').toLowerCase().includes(q) ||
-          (c.facilityCategory ?? '').toLowerCase().includes(q),
-      );
+          (c.subdistrict ?? '').toLowerCase().includes(q) ||
+          (c.facilityCategory ?? '').toLowerCase().includes(q)
+        );
+      });
   },
 
   getCameraById(user: AuthUserDto, id: string): CctvCameraDto | null {
     return this.listCameras(user).find((c) => c.id === id) ?? null;
+  },
+
+  updateCameraRoi(
+    user: AuthUserDto,
+    id: string,
+    roiPolygon: NormalizedPolygon | null,
+  ): CctvCameraDto {
+    const cam = this.getCameraById(user, id);
+    if (!cam) throw new Error('Kamera CCTV tidak ditemukan.');
+    catalogCameras = catalogCameras.map((c) =>
+      c.id === id ? { ...c, roiPolygon } : c,
+    );
+    return { ...cam, roiPolygon };
   },
 
   listZones(user: AuthUserDto): RestrictedZoneDto[] {

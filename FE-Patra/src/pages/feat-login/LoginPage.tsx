@@ -11,18 +11,19 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { PatraMark } from '@/components/ui/PatraLogo';
+import { EXTRA_PUBLIC_CITY_ACCOUNTS } from '@/services/offlineMock';
 
 const DEMO_ACCOUNTS = [
   {
     demoKey: 'satpol-semarang',
     label: 'Satpol PP',
-    city: 'Kota Semarang',
+    city: 'Kota Semarang (62 CCTV)',
     role: 'SATPOL_PP' as const,
   },
   {
     demoKey: 'satpol-jkt-pusat',
     label: 'Satpol PP',
-    city: 'Jakarta Pusat',
+    city: 'Jakarta Pusat (32 CCTV)',
     role: 'SATPOL_PP' as const,
   },
   {
@@ -345,6 +346,34 @@ export default function LoginPage() {
                     </button>
                   );
                 })}
+              </div>
+
+              <div className="mt-3 border-t border-accent/40 pt-3">
+                <label
+                  htmlFor="extra-city-select"
+                  className="block text-[10px] font-semibold uppercase tracking-wide text-slate-500"
+                >
+                  Atau jelajahi Satpol PP kota publik lainnya (594 CCTV, 17 Kota)
+                </label>
+                <select
+                  id="extra-city-select"
+                  defaultValue=""
+                  disabled={isSubmitting || Boolean(activeDemoKey)}
+                  onChange={(e) => {
+                    const key = e.target.value;
+                    if (key) void handleDemoLogin(key);
+                  }}
+                  className="mt-1.5 w-full rounded-xl border border-accent/60 bg-white px-3 py-2 text-xs font-medium text-primary focus:border-primary focus:outline-none disabled:opacity-60"
+                >
+                  <option value="" disabled>
+                    Pilih kota publik lainnya...
+                  </option>
+                  {EXTRA_PUBLIC_CITY_ACCOUNTS.map((item) => (
+                    <option key={item.demoKey} value={item.demoKey}>
+                      Satpol PP {item.city} — {item.province} ({item.cameraCount} CCTV)
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
