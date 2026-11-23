@@ -10,6 +10,8 @@ import { Loader2 } from 'lucide-react';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
 import { ToastProvider } from '@/components/ui/Toast';
+import { WalkthroughProvider } from '@/components/walkthrough/WalkthroughContext';
+import WalkthroughOverlay from '@/components/walkthrough/WalkthroughOverlay';
 import type { UserRole } from '@/types';
 
 const PublicHomePage = lazy(() => import('@/pages/feat-public/PublicHomePage'));
@@ -98,56 +100,59 @@ export default function App() {
         <AuthProvider>
           <ToastProvider>
             <BrowserRouter>
-              <Suspense fallback={<FullPageLoader />}>
-                <Routes>
-                  {/* Portal Publik Transparansi SDG 16 (Tanpa Login) */}
-                  <Route path="/" element={<PublicHomePage />} />
+              <WalkthroughProvider>
+                <Suspense fallback={<FullPageLoader />}>
+                  <Routes>
+                    {/* Portal Publik Transparansi SDG 16 (Tanpa Login) */}
+                    <Route path="/" element={<PublicHomePage />} />
 
-                  <Route
-                    path="/login"
-                    element={
-                      <GuestOnly>
-                        <LoginPage />
-                      </GuestOnly>
-                    }
-                  />
+                    <Route
+                      path="/login"
+                      element={
+                        <GuestOnly>
+                          <LoginPage />
+                        </GuestOnly>
+                      }
+                    />
 
-                  {/* Portal Satpol PP (Region-Locked — Hanya 3 Menu Inti) */}
-                  <Route
-                    path="/satpol"
-                    element={
-                      <RequireRole role="SATPOL_PP">
-                        <SatpolLayout />
-                      </RequireRole>
-                    }
-                  >
-                    <Route index element={<Navigate to="cctv" replace />} />
-                    <Route path="cctv" element={<CctvListPage />} />
-                    <Route path="cctv/:cameraId" element={<CctvLivePage />} />
-                    <Route path="peta" element={<RegionalMapPage />} />
-                    <Route path="laporan" element={<ReportsListPage />} />
-                    <Route path="laporan/:reportId" element={<ReportDetailPage />} />
-                  </Route>
+                    {/* Portal Satpol PP (Region-Locked — Hanya 3 Menu Inti) */}
+                    <Route
+                      path="/satpol"
+                      element={
+                        <RequireRole role="SATPOL_PP">
+                          <SatpolLayout />
+                        </RequireRole>
+                      }
+                    >
+                      <Route index element={<Navigate to="cctv" replace />} />
+                      <Route path="cctv" element={<CctvListPage />} />
+                      <Route path="cctv/:cameraId" element={<CctvLivePage />} />
+                      <Route path="peta" element={<RegionalMapPage />} />
+                      <Route path="laporan" element={<ReportsListPage />} />
+                      <Route path="laporan/:reportId" element={<ReportDetailPage />} />
+                    </Route>
 
-                  {/* Portal Dinas UMKM (Region-Locked — Hanya 3 Menu Inti) */}
-                  <Route
-                    path="/dinas"
-                    element={
-                      <RequireRole role="DINAS_UMKM">
-                        <DinasLayout />
-                      </RequireRole>
-                    }
-                  >
-                    <Route index element={<Navigate to="dashboard" replace />} />
-                    <Route path="dashboard" element={<DinasDashboardPage />} />
-                    <Route path="validasi" element={<ValidationListPage />} />
-                    <Route path="validasi/:reportId" element={<ValidationSplitPage />} />
-                    <Route path="lokasi-binaan" element={<RelocationSitesPage />} />
-                  </Route>
+                    {/* Portal Dinas UMKM (Region-Locked — Hanya 3 Menu Inti) */}
+                    <Route
+                      path="/dinas"
+                      element={
+                        <RequireRole role="DINAS_UMKM">
+                          <DinasLayout />
+                        </RequireRole>
+                      }
+                    >
+                      <Route index element={<Navigate to="dashboard" replace />} />
+                      <Route path="dashboard" element={<DinasDashboardPage />} />
+                      <Route path="validasi" element={<ValidationListPage />} />
+                      <Route path="validasi/:reportId" element={<ValidationSplitPage />} />
+                      <Route path="lokasi-binaan" element={<RelocationSitesPage />} />
+                    </Route>
 
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </Suspense>
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </Suspense>
+                <WalkthroughOverlay />
+              </WalkthroughProvider>
             </BrowserRouter>
           </ToastProvider>
         </AuthProvider>

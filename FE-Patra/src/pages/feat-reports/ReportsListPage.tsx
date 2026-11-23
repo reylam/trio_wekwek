@@ -66,7 +66,10 @@ export default function ReportsListPage() {
       />
 
       {/* Filter & Search Bar */}
-      <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div
+        data-tour="satpol-reports-filters"
+        className="mb-6 flex flex-col gap-3 rounded-2xl lg:flex-row lg:items-center lg:justify-between"
+      >
         <div className="flex flex-wrap gap-2">
           {STATUS_TABS.map((tab) => {
             const active = activeTab === tab.key;

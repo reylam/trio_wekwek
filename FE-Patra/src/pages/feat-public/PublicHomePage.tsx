@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { PatraWordmark } from '@/components/ui/PatraLogo';
 import { useToast } from '@/components/ui/Toast';
+import WalkthroughTriggerButton from '@/components/walkthrough/WalkthroughTriggerButton';
 import { useAuth } from '@/context/AuthContext';
 import { ApiError } from '@/lib/apiClient';
 import { escapeHtml, formatKpiSla } from '@/lib/dinasHelpers';
@@ -308,6 +309,7 @@ export default function PublicHomePage() {
           </nav>
 
           <div className="flex shrink-0 items-center gap-2">
+            <WalkthroughTriggerButton tourId="public" label="Panduan Tur" />
             {user ? (
               <Link
                 to={user.role === 'SATPOL_PP' ? '/satpol/cctv' : '/dinas/dashboard'}
@@ -349,7 +351,10 @@ export default function PublicHomePage() {
               </p>
 
               {/* Dynamic Kabupaten/Kota Filter */}
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div
+                data-tour="public-city-filter"
+                className="mt-6 flex flex-col gap-3 rounded-2xl sm:flex-row sm:items-center"
+              >
                 <div className="min-w-0 flex-1 sm:max-w-xs">
                   <label
                     htmlFor="public-city-select"
@@ -411,7 +416,10 @@ export default function PublicHomePage() {
             </div>
 
             {/* Akses Cepat & Demo Juri 1-Klik */}
-            <div className="rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-md lg:col-span-5 sm:p-5">
+            <div
+              data-tour="public-demo-panel"
+              className="rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-md lg:col-span-5 sm:p-5"
+            >
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-[#9EC1EB]" />
@@ -468,7 +476,11 @@ export default function PublicHomePage() {
         </section>
 
         {/* 4 Kartu KPI Transparansi */}
-        <section id="ringkasan-kpi" className="scroll-mt-20 space-y-3">
+        <section
+          id="ringkasan-kpi"
+          data-tour="public-kpi"
+          className="scroll-mt-20 space-y-3 rounded-2xl"
+        >
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h2 className="text-lg font-extrabold text-primary">
@@ -565,6 +577,7 @@ export default function PublicHomePage() {
           {/* Peta Transparansi */}
           <div
             id="peta-transparansi"
+            data-tour="public-map"
             className="scroll-mt-20 rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6 lg:col-span-7"
           >
             <div className="flex flex-wrap items-center justify-between gap-3 pb-4">
@@ -638,6 +651,7 @@ export default function PublicHomePage() {
           {/* Linimasa Akuntabilitas Publik (Audit Feed) */}
           <div
             id="linimasa-audit"
+            data-tour="public-audit-feed"
             className="scroll-mt-20 flex flex-col rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6 lg:col-span-5"
           >
             <div className="border-b border-slate-100 pb-4">

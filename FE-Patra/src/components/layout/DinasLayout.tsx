@@ -17,6 +17,8 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { dinasReportApi } from '@/services/dinasApi';
 import { PatraWordmark } from '@/components/ui/PatraLogo';
+import WalkthroughTriggerButton from '@/components/walkthrough/WalkthroughTriggerButton';
+import { useWalkthrough } from '@/components/walkthrough/WalkthroughContext';
 import { formatHeaderClock, REPORT_STATUS_META } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 
@@ -85,8 +87,11 @@ export function DinasTopHeader({
       </div>
 
       <div className="relative flex shrink-0 items-center gap-2 sm:gap-3">
+        <WalkthroughTriggerButton tourId="dinas" label="Panduan Tur" />
+
         <button
           type="button"
+          data-tour="dinas-header-bell"
           onClick={() => setBellOpen((prev) => !prev)}
           className="relative flex h-9 w-9 items-center justify-center rounded-full text-primary transition hover:bg-accent/25 sm:h-10 sm:w-10"
           aria-label="Notifikasi laporan menunggu validasi"
@@ -188,6 +193,7 @@ export function DinasTopHeader({
 
 export default function DinasLayout() {
   const { user, logout } = useAuth();
+  const { startTour } = useWalkthrough();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [modalType, setModalType] = useState<'profile' | 'help' | null>(null);
@@ -217,7 +223,7 @@ export default function DinasLayout() {
           <PatraWordmark subtitle={user?.region.umkmAgencyName ?? 'Portal Dinas UMKM'} />
         </div>
 
-        <nav className="space-y-1" aria-label="Menu Utama Dinas UMKM">
+        <nav data-tour="dinas-nav" className="space-y-1" aria-label="Menu Utama Dinas UMKM">
           {DINAS_NAV_ITEMS.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
@@ -316,6 +322,7 @@ export default function DinasLayout() {
         <PatraWordmark subtitle={user?.region.city} />
         <button
           type="button"
+          data-tour="dinas-nav"
           onClick={() => setMobileMenuOpen(true)}
           className="rounded-xl p-2 text-primary hover:bg-accent/20"
           aria-label="Buka navigasi"
@@ -408,7 +415,19 @@ export default function DinasLayout() {
               </div>
             )}
 
-            <div className="mt-5 flex justify-end">
+            <div className="mt-5 flex items-center justify-end gap-2">
+              {modalType === 'help' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalType(null);
+                    startTour('dinas');
+                  }}
+                  className="rounded-xl border border-primary/25 bg-[#EEF4FD] px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/15"
+                >
+                  Mulai Tur Interaktif
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setModalType(null)}

@@ -514,7 +514,10 @@ export default function RegionalMapPage() {
       {/* Top Floating Controls — Matches Regional Map.png & Regional Map - Manage Restricted Zone.png */}
       {!editMode ? (
         <div className="pointer-events-none absolute inset-x-0 top-5 z-[400] flex justify-center px-4">
-          <div className="pointer-events-auto flex w-full max-w-5xl flex-wrap items-center gap-2 rounded-2xl bg-[#9EC1EB]/45 p-2 shadow-lg backdrop-blur-md">
+          <div
+            data-tour="satpol-map-controls"
+            className="pointer-events-auto flex w-full max-w-5xl flex-wrap items-center gap-2 rounded-2xl bg-[#9EC1EB]/45 p-2 shadow-lg backdrop-blur-md"
+          >
             {/* Search Box */}
             <div className="relative min-w-[200px] flex-1">
               <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />

@@ -16,6 +16,8 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { reportApi } from '@/services/api';
 import { PatraWordmark } from '@/components/ui/PatraLogo';
+import WalkthroughTriggerButton from '@/components/walkthrough/WalkthroughTriggerButton';
+import { useWalkthrough } from '@/components/walkthrough/WalkthroughContext';
 import { formatHeaderClock, REPORT_STATUS_META } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 
@@ -37,8 +39,10 @@ export function SatpolTopHeader({
 }) {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [clockText, setClockText] = useState(() => formatHeaderClock());
   const [bellOpen, setBellOpen] = useState(false);
+  const isLiveCctvDetail = /^\/satpol\/cctv\/.+/.test(location.pathname);
 
   useEffect(() => {
     const id = window.setInterval(() => setClockText(formatHeaderClock()), 30_000);
@@ -79,8 +83,14 @@ export function SatpolTopHeader({
       </div>
 
       <div className="relative flex shrink-0 items-center gap-2 sm:gap-3">
+        <WalkthroughTriggerButton
+          tourId={isLiveCctvDetail ? 'satpol-live' : 'satpol'}
+          label={isLiveCctvDetail ? 'Tur Kamera AI' : 'Panduan Tur'}
+        />
+
         <button
           type="button"
+          data-tour="satpol-header-bell"
           onClick={() => setBellOpen((prev) => !prev)}
           className="relative flex h-9 w-9 items-center justify-center rounded-full text-primary transition hover:bg-accent/25 sm:h-10 sm:w-10"
           aria-label="Notifikasi laporan aktif"
@@ -179,6 +189,7 @@ export function SatpolTopHeader({
 
 export default function SatpolLayout() {
   const { user, logout } = useAuth();
+  const { startTour } = useWalkthrough();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -198,7 +209,7 @@ export default function SatpolLayout() {
           <PatraWordmark subtitle={user?.region.city ?? 'Portal Satpol PP'} />
         </div>
 
-        <nav className="space-y-1" aria-label="Menu Utama Satpol PP">
+        <nav data-tour="satpol-nav" className="space-y-1" aria-label="Menu Utama Satpol PP">
           {SATPOL_NAV_ITEMS.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
@@ -292,6 +303,7 @@ export default function SatpolLayout() {
         <PatraWordmark subtitle={user?.region.city} />
         <button
           type="button"
+          data-tour="satpol-nav"
           onClick={() => setMobileMenuOpen(true)}
           className="rounded-xl p-2 text-primary hover:bg-accent/20"
           aria-label="Buka navigasi"
@@ -389,7 +401,20 @@ export default function SatpolLayout() {
               </div>
             )}
 
-            <div className="mt-5 flex justify-end">
+            <div className="mt-5 flex items-center justify-end gap-2">
+              {modalType === 'help' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalType(null);
+                    const isLiveDetail = /^\/satpol\/cctv\/.+/.test(location.pathname);
+                    startTour(isLiveDetail ? 'satpol-live' : 'satpol');
+                  }}
+                  className="rounded-xl border border-primary/25 bg-[#EEF4FD] px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/15"
+                >
+                  Mulai Tur Interaktif
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setModalType(null)}

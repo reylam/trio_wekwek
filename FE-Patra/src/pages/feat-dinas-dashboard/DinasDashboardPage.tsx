@@ -241,8 +241,9 @@ export default function DinasDashboardPage() {
         <div className="space-y-6">
           {/* 4 Kartu KPI Strategis */}
           <section
+            data-tour="dinas-kpi"
             aria-label="Indikator Kinerja Utama"
-            className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"
+            className="grid grid-cols-1 gap-4 rounded-2xl sm:grid-cols-2 xl:grid-cols-4"
           >
             <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between">
@@ -314,7 +315,7 @@ export default function DinasDashboardPage() {
           </section>
 
           {/* 2 Grafik Recharts */}
-          <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <section data-tour="dinas-charts" className="grid grid-cols-1 gap-6 rounded-3xl lg:grid-cols-2">
             <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
               <div className="flex items-center justify-between gap-2 pb-4">
                 <div>
@@ -446,7 +447,7 @@ export default function DinasDashboardPage() {
           </section>
 
           {/* Bottom Section: Top 5 Ruas Jalan & Peta Penataan Lokasi Binaan */}
-          <section className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+          <section data-tour="dinas-planning-map" className="grid grid-cols-1 gap-6 rounded-3xl lg:grid-cols-12">
             {/* Top 5 Ruas Jalan */}
             <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6 lg:col-span-5">
               <div className="flex items-center justify-between gap-2 pb-4">

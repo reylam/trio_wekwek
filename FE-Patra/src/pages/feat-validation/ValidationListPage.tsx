@@ -91,7 +91,10 @@ export default function ValidationListPage() {
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
       <DinasTopHeader />
 
-      <section className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
+      <section
+        data-tour="dinas-validation-panel"
+        className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6"
+      >
         <div className="flex flex-col gap-4 border-b border-slate-100 pb-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap gap-2" role="tablist" aria-label="Filter status validasi">
             {VALIDATION_TABS.map((tab) => {

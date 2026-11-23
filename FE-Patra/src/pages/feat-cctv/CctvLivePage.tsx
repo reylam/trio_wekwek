@@ -269,17 +269,22 @@ export default function CctvLivePage() {
             </div>
           )}
 
-          <CctvPlayerWithAI
-            camera={camera}
-            onViolationCaptured={handleViolationCaptured}
-            onTelemetryChange={setTelemetry}
-            onViewOnMap={() =>
-              navigate(`/satpol/peta?cameraId=${encodeURIComponent(camera.id)}`)
-            }
-          />
+          <div data-tour="satpol-live-player" className="rounded-2xl">
+            <CctvPlayerWithAI
+              camera={camera}
+              onViolationCaptured={handleViolationCaptured}
+              onTelemetryChange={setTelemetry}
+              onViewOnMap={() =>
+                navigate(`/satpol/peta?cameraId=${encodeURIComponent(camera.id)}`)
+              }
+            />
+          </div>
 
           {/* Metadata & Sumber Kamera */}
-          <div className="animate-patra-enter grid grid-cols-1 gap-3 rounded-2xl border border-accent/45 bg-white p-4 text-xs shadow-sm sm:grid-cols-3">
+          <div
+            data-tour="satpol-live-telemetry"
+            className="animate-patra-enter grid grid-cols-1 gap-3 rounded-2xl border border-accent/45 bg-white p-4 text-xs shadow-sm sm:grid-cols-3"
+          >
             <div>
               <p className="font-semibold text-slate-400">Sumber &amp; Atribusi</p>
               <p className="mt-1 font-semibold text-slate-800">{camera.attribution}</p>
@@ -325,7 +330,7 @@ export default function CctvLivePage() {
 
           {/* Rekomendasi CCTV Lainnya di Kota yang Sama (Region-Locked) */}
           {recommendedCameras.length > 0 && (
-            <section className="animate-patra-enter pt-2">
+            <section data-tour="satpol-live-recommend" className="animate-patra-enter rounded-2xl pt-2">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
                   <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary">

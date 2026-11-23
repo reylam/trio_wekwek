@@ -54,7 +54,10 @@ export default function CctvListPage() {
       <SatpolTopHeader />
 
       {/* Toolbar Region-Locked Per Kota/Kabupaten */}
-      <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div
+        data-tour="satpol-cctv-toolbar"
+        className="mb-6 flex flex-col gap-3 rounded-2xl lg:flex-row lg:items-center lg:justify-between"
+      >
         <div className="flex items-center justify-between gap-2 sm:justify-start sm:gap-2.5">
           <div className="inline-flex h-9 min-w-0 items-center gap-1.5 rounded-full border border-primary/25 bg-white px-3 text-[11px] font-semibold text-primary shadow-sm sm:gap-2 sm:px-3.5 sm:text-xs">
             <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-emerald-500" />
@@ -198,7 +201,10 @@ export default function CctvListPage() {
 
       {/* 3-Column Camera Card Grid with smooth staggered entrance animation */}
       {!camerasQuery.isLoading && !camerasQuery.isError && filteredCameras.length > 0 && (
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <div
+          data-tour="satpol-cctv-grid"
+          className="grid grid-cols-1 gap-5 rounded-2xl md:grid-cols-2 xl:grid-cols-3"
+        >
           {filteredCameras.map((camera, idx) => (
             <article
               key={camera.id}
