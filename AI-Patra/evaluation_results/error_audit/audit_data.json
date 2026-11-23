@@ -1,0 +1,3437 @@
+{
+  "model": "C:\\Users\\rey\\Downloads\\Competition\\stack_2026_mpruy\\AI-Patra\\model\\best_patra_highangle.onnx",
+  "output_shape": [
+    1,
+    5,
+    8400
+  ],
+  "split": "test",
+  "conf_thresh": 0.25,
+  "iou_thresh": 0.5,
+  "iou_nms": 0.45,
+  "totals": {
+    "images": 41,
+    "gt": 94,
+    "tp": 25,
+    "fp": 25,
+    "fn": 69,
+    "fp_by_type": {
+      "incorrect_bbox": 7,
+      "background": 18
+    },
+    "fn_by_cause": {
+      "true_model_miss": 55,
+      "localization_miss": 7,
+      "threshold_recoverable": 7
+    },
+    "fn_by_size": {
+      "Tiny (<0.25%)": 12,
+      "Far (0.25-1%)": 17,
+      "Near (>=4%)": 19,
+      "Medium (1-4%)": 21
+    },
+    "fn_by_subclass": {
+      "Gerobak": 33,
+      "Terpal": 23,
+      "Payung": 8,
+      "Emperan": 3,
+      "Panggul": 1,
+      "Sepeda-motor": 1
+    },
+    "fn_factors": {
+      "Near (>=4%)": 19,
+      "Medium (1-4%)": 21,
+      "Far (0.25-1%)": 17,
+      "Tiny (<0.25%)": 12,
+      "Low-light (crop V<75 or Night)": 15,
+      "Edge-of-frame": 20,
+      "GT-to-GT Overlap (IoU>=0.15)": 14
+    },
+    "low_conf_010_025": {
+      "low_conf_fp": 27,
+      "recoverable_tp": 5
+    }
+  },
+  "annotation_audit": {
+    "splits": {
+      "train": {
+        "images": 321,
+        "background_images": 16,
+        "total_boxes": 818,
+        "edge_boxes": 100,
+        "aspect_outliers_gt5": 0,
+        "gt_overlap_pairs_iou30": 1,
+        "gt_overlap_pairs_iou45_nms_conflict": 0,
+        "cross_class_overlap_iou30": {
+          "Gerobak <-> Gerobak": 1
+        },
+        "by_class": {
+          "Emperan": {
+            "count": 43,
+            "pct_of_split": 5.3,
+            "median_area_pct": 2.1,
+            "mean_area_pct": 2.71,
+            "pct_tiny": 0.0,
+            "pct_far": 23.3
+          },
+          "Gerobak": {
+            "count": 358,
+            "pct_of_split": 43.8,
+            "median_area_pct": 0.974,
+            "mean_area_pct": 1.597,
+            "pct_tiny": 9.8,
+            "pct_far": 52.2
+          },
+          "Panggul": {
+            "count": 3,
+            "pct_of_split": 0.4,
+            "median_area_pct": 22.261,
+            "mean_area_pct": 39.572,
+            "pct_tiny": 0.0,
+            "pct_far": 0.0
+          },
+          "Payung": {
+            "count": 213,
+            "pct_of_split": 26.0,
+            "median_area_pct": 0.324,
+            "mean_area_pct": 0.944,
+            "pct_tiny": 43.2,
+            "pct_far": 74.2
+          },
+          "Sepeda-motor": {
+            "count": 7,
+            "pct_of_split": 0.9,
+            "median_area_pct": 0.352,
+            "mean_area_pct": 0.662,
+            "pct_tiny": 28.6,
+            "pct_far": 71.4
+          },
+          "Terpal": {
+            "count": 194,
+            "pct_of_split": 23.7,
+            "median_area_pct": 0.728,
+            "mean_area_pct": 1.986,
+            "pct_tiny": 23.2,
+            "pct_far": 62.9
+          }
+        }
+      },
+      "valid": {
+        "images": 61,
+        "background_images": 3,
+        "total_boxes": 139,
+        "edge_boxes": 18,
+        "aspect_outliers_gt5": 1,
+        "gt_overlap_pairs_iou30": 3,
+        "gt_overlap_pairs_iou45_nms_conflict": 1,
+        "cross_class_overlap_iou30": {
+          "Payung <-> Terpal": 1,
+          "Sepeda-motor <-> Sepeda-motor": 1,
+          "Payung <-> Payung": 1
+        },
+        "by_class": {
+          "Emperan": {
+            "count": 7,
+            "pct_of_split": 5.0,
+            "median_area_pct": 2.189,
+            "mean_area_pct": 3.5,
+            "pct_tiny": 0.0,
+            "pct_far": 0.0
+          },
+          "Gerobak": {
+            "count": 57,
+            "pct_of_split": 41.0,
+            "median_area_pct": 0.401,
+            "mean_area_pct": 0.667,
+            "pct_tiny": 38.6,
+            "pct_far": 86.0
+          },
+          "Panggul": {
+            "count": 1,
+            "pct_of_split": 0.7,
+            "median_area_pct": 2.763,
+            "mean_area_pct": 2.763,
+            "pct_tiny": 0.0,
+            "pct_far": 0.0
+          },
+          "Payung": {
+            "count": 35,
+            "pct_of_split": 25.2,
+            "median_area_pct": 0.391,
+            "mean_area_pct": 0.99,
+            "pct_tiny": 37.1,
+            "pct_far": 82.9
+          },
+          "Sepeda-motor": {
+            "count": 2,
+            "pct_of_split": 1.4,
+            "median_area_pct": 1.054,
+            "mean_area_pct": 1.054,
+            "pct_tiny": 0.0,
+            "pct_far": 50.0
+          },
+          "Terpal": {
+            "count": 37,
+            "pct_of_split": 26.6,
+            "median_area_pct": 1.128,
+            "mean_area_pct": 1.66,
+            "pct_tiny": 8.1,
+            "pct_far": 43.2
+          }
+        }
+      },
+      "test": {
+        "images": 41,
+        "background_images": 2,
+        "total_boxes": 94,
+        "edge_boxes": 20,
+        "aspect_outliers_gt5": 0,
+        "gt_overlap_pairs_iou30": 4,
+        "gt_overlap_pairs_iou45_nms_conflict": 4,
+        "cross_class_overlap_iou30": {
+          "Gerobak <-> Terpal": 4
+        },
+        "by_class": {
+          "Emperan": {
+            "count": 5,
+            "pct_of_split": 5.3,
+            "median_area_pct": 1.584,
+            "mean_area_pct": 1.509,
+            "pct_tiny": 0.0,
+            "pct_far": 20.0
+          },
+          "Gerobak": {
+            "count": 39,
+            "pct_of_split": 41.5,
+            "median_area_pct": 0.862,
+            "mean_area_pct": 1.377,
+            "pct_tiny": 20.5,
+            "pct_far": 56.4
+          },
+          "Panggul": {
+            "count": 1,
+            "pct_of_split": 1.1,
+            "median_area_pct": 3.092,
+            "mean_area_pct": 3.092,
+            "pct_tiny": 0.0,
+            "pct_far": 0.0
+          },
+          "Payung": {
+            "count": 24,
+            "pct_of_split": 25.5,
+            "median_area_pct": 0.393,
+            "mean_area_pct": 0.93,
+            "pct_tiny": 37.5,
+            "pct_far": 66.7
+          },
+          "Sepeda-motor": {
+            "count": 1,
+            "pct_of_split": 1.1,
+            "median_area_pct": 66.762,
+            "mean_area_pct": 66.762,
+            "pct_tiny": 0.0,
+            "pct_far": 0.0
+          },
+          "Terpal": {
+            "count": 24,
+            "pct_of_split": 25.5,
+            "median_area_pct": 5.005,
+            "mean_area_pct": 7.273,
+            "pct_tiny": 4.2,
+            "pct_far": 12.5
+          }
+        }
+      }
+    },
+    "test_gt_overlaps": [
+      {
+        "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118172808_jpg.rf.070a3977c9de4a3fcb14da5d3de30fde",
+        "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+        "pair": "Gerobak <-> Terpal",
+        "iou": 0.747,
+        "box_a": [
+          0.5797,
+          0.2062,
+          0.7125,
+          0.5109
+        ],
+        "box_b": [
+          0.5984,
+          0.2031,
+          0.7,
+          0.5062
+        ]
+      },
+      {
+        "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118172808_jpg.rf.070a3977c9de4a3fcb14da5d3de30fde",
+        "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+        "pair": "Gerobak <-> Terpal",
+        "iou": 0.782,
+        "box_a": [
+          0.6109,
+          0.1031,
+          0.7031,
+          0.2219
+        ],
+        "box_b": [
+          0.6234,
+          0.0953,
+          0.7016,
+          0.2188
+        ]
+      },
+      {
+        "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118222413_jpg.rf.46883db735b3bece8e92e88b1d471fea",
+        "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+        "pair": "Gerobak <-> Terpal",
+        "iou": 0.783,
+        "box_a": [
+          0.5875,
+          0.1828,
+          0.7156,
+          0.4719
+        ],
+        "box_b": [
+          0.5984,
+          0.1641,
+          0.7078,
+          0.4625
+        ]
+      },
+      {
+        "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118233836_jpg.rf.5db8116ce00403677576fc0b885b6955",
+        "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+        "pair": "Gerobak <-> Terpal",
+        "iou": 0.791,
+        "box_a": [
+          0.5875,
+          0.1813,
+          0.7125,
+          0.4922
+        ],
+        "box_b": [
+          0.6,
+          0.1891,
+          0.7031,
+          0.4984
+        ]
+      }
+    ]
+  },
+  "false_positives": [
+    {
+      "fp_id": 1,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118172808_jpg.rf.070a3977c9de4a3fcb14da5d3de30fde",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118172808_jpg.rf.070a3977c9de4a3fcb14da5d3de30fde.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "lighting": "Day / Bright",
+      "score": 0.3542,
+      "fp_type": "incorrect_bbox",
+      "max_gt_iou": 0.3313,
+      "near_gt_cls": "Terpal",
+      "pred_to_gt_area_ratio": 0.33,
+      "pred_area_pct": 6.114,
+      "size_bucket": "Near (>=4%)",
+      "edge": true,
+      "pred_bbox": [
+        544.9,
+        357.8,
+        640.0,
+        621.1
+      ]
+    },
+    {
+      "fp_id": 2,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118184052_jpg.rf.0480d12e360e81f8380c5e598d4adaa4",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118184052_jpg.rf.0480d12e360e81f8380c5e598d4adaa4.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "lighting": "Dusk / Overcast",
+      "score": 0.4135,
+      "fp_type": "incorrect_bbox",
+      "max_gt_iou": 0.3859,
+      "near_gt_cls": "Terpal",
+      "pred_to_gt_area_ratio": 0.39,
+      "pred_area_pct": 6.262,
+      "size_bucket": "Near (>=4%)",
+      "edge": true,
+      "pred_bbox": [
+        535.1,
+        379.5,
+        640.0,
+        623.8
+      ]
+    },
+    {
+      "fp_id": 3,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118195520_jpg.rf.102be66a9f127efba0e8644e6cad18e9",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118195520_jpg.rf.102be66a9f127efba0e8644e6cad18e9.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "lighting": "Dusk / Overcast",
+      "score": 0.388,
+      "fp_type": "incorrect_bbox",
+      "max_gt_iou": 0.3439,
+      "near_gt_cls": "Terpal",
+      "pred_to_gt_area_ratio": 0.34,
+      "pred_area_pct": 6.533,
+      "size_bucket": "Near (>=4%)",
+      "edge": true,
+      "pred_bbox": [
+        534.0,
+        369.4,
+        640.0,
+        621.8
+      ]
+    },
+    {
+      "fp_id": 4,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118210947_jpg.rf.cc164f7cf579e402249391854061f4d8",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118210947_jpg.rf.cc164f7cf579e402249391854061f4d8.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "lighting": "Dusk / Overcast",
+      "score": 0.3075,
+      "fp_type": "incorrect_bbox",
+      "max_gt_iou": 0.2748,
+      "near_gt_cls": "Terpal",
+      "pred_to_gt_area_ratio": 0.27,
+      "pred_area_pct": 4.75,
+      "size_bucket": "Near (>=4%)",
+      "edge": true,
+      "pred_bbox": [
+        527.7,
+        435.4,
+        639.6,
+        609.4
+      ]
+    },
+    {
+      "fp_id": 5,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118222413_jpg.rf.46883db735b3bece8e92e88b1d471fea",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118222413_jpg.rf.46883db735b3bece8e92e88b1d471fea.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "lighting": "Dusk / Overcast",
+      "score": 0.6295,
+      "fp_type": "background",
+      "max_gt_iou": 0.0848,
+      "near_gt_cls": null,
+      "pred_to_gt_area_ratio": null,
+      "pred_area_pct": 2.775,
+      "size_bucket": "Medium (1-4%)",
+      "edge": false,
+      "pred_bbox": [
+        443.4,
+        377.6,
+        521.9,
+        522.4
+      ]
+    },
+    {
+      "fp_id": 6,
+      "stem": "501732_JKS_DISHUB_JL-PROF-DR-SATRIO-C01_CCTV-01_20240119082739_jpg.rf.24c8bc9fb6af18d76aa76fd19ef05979",
+      "filename": "501732_JKS_DISHUB_JL-PROF-DR-SATRIO-C01_CCTV-01_20240119082739_jpg.rf.24c8bc9fb6af18d76aa76fd19ef05979.jpg",
+      "camera": "501732_JKS_DISHUB_JL-PROF-DR-SATRIO-C01_CCTV-01",
+      "lighting": "Dusk / Overcast",
+      "score": 0.4349,
+      "fp_type": "background",
+      "max_gt_iou": 0.0,
+      "near_gt_cls": null,
+      "pred_to_gt_area_ratio": null,
+      "pred_area_pct": 0.161,
+      "size_bucket": "Tiny (<0.25%)",
+      "edge": false,
+      "pred_bbox": [
+        271.0,
+        128.5,
+        288.3,
+        166.5
+      ]
+    },
+    {
+      "fp_id": 7,
+      "stem": "501741_JKS_BPBD_JL-KP-DALAM-C01_CCTV-01_20240119082741_jpg.rf.54ec5914cb85d17a2bd23b36e285b75b",
+      "filename": "501741_JKS_BPBD_JL-KP-DALAM-C01_CCTV-01_20240119082741_jpg.rf.54ec5914cb85d17a2bd23b36e285b75b.jpg",
+      "camera": "501741_JKS_BPBD_JL-KP-DALAM-C01_CCTV-01",
+      "lighting": "Dusk / Overcast",
+      "score": 0.4894,
+      "fp_type": "background",
+      "max_gt_iou": 0.0,
+      "near_gt_cls": null,
+      "pred_to_gt_area_ratio": null,
+      "pred_area_pct": 0.361,
+      "size_bucket": "Far (0.25-1%)",
+      "edge": false,
+      "pred_bbox": [
+        312.2,
+        401.8,
+        339.9,
+        455.0
+      ]
+    },
+    {
+      "fp_id": 8,
+      "stem": "501789_JKT_BPBD_JL-JATINEGARA-BARAT-C02_CCTV-02_20240119021105_jpg.rf.23c2264757682e85e4b1fec5ae4dc5fa",
+      "filename": "501789_JKT_BPBD_JL-JATINEGARA-BARAT-C02_CCTV-02_20240119021105_jpg.rf.23c2264757682e85e4b1fec5ae4dc5fa.jpg",
+      "camera": "501789_JKT_BPBD_JL-JATINEGARA-BARAT-C02_CCTV-02",
+      "lighting": "Night / Low-Light",
+      "score": 0.2827,
+      "fp_type": "background",
+      "max_gt_iou": 0.0,
+      "near_gt_cls": null,
+      "pred_to_gt_area_ratio": null,
+      "pred_area_pct": 0.587,
+      "size_bucket": "Far (0.25-1%)",
+      "edge": false,
+      "pred_bbox": [
+        39.0,
+        229.6,
+        80.2,
+        288.0
+      ]
+    },
+    {
+      "fp_id": 9,
+      "stem": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02_20240119082749_jpg.rf.0445a6d4ec41e111ecd82b7703810658",
+      "filename": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02_20240119082749_jpg.rf.0445a6d4ec41e111ecd82b7703810658.jpg",
+      "camera": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02",
+      "lighting": "Dusk / Overcast",
+      "score": 0.3022,
+      "fp_type": "background",
+      "max_gt_iou": 0.0,
+      "near_gt_cls": null,
+      "pred_to_gt_area_ratio": null,
+      "pred_area_pct": 1.015,
+      "size_bucket": "Medium (1-4%)",
+      "edge": false,
+      "pred_bbox": [
+        252.7,
+        450.1,
+        324.0,
+        508.5
+      ]
+    },
+    {
+      "fp_id": 10,
+      "stem": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02_20240119082749_jpg.rf.0445a6d4ec41e111ecd82b7703810658",
+      "filename": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02_20240119082749_jpg.rf.0445a6d4ec41e111ecd82b7703810658.jpg",
+      "camera": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02",
+      "lighting": "Dusk / Overcast",
+      "score": 0.2864,
+      "fp_type": "background",
+      "max_gt_iou": 0.0,
+      "near_gt_cls": null,
+      "pred_to_gt_area_ratio": null,
+      "pred_area_pct": 5.886,
+      "size_bucket": "Near (>=4%)",
+      "edge": true,
+      "pred_bbox": [
+        235.2,
+        525.7,
+        446.0,
+        640.0
+      ]
+    },
+    {
+      "fp_id": 11,
+      "stem": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02_20240119082749_jpg.rf.0445a6d4ec41e111ecd82b7703810658",
+      "filename": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02_20240119082749_jpg.rf.0445a6d4ec41e111ecd82b7703810658.jpg",
+      "camera": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02",
+      "lighting": "Dusk / Overcast",
+      "score": 0.2545,
+      "fp_type": "background",
+      "max_gt_iou": 0.0873,
+      "near_gt_cls": null,
+      "pred_to_gt_area_ratio": null,
+      "pred_area_pct": 0.092,
+      "size_bucket": "Tiny (<0.25%)",
+      "edge": false,
+      "pred_bbox": [
+        559.2,
+        124.4,
+        579.6,
+        142.7
+      ]
+    },
+    {
+      "fp_id": 12,
+      "stem": "501813_JKS_DISHUB_STASIUN-DUREN-KALIBATA-C01_CCTV-02_20240119082753_jpg.rf.545e116fb5321f2202227856476b34a3",
+      "filename": "501813_JKS_DISHUB_STASIUN-DUREN-KALIBATA-C01_CCTV-02_20240119082753_jpg.rf.545e116fb5321f2202227856476b34a3.jpg",
+      "camera": "501813_JKS_DISHUB_STASIUN-DUREN-KALIBATA-C01_CCTV-02",
+      "lighting": "Dusk / Overcast",
+      "score": 0.7833,
+      "fp_type": "background",
+      "max_gt_iou": 0.0,
+      "near_gt_cls": null,
+      "pred_to_gt_area_ratio": null,
+      "pred_area_pct": 0.298,
+      "size_bucket": "Far (0.25-1%)",
+      "edge": false,
+      "pred_bbox": [
+        99.4,
+        202.7,
+        153.5,
+        225.3
+      ]
+    },
+    {
+      "fp_id": 13,
+      "stem": "501813_JKS_DISHUB_STASIUN-DUREN-KALIBATA-C01_CCTV-02_20240119082753_jpg.rf.545e116fb5321f2202227856476b34a3",
+      "filename": "501813_JKS_DISHUB_STASIUN-DUREN-KALIBATA-C01_CCTV-02_20240119082753_jpg.rf.545e116fb5321f2202227856476b34a3.jpg",
+      "camera": "501813_JKS_DISHUB_STASIUN-DUREN-KALIBATA-C01_CCTV-02",
+      "lighting": "Dusk / Overcast",
+      "score": 0.4235,
+      "fp_type": "background",
+      "max_gt_iou": 0.0,
+      "near_gt_cls": null,
+      "pred_to_gt_area_ratio": null,
+      "pred_area_pct": 0.393,
+      "size_bucket": "Far (0.25-1%)",
+      "edge": false,
+      "pred_bbox": [
+        188.6,
+        209.4,
+        249.2,
+        236.0
+      ]
+    },
+    {
+      "fp_id": 14,
+      "stem": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04_20240118211032_jpg.rf.5a485b1a82180474b4d4d7826399664f",
+      "filename": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04_20240118211032_jpg.rf.5a485b1a82180474b4d4d7826399664f.jpg",
+      "camera": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04",
+      "lighting": "Dusk / Overcast",
+      "score": 0.2613,
+      "fp_type": "incorrect_bbox",
+      "max_gt_iou": 0.1611,
+      "near_gt_cls": "Gerobak",
+      "pred_to_gt_area_ratio": 0.18,
+      "pred_area_pct": 0.299,
+      "size_bucket": "Far (0.25-1%)",
+      "edge": false,
+      "pred_bbox": [
+        537.4,
+        188.7,
+        570.6,
+        225.7
+      ]
+    },
+    {
+      "fp_id": 15,
+      "stem": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03_20240118172907_jpg.rf.62a17c56d0fad3e534918f15ec19b1c1",
+      "filename": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03_20240118172907_jpg.rf.62a17c56d0fad3e534918f15ec19b1c1.jpg",
+      "camera": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03",
+      "lighting": "Dusk / Overcast",
+      "score": 0.4273,
+      "fp_type": "incorrect_bbox",
+      "max_gt_iou": 0.3776,
+      "near_gt_cls": "Terpal",
+      "pred_to_gt_area_ratio": 0.38,
+      "pred_area_pct": 0.11,
+      "size_bucket": "Tiny (<0.25%)",
+      "edge": false,
+      "pred_bbox": [
+        471.8,
+        93.7,
+        500.2,
+        109.7
+      ]
+    },
+    {
+      "fp_id": 16,
+      "stem": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03_20240118172907_jpg.rf.62a17c56d0fad3e534918f15ec19b1c1",
+      "filename": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03_20240118172907_jpg.rf.62a17c56d0fad3e534918f15ec19b1c1.jpg",
+      "camera": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03",
+      "lighting": "Dusk / Overcast",
+      "score": 0.3941,
+      "fp_type": "background",
+      "max_gt_iou": 0.0789,
+      "near_gt_cls": null,
+      "pred_to_gt_area_ratio": null,
+      "pred_area_pct": 0.222,
+      "size_bucket": "Tiny (<0.25%)",
+      "edge": false,
+      "pred_bbox": [
+        583.6,
+        201.5,
+        613.8,
+        231.6
+      ]
+    },
+    {
+      "fp_id": 17,
+      "stem": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03_20240118195609_jpg.rf.a65bdeefbc420064d0ddb82f39726cdd",
+      "filename": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03_20240118195609_jpg.rf.a65bdeefbc420064d0ddb82f39726cdd.jpg",
+      "camera": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03",
+      "lighting": "Dusk / Overcast",
+      "score": 0.3211,
+      "fp_type": "background",
+      "max_gt_iou": 0.0,
+      "near_gt_cls": null,
+      "pred_to_gt_area_ratio": null,
+      "pred_area_pct": 1.545,
+      "size_bucket": "Medium (1-4%)",
+      "edge": false,
+      "pred_bbox": [
+        545.4,
+        240.2,
+        620.8,
+        324.1
+      ]
+    },
+    {
+      "fp_id": 18,
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240118172909_jpg.rf.5b374fec9aaddbadb91ce7be271a213c",
+      "filename": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240118172909_jpg.rf.5b374fec9aaddbadb91ce7be271a213c.jpg",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "lighting": "Dusk / Overcast",
+      "score": 0.2671,
+      "fp_type": "background",
+      "max_gt_iou": 0.0,
+      "near_gt_cls": null,
+      "pred_to_gt_area_ratio": null,
+      "pred_area_pct": 1.059,
+      "size_bucket": "Medium (1-4%)",
+      "edge": false,
+      "pred_bbox": [
+        441.4,
+        127.8,
+        485.2,
+        226.7
+      ]
+    },
+    {
+      "fp_id": 19,
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240118211038_jpg.rf.8cf689eda68077115c9e7070d0afed78",
+      "filename": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240118211038_jpg.rf.8cf689eda68077115c9e7070d0afed78.jpg",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "lighting": "Dusk / Overcast",
+      "score": 0.2684,
+      "fp_type": "background",
+      "max_gt_iou": 0.0,
+      "near_gt_cls": null,
+      "pred_to_gt_area_ratio": null,
+      "pred_area_pct": 0.402,
+      "size_bucket": "Far (0.25-1%)",
+      "edge": false,
+      "pred_bbox": [
+        375.2,
+        62.6,
+        400.0,
+        129.1
+      ]
+    },
+    {
+      "fp_id": 20,
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240118222500_jpg.rf.1a5977ca9d81a79628238af461138520",
+      "filename": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240118222500_jpg.rf.1a5977ca9d81a79628238af461138520.jpg",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "lighting": "Dusk / Overcast",
+      "score": 0.3075,
+      "fp_type": "incorrect_bbox",
+      "max_gt_iou": 0.1489,
+      "near_gt_cls": "Gerobak",
+      "pred_to_gt_area_ratio": 0.21,
+      "pred_area_pct": 0.294,
+      "size_bucket": "Far (0.25-1%)",
+      "edge": false,
+      "pred_bbox": [
+        475.1,
+        187.6,
+        511.1,
+        221.1
+      ]
+    },
+    {
+      "fp_id": 21,
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240119055731_jpg.rf.8d5473e5e85666e66961ba8ba1bd3648",
+      "filename": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240119055731_jpg.rf.8d5473e5e85666e66961ba8ba1bd3648.jpg",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "lighting": "Dusk / Overcast",
+      "score": 0.2664,
+      "fp_type": "background",
+      "max_gt_iou": 0.0184,
+      "near_gt_cls": null,
+      "pred_to_gt_area_ratio": null,
+      "pred_area_pct": 0.76,
+      "size_bucket": "Far (0.25-1%)",
+      "edge": false,
+      "pred_bbox": [
+        459.8,
+        153.7,
+        499.6,
+        231.8
+      ]
+    },
+    {
+      "fp_id": 22,
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240119071247_jpg.rf.11446ccf645d1fa06f44717d851b827b",
+      "filename": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240119071247_jpg.rf.11446ccf645d1fa06f44717d851b827b.jpg",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "lighting": "Dusk / Overcast",
+      "score": 0.6001,
+      "fp_type": "background",
+      "max_gt_iou": 0.0876,
+      "near_gt_cls": null,
+      "pred_to_gt_area_ratio": null,
+      "pred_area_pct": 0.201,
+      "size_bucket": "Tiny (<0.25%)",
+      "edge": false,
+      "pred_bbox": [
+        432.5,
+        195.1,
+        465.5,
+        220.1
+      ]
+    },
+    {
+      "fp_id": 23,
+      "stem": "sep_jpg.rf.2168d6036c5cab5130a50c3a16bc8830",
+      "filename": "sep_jpg.rf.2168d6036c5cab5130a50c3a16bc8830.jpg",
+      "camera": "noncctv_sep",
+      "lighting": "Day / Bright",
+      "score": 0.5448,
+      "fp_type": "background",
+      "max_gt_iou": 0.0434,
+      "near_gt_cls": null,
+      "pred_to_gt_area_ratio": null,
+      "pred_area_pct": 3.762,
+      "size_bucket": "Medium (1-4%)",
+      "edge": true,
+      "pred_bbox": [
+        427.5,
+        521.6,
+        557.7,
+        640.0
+      ]
+    },
+    {
+      "fp_id": 24,
+      "stem": "sep_jpg.rf.2168d6036c5cab5130a50c3a16bc8830",
+      "filename": "sep_jpg.rf.2168d6036c5cab5130a50c3a16bc8830.jpg",
+      "camera": "noncctv_sep",
+      "lighting": "Day / Bright",
+      "score": 0.4266,
+      "fp_type": "background",
+      "max_gt_iou": 0.0537,
+      "near_gt_cls": null,
+      "pred_to_gt_area_ratio": null,
+      "pred_area_pct": 3.584,
+      "size_bucket": "Medium (1-4%)",
+      "edge": false,
+      "pred_bbox": [
+        259.6,
+        410.6,
+        385.1,
+        527.6
+      ]
+    },
+    {
+      "fp_id": 25,
+      "stem": "sep_jpg.rf.2168d6036c5cab5130a50c3a16bc8830",
+      "filename": "sep_jpg.rf.2168d6036c5cab5130a50c3a16bc8830.jpg",
+      "camera": "noncctv_sep",
+      "lighting": "Day / Bright",
+      "score": 0.3097,
+      "fp_type": "background",
+      "max_gt_iou": 0.01,
+      "near_gt_cls": null,
+      "pred_to_gt_area_ratio": null,
+      "pred_area_pct": 2.827,
+      "size_bucket": "Medium (1-4%)",
+      "edge": true,
+      "pred_bbox": [
+        506.2,
+        1.3,
+        595.7,
+        130.7
+      ]
+    }
+  ],
+  "false_negatives": [
+    {
+      "fn_id": 1,
+      "stem": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01_20240118172806_jpg.rf.8b95197a7dfa87aa518344de6172befe",
+      "filename": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01_20240118172806_jpg.rf.8b95197a7dfa87aa518344de6172befe.jpg",
+      "camera": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01",
+      "cls_name": "Gerobak",
+      "area_pct": 0.204,
+      "size_bucket": "Tiny (<0.25%)",
+      "crop_brightness_v": 78.2,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        148.0,
+        182.0,
+        170.0,
+        220.0
+      ]
+    },
+    {
+      "fn_id": 2,
+      "stem": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01_20240118172806_jpg.rf.8b95197a7dfa87aa518344de6172befe",
+      "filename": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01_20240118172806_jpg.rf.8b95197a7dfa87aa518344de6172befe.jpg",
+      "camera": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01",
+      "cls_name": "Gerobak",
+      "area_pct": 0.123,
+      "size_bucket": "Tiny (<0.25%)",
+      "crop_brightness_v": 113.3,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        280.0,
+        159.0,
+        298.0,
+        187.0
+      ]
+    },
+    {
+      "fn_id": 3,
+      "stem": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01_20240118184050_jpg.rf.2cc7d354abb0b11e940c5dca4a88e210",
+      "filename": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01_20240118184050_jpg.rf.2cc7d354abb0b11e940c5dca4a88e210.jpg",
+      "camera": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01",
+      "cls_name": "Gerobak",
+      "area_pct": 0.27,
+      "size_bucket": "Far (0.25-1%)",
+      "crop_brightness_v": 147.3,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.1026,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        149.0,
+        179.0,
+        176.0,
+        220.0
+      ]
+    },
+    {
+      "fn_id": 4,
+      "stem": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01_20240118184050_jpg.rf.2cc7d354abb0b11e940c5dca4a88e210",
+      "filename": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01_20240118184050_jpg.rf.2cc7d354abb0b11e940c5dca4a88e210.jpg",
+      "camera": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01",
+      "cls_name": "Gerobak",
+      "area_pct": 0.153,
+      "size_bucket": "Tiny (<0.25%)",
+      "crop_brightness_v": 174.2,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        278.0,
+        155.0,
+        297.0,
+        188.0
+      ]
+    },
+    {
+      "fn_id": 5,
+      "stem": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01_20240118195518_jpg.rf.4160e5c8157cfd13fa66029294830029",
+      "filename": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01_20240118195518_jpg.rf.4160e5c8157cfd13fa66029294830029.jpg",
+      "camera": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01",
+      "cls_name": "Gerobak",
+      "area_pct": 0.103,
+      "size_bucket": "Tiny (<0.25%)",
+      "crop_brightness_v": 188.5,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        282.0,
+        159.0,
+        297.0,
+        187.0
+      ]
+    },
+    {
+      "fn_id": 6,
+      "stem": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01_20240118210946_jpg.rf.8689ba7093900077f9c5ba33929f29ca",
+      "filename": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01_20240118210946_jpg.rf.8689ba7093900077f9c5ba33929f29ca.jpg",
+      "camera": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01",
+      "cls_name": "Gerobak",
+      "area_pct": 0.159,
+      "size_bucket": "Tiny (<0.25%)",
+      "crop_brightness_v": 166.3,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        275.0,
+        161.0,
+        301.0,
+        186.0
+      ]
+    },
+    {
+      "fn_id": 7,
+      "stem": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01_20240118222411_jpg.rf.d49e1a4796f1de10a1496704ee9e31c1",
+      "filename": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01_20240118222411_jpg.rf.d49e1a4796f1de10a1496704ee9e31c1.jpg",
+      "camera": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01",
+      "cls_name": "Gerobak",
+      "area_pct": 0.144,
+      "size_bucket": "Tiny (<0.25%)",
+      "crop_brightness_v": 173.1,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        278.0,
+        157.0,
+        297.0,
+        188.0
+      ]
+    },
+    {
+      "fn_id": 8,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118172808_jpg.rf.070a3977c9de4a3fcb14da5d3de30fde",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118172808_jpg.rf.070a3977c9de4a3fcb14da5d3de30fde.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "cls_name": "Terpal",
+      "area_pct": 4.047,
+      "size_bucket": "Near (>=4%)",
+      "crop_brightness_v": 116.5,
+      "image_lighting": "Day / Bright",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": true,
+      "max_peer_gt_iou": 0.747,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        371.0,
+        132.0,
+        456.0,
+        327.0
+      ]
+    },
+    {
+      "fn_id": 9,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118172808_jpg.rf.070a3977c9de4a3fcb14da5d3de30fde",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118172808_jpg.rf.070a3977c9de4a3fcb14da5d3de30fde.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "cls_name": "Terpal",
+      "area_pct": 1.095,
+      "size_bucket": "Medium (1-4%)",
+      "crop_brightness_v": 111.0,
+      "image_lighting": "Day / Bright",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": true,
+      "max_peer_gt_iou": 0.782,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        391.0,
+        66.0,
+        450.0,
+        142.0
+      ]
+    },
+    {
+      "fn_id": 10,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118172808_jpg.rf.070a3977c9de4a3fcb14da5d3de30fde",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118172808_jpg.rf.070a3977c9de4a3fcb14da5d3de30fde.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "cls_name": "Gerobak",
+      "area_pct": 3.079,
+      "size_bucket": "Medium (1-4%)",
+      "crop_brightness_v": 115.8,
+      "image_lighting": "Day / Bright",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": true,
+      "max_peer_gt_iou": 0.747,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        383.0,
+        130.0,
+        448.0,
+        324.0
+      ]
+    },
+    {
+      "fn_id": 11,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118172808_jpg.rf.070a3977c9de4a3fcb14da5d3de30fde",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118172808_jpg.rf.070a3977c9de4a3fcb14da5d3de30fde.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "cls_name": "Gerobak",
+      "area_pct": 0.964,
+      "size_bucket": "Far (0.25-1%)",
+      "crop_brightness_v": 106.1,
+      "image_lighting": "Day / Bright",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": true,
+      "max_peer_gt_iou": 0.782,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        399.0,
+        61.0,
+        449.0,
+        140.0
+      ]
+    },
+    {
+      "fn_id": 12,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118172808_jpg.rf.070a3977c9de4a3fcb14da5d3de30fde",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118172808_jpg.rf.070a3977c9de4a3fcb14da5d3de30fde.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "cls_name": "Terpal",
+      "area_pct": 4.358,
+      "size_bucket": "Near (>=4%)",
+      "crop_brightness_v": 76.5,
+      "image_lighting": "Day / Bright",
+      "is_low_light": false,
+      "is_edge": true,
+      "is_gt_overlap": true,
+      "max_peer_gt_iou": 0.176,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        461.0,
+        21.0,
+        631.0,
+        126.0
+      ]
+    },
+    {
+      "fn_id": 13,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118172808_jpg.rf.070a3977c9de4a3fcb14da5d3de30fde",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118172808_jpg.rf.070a3977c9de4a3fcb14da5d3de30fde.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "cls_name": "Terpal",
+      "area_pct": 18.457,
+      "size_bucket": "Near (>=4%)",
+      "crop_brightness_v": 197.2,
+      "image_lighting": "Day / Bright",
+      "is_low_light": false,
+      "is_edge": true,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.037,
+      "max_conf_iou50": 0.0332,
+      "max_conf_iou10": 0.3542,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "localization_miss",
+      "gt_bbox": [
+        472.0,
+        188.0,
+        640.0,
+        638.0
+      ]
+    },
+    {
+      "fn_id": 14,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118172808_jpg.rf.070a3977c9de4a3fcb14da5d3de30fde",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118172808_jpg.rf.070a3977c9de4a3fcb14da5d3de30fde.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "cls_name": "Terpal",
+      "area_pct": 5.056,
+      "size_bucket": "Near (>=4%)",
+      "crop_brightness_v": 97.2,
+      "image_lighting": "Day / Bright",
+      "is_low_light": false,
+      "is_edge": true,
+      "is_gt_overlap": true,
+      "max_peer_gt_iou": 0.176,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        459.0,
+        92.0,
+        636.0,
+        209.0
+      ]
+    },
+    {
+      "fn_id": 15,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118184052_jpg.rf.0480d12e360e81f8380c5e598d4adaa4",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118184052_jpg.rf.0480d12e360e81f8380c5e598d4adaa4.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "cls_name": "Terpal",
+      "area_pct": 16.225,
+      "size_bucket": "Near (>=4%)",
+      "crop_brightness_v": 122.9,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": true,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.024,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.4135,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "localization_miss",
+      "gt_bbox": [
+        484.0,
+        208.0,
+        640.0,
+        634.0
+      ]
+    },
+    {
+      "fn_id": 16,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118184052_jpg.rf.0480d12e360e81f8380c5e598d4adaa4",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118184052_jpg.rf.0480d12e360e81f8380c5e598d4adaa4.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "cls_name": "Terpal",
+      "area_pct": 6.334,
+      "size_bucket": "Near (>=4%)",
+      "crop_brightness_v": 66.2,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": true,
+      "is_edge": true,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.14,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        456.0,
+        81.0,
+        640.0,
+        222.0
+      ]
+    },
+    {
+      "fn_id": 17,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118184052_jpg.rf.0480d12e360e81f8380c5e598d4adaa4",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118184052_jpg.rf.0480d12e360e81f8380c5e598d4adaa4.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "cls_name": "Terpal",
+      "area_pct": 4.217,
+      "size_bucket": "Near (>=4%)",
+      "crop_brightness_v": 50.0,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": true,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.14,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.035,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        459.0,
+        11.0,
+        630.0,
+        112.0
+      ]
+    },
+    {
+      "fn_id": 18,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118195520_jpg.rf.102be66a9f127efba0e8644e6cad18e9",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118195520_jpg.rf.102be66a9f127efba0e8644e6cad18e9.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "cls_name": "Terpal",
+      "area_pct": 18.995,
+      "size_bucket": "Near (>=4%)",
+      "crop_brightness_v": 116.2,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": true,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.042,
+      "max_conf_iou50": 0.012,
+      "max_conf_iou10": 0.388,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "localization_miss",
+      "gt_bbox": [
+        469.0,
+        184.0,
+        640.0,
+        639.0
+      ]
+    },
+    {
+      "fn_id": 19,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118195520_jpg.rf.102be66a9f127efba0e8644e6cad18e9",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118195520_jpg.rf.102be66a9f127efba0e8644e6cad18e9.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "cls_name": "Terpal",
+      "area_pct": 8.038,
+      "size_bucket": "Near (>=4%)",
+      "crop_brightness_v": 48.2,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": true,
+      "is_edge": true,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.042,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        463.0,
+        24.0,
+        640.0,
+        210.0
+      ]
+    },
+    {
+      "fn_id": 20,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118210947_jpg.rf.cc164f7cf579e402249391854061f4d8",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118210947_jpg.rf.cc164f7cf579e402249391854061f4d8.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "cls_name": "Terpal",
+      "area_pct": 17.281,
+      "size_bucket": "Near (>=4%)",
+      "crop_brightness_v": 113.7,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": true,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.043,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.3075,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "localization_miss",
+      "gt_bbox": [
+        482.0,
+        187.0,
+        640.0,
+        635.0
+      ]
+    },
+    {
+      "fn_id": 21,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118210947_jpg.rf.cc164f7cf579e402249391854061f4d8",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118210947_jpg.rf.cc164f7cf579e402249391854061f4d8.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "cls_name": "Terpal",
+      "area_pct": 5.303,
+      "size_bucket": "Near (>=4%)",
+      "crop_brightness_v": 61.1,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": true,
+      "is_edge": true,
+      "is_gt_overlap": true,
+      "max_peer_gt_iou": 0.21,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        459.0,
+        91.0,
+        640.0,
+        211.0
+      ]
+    },
+    {
+      "fn_id": 22,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118210947_jpg.rf.cc164f7cf579e402249391854061f4d8",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118210947_jpg.rf.cc164f7cf579e402249391854061f4d8.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "cls_name": "Terpal",
+      "area_pct": 4.954,
+      "size_bucket": "Near (>=4%)",
+      "crop_brightness_v": 43.9,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": true,
+      "is_edge": true,
+      "is_gt_overlap": true,
+      "max_peer_gt_iou": 0.21,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0192,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        462.0,
+        18.0,
+        640.0,
+        132.0
+      ]
+    },
+    {
+      "fn_id": 23,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118222413_jpg.rf.46883db735b3bece8e92e88b1d471fea",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118222413_jpg.rf.46883db735b3bece8e92e88b1d471fea.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "cls_name": "Gerobak",
+      "area_pct": 3.704,
+      "size_bucket": "Medium (1-4%)",
+      "crop_brightness_v": 164.8,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": true,
+      "max_peer_gt_iou": 0.783,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0141,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        376.0,
+        117.0,
+        458.0,
+        302.0
+      ]
+    },
+    {
+      "fn_id": 24,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118222413_jpg.rf.46883db735b3bece8e92e88b1d471fea",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118222413_jpg.rf.46883db735b3bece8e92e88b1d471fea.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "cls_name": "Gerobak",
+      "area_pct": 0.615,
+      "size_bucket": "Far (0.25-1%)",
+      "crop_brightness_v": 124.4,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": true,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        426.0,
+        9.0,
+        461.0,
+        81.0
+      ]
+    },
+    {
+      "fn_id": 25,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118222413_jpg.rf.46883db735b3bece8e92e88b1d471fea",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118222413_jpg.rf.46883db735b3bece8e92e88b1d471fea.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "cls_name": "Terpal",
+      "area_pct": 3.264,
+      "size_bucket": "Medium (1-4%)",
+      "crop_brightness_v": 164.3,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": true,
+      "max_peer_gt_iou": 0.783,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0141,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        383.0,
+        105.0,
+        453.0,
+        296.0
+      ]
+    },
+    {
+      "fn_id": 26,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118222413_jpg.rf.46883db735b3bece8e92e88b1d471fea",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118222413_jpg.rf.46883db735b3bece8e92e88b1d471fea.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "cls_name": "Terpal",
+      "area_pct": 18.45,
+      "size_bucket": "Near (>=4%)",
+      "crop_brightness_v": 110.2,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": true,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.056,
+      "max_conf_iou50": 0.033,
+      "max_conf_iou10": 0.1831,
+      "pre_nms_max_conf_iou50": 0.1542,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        475.0,
+        182.0,
+        640.0,
+        640.0
+      ]
+    },
+    {
+      "fn_id": 27,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118222413_jpg.rf.46883db735b3bece8e92e88b1d471fea",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118222413_jpg.rf.46883db735b3bece8e92e88b1d471fea.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "cls_name": "Terpal",
+      "area_pct": 5.128,
+      "size_bucket": "Near (>=4%)",
+      "crop_brightness_v": 64.5,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": true,
+      "is_edge": true,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.069,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        462.0,
+        95.0,
+        640.0,
+        213.0
+      ]
+    },
+    {
+      "fn_id": 28,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118222413_jpg.rf.46883db735b3bece8e92e88b1d471fea",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118222413_jpg.rf.46883db735b3bece8e92e88b1d471fea.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "cls_name": "Terpal",
+      "area_pct": 3.359,
+      "size_bucket": "Medium (1-4%)",
+      "crop_brightness_v": 43.0,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": true,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.069,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0238,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        469.0,
+        23.0,
+        629.0,
+        109.0
+      ]
+    },
+    {
+      "fn_id": 29,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118233836_jpg.rf.5db8116ce00403677576fc0b885b6955",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118233836_jpg.rf.5db8116ce00403677576fc0b885b6955.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "cls_name": "Gerobak",
+      "area_pct": 3.887,
+      "size_bucket": "Medium (1-4%)",
+      "crop_brightness_v": 115.9,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": true,
+      "max_peer_gt_iou": 0.791,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        376.0,
+        116.0,
+        456.0,
+        315.0
+      ]
+    },
+    {
+      "fn_id": 30,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118233836_jpg.rf.5db8116ce00403677576fc0b885b6955",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118233836_jpg.rf.5db8116ce00403677576fc0b885b6955.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "cls_name": "Terpal",
+      "area_pct": 3.19,
+      "size_bucket": "Medium (1-4%)",
+      "crop_brightness_v": 112.4,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": true,
+      "max_peer_gt_iou": 0.791,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        384.0,
+        121.0,
+        450.0,
+        319.0
+      ]
+    },
+    {
+      "fn_id": 31,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118233836_jpg.rf.5db8116ce00403677576fc0b885b6955",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118233836_jpg.rf.5db8116ce00403677576fc0b885b6955.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "cls_name": "Terpal",
+      "area_pct": 3.724,
+      "size_bucket": "Medium (1-4%)",
+      "crop_brightness_v": 42.5,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": true,
+      "is_edge": true,
+      "is_gt_overlap": true,
+      "max_peer_gt_iou": 0.166,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        467.0,
+        29.0,
+        631.0,
+        122.0
+      ]
+    },
+    {
+      "fn_id": 32,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118233836_jpg.rf.5db8116ce00403677576fc0b885b6955",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118233836_jpg.rf.5db8116ce00403677576fc0b885b6955.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "cls_name": "Terpal",
+      "area_pct": 5.259,
+      "size_bucket": "Near (>=4%)",
+      "crop_brightness_v": 57.4,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": true,
+      "is_edge": true,
+      "is_gt_overlap": true,
+      "max_peer_gt_iou": 0.166,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        459.0,
+        90.0,
+        640.0,
+        209.0
+      ]
+    },
+    {
+      "fn_id": 33,
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118233836_jpg.rf.5db8116ce00403677576fc0b885b6955",
+      "filename": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118233836_jpg.rf.5db8116ce00403677576fc0b885b6955.jpg",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "cls_name": "Terpal",
+      "area_pct": 16.919,
+      "size_bucket": "Near (>=4%)",
+      "crop_brightness_v": 128.2,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": true,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.03,
+      "max_conf_iou50": 0.1218,
+      "max_conf_iou10": 0.1218,
+      "pre_nms_max_conf_iou50": 0.1218,
+      "cause": "threshold_recoverable",
+      "gt_bbox": [
+        475.0,
+        193.0,
+        640.0,
+        613.0
+      ]
+    },
+    {
+      "fn_id": 34,
+      "stem": "501732_JKS_DISHUB_JL-PROF-DR-SATRIO-C01_CCTV-01_20240119082739_jpg.rf.24c8bc9fb6af18d76aa76fd19ef05979",
+      "filename": "501732_JKS_DISHUB_JL-PROF-DR-SATRIO-C01_CCTV-01_20240119082739_jpg.rf.24c8bc9fb6af18d76aa76fd19ef05979.jpg",
+      "camera": "501732_JKS_DISHUB_JL-PROF-DR-SATRIO-C01_CCTV-01",
+      "cls_name": "Gerobak",
+      "area_pct": 0.231,
+      "size_bucket": "Tiny (<0.25%)",
+      "crop_brightness_v": 161.3,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        223.0,
+        161.0,
+        245.0,
+        204.0
+      ]
+    },
+    {
+      "fn_id": 35,
+      "stem": "501734_JKS_DISHUB_JL-TAMAN-MARGASATWA-RAYA-C01_CCTV-04_20240119071206_jpg.rf.020d103f77e077aef73022e7f21d72ff",
+      "filename": "501734_JKS_DISHUB_JL-TAMAN-MARGASATWA-RAYA-C01_CCTV-04_20240119071206_jpg.rf.020d103f77e077aef73022e7f21d72ff.jpg",
+      "camera": "501734_JKS_DISHUB_JL-TAMAN-MARGASATWA-RAYA-C01_CCTV-04",
+      "cls_name": "Gerobak",
+      "area_pct": 0.382,
+      "size_bucket": "Far (0.25-1%)",
+      "crop_brightness_v": 123.2,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        139.0,
+        101.0,
+        157.0,
+        188.0
+      ]
+    },
+    {
+      "fn_id": 36,
+      "stem": "501789_JKT_BPBD_JL-JATINEGARA-BARAT-C02_CCTV-02_20240119021105_jpg.rf.23c2264757682e85e4b1fec5ae4dc5fa",
+      "filename": "501789_JKT_BPBD_JL-JATINEGARA-BARAT-C02_CCTV-02_20240119021105_jpg.rf.23c2264757682e85e4b1fec5ae4dc5fa.jpg",
+      "camera": "501789_JKT_BPBD_JL-JATINEGARA-BARAT-C02_CCTV-02",
+      "cls_name": "Gerobak",
+      "area_pct": 0.564,
+      "size_bucket": "Far (0.25-1%)",
+      "crop_brightness_v": 79.6,
+      "image_lighting": "Night / Low-Light",
+      "is_low_light": true,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.1107,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        344.0,
+        355.0,
+        377.0,
+        425.0
+      ]
+    },
+    {
+      "fn_id": 37,
+      "stem": "501789_JKT_BPBD_JL-JATINEGARA-BARAT-C02_CCTV-02_20240119044129_jpg.rf.9dec440321700c96c6946f83c31552f1",
+      "filename": "501789_JKT_BPBD_JL-JATINEGARA-BARAT-C02_CCTV-02_20240119044129_jpg.rf.9dec440321700c96c6946f83c31552f1.jpg",
+      "camera": "501789_JKT_BPBD_JL-JATINEGARA-BARAT-C02_CCTV-02",
+      "cls_name": "Gerobak",
+      "area_pct": 7.67,
+      "size_bucket": "Near (>=4%)",
+      "crop_brightness_v": 112.0,
+      "image_lighting": "Night / Low-Light",
+      "is_low_light": true,
+      "is_edge": true,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        205.0,
+        399.0,
+        337.0,
+        637.0
+      ]
+    },
+    {
+      "fn_id": 38,
+      "stem": "501798_JKT_KESBANGPOL_JL-PEMUDA-C03_CCTV-01_20240119055653_jpg.rf.b9e1ceb629dd06032024156735160068",
+      "filename": "501798_JKT_KESBANGPOL_JL-PEMUDA-C03_CCTV-01_20240119055653_jpg.rf.b9e1ceb629dd06032024156735160068.jpg",
+      "camera": "501798_JKT_KESBANGPOL_JL-PEMUDA-C03_CCTV-01",
+      "cls_name": "Payung",
+      "area_pct": 0.053,
+      "size_bucket": "Tiny (<0.25%)",
+      "crop_brightness_v": 104.9,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        472.0,
+        128.0,
+        490.0,
+        140.0
+      ]
+    },
+    {
+      "fn_id": 39,
+      "stem": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02_20240119071215_jpg.rf.5dcc774409d57a11cf48fec1e316de02",
+      "filename": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02_20240119071215_jpg.rf.5dcc774409d57a11cf48fec1e316de02.jpg",
+      "camera": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02",
+      "cls_name": "Gerobak",
+      "area_pct": 0.255,
+      "size_bucket": "Far (0.25-1%)",
+      "crop_brightness_v": 98.2,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        429.0,
+        95.0,
+        458.0,
+        131.0
+      ]
+    },
+    {
+      "fn_id": 40,
+      "stem": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02_20240119071215_jpg.rf.5dcc774409d57a11cf48fec1e316de02",
+      "filename": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02_20240119071215_jpg.rf.5dcc774409d57a11cf48fec1e316de02.jpg",
+      "camera": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02",
+      "cls_name": "Payung",
+      "area_pct": 0.044,
+      "size_bucket": "Tiny (<0.25%)",
+      "crop_brightness_v": 181.3,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        560.0,
+        112.0,
+        575.0,
+        124.0
+      ]
+    },
+    {
+      "fn_id": 41,
+      "stem": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02_20240119082749_jpg.rf.0445a6d4ec41e111ecd82b7703810658",
+      "filename": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02_20240119082749_jpg.rf.0445a6d4ec41e111ecd82b7703810658.jpg",
+      "camera": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02",
+      "cls_name": "Gerobak",
+      "area_pct": 0.32,
+      "size_bucket": "Far (0.25-1%)",
+      "crop_brightness_v": 85.6,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.057,
+      "max_conf_iou50": 0.0123,
+      "max_conf_iou10": 0.0123,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        430.0,
+        93.0,
+        462.0,
+        134.0
+      ]
+    },
+    {
+      "fn_id": 42,
+      "stem": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02_20240119082749_jpg.rf.0445a6d4ec41e111ecd82b7703810658",
+      "filename": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02_20240119082749_jpg.rf.0445a6d4ec41e111ecd82b7703810658.jpg",
+      "camera": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02",
+      "cls_name": "Payung",
+      "area_pct": 0.044,
+      "size_bucket": "Tiny (<0.25%)",
+      "crop_brightness_v": 182.4,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.008,
+      "max_conf_iou50": 0.0143,
+      "max_conf_iou10": 0.0143,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        561.0,
+        112.0,
+        575.0,
+        125.0
+      ]
+    },
+    {
+      "fn_id": 43,
+      "stem": "501813_JKS_DISHUB_STASIUN-DUREN-KALIBATA-C01_CCTV-02_20240119082753_jpg.rf.545e116fb5321f2202227856476b34a3",
+      "filename": "501813_JKS_DISHUB_STASIUN-DUREN-KALIBATA-C01_CCTV-02_20240119082753_jpg.rf.545e116fb5321f2202227856476b34a3.jpg",
+      "camera": "501813_JKS_DISHUB_STASIUN-DUREN-KALIBATA-C01_CCTV-02",
+      "cls_name": "Gerobak",
+      "area_pct": 0.204,
+      "size_bucket": "Tiny (<0.25%)",
+      "crop_brightness_v": 100.3,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        308.0,
+        143.0,
+        335.0,
+        174.0
+      ]
+    },
+    {
+      "fn_id": 44,
+      "stem": "501829_JKS_DISHUB_STASIUN-PASAR-MINGGU-C01_CCTV-01_20240118172840_jpg.rf.c87f20b3e6f2a3bd485c51f3a52ef693",
+      "filename": "501829_JKS_DISHUB_STASIUN-PASAR-MINGGU-C01_CCTV-01_20240118172840_jpg.rf.c87f20b3e6f2a3bd485c51f3a52ef693.jpg",
+      "camera": "501829_JKS_DISHUB_STASIUN-PASAR-MINGGU-C01_CCTV-01",
+      "cls_name": "Payung",
+      "area_pct": 4.52,
+      "size_bucket": "Near (>=4%)",
+      "crop_brightness_v": 102.2,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": true,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.056,
+      "max_conf_iou50": 0.01,
+      "max_conf_iou10": 0.01,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        492.0,
+        462.0,
+        596.0,
+        640.0
+      ]
+    },
+    {
+      "fn_id": 45,
+      "stem": "501829_JKS_DISHUB_STASIUN-PASAR-MINGGU-C01_CCTV-01_20240118172840_jpg.rf.c87f20b3e6f2a3bd485c51f3a52ef693",
+      "filename": "501829_JKS_DISHUB_STASIUN-PASAR-MINGGU-C01_CCTV-01_20240118172840_jpg.rf.c87f20b3e6f2a3bd485c51f3a52ef693.jpg",
+      "camera": "501829_JKS_DISHUB_STASIUN-PASAR-MINGGU-C01_CCTV-01",
+      "cls_name": "Gerobak",
+      "area_pct": 1.971,
+      "size_bucket": "Medium (1-4%)",
+      "crop_brightness_v": 120.5,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0703,
+      "max_conf_iou10": 0.0703,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "threshold_recoverable",
+      "gt_bbox": [
+        418.0,
+        159.0,
+        487.0,
+        276.0
+      ]
+    },
+    {
+      "fn_id": 46,
+      "stem": "501829_JKS_DISHUB_STASIUN-PASAR-MINGGU-C01_CCTV-01_20240118172840_jpg.rf.c87f20b3e6f2a3bd485c51f3a52ef693",
+      "filename": "501829_JKS_DISHUB_STASIUN-PASAR-MINGGU-C01_CCTV-01_20240118172840_jpg.rf.c87f20b3e6f2a3bd485c51f3a52ef693.jpg",
+      "camera": "501829_JKS_DISHUB_STASIUN-PASAR-MINGGU-C01_CCTV-01",
+      "cls_name": "Emperan",
+      "area_pct": 0.945,
+      "size_bucket": "Far (0.25-1%)",
+      "crop_brightness_v": 108.1,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        504.0,
+        159.0,
+        547.0,
+        249.0
+      ]
+    },
+    {
+      "fn_id": 47,
+      "stem": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04_20240118184138_jpg.rf.34d38c772080a56d5c305cea0d993ef7",
+      "filename": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04_20240118184138_jpg.rf.34d38c772080a56d5c305cea0d993ef7.jpg",
+      "camera": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04",
+      "cls_name": "Gerobak",
+      "area_pct": 0.389,
+      "size_bucket": "Far (0.25-1%)",
+      "crop_brightness_v": 104.2,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.1814,
+      "max_conf_iou10": 0.1814,
+      "pre_nms_max_conf_iou50": 0.1814,
+      "cause": "threshold_recoverable",
+      "gt_bbox": [
+        492.0,
+        130.0,
+        521.0,
+        185.0
+      ]
+    },
+    {
+      "fn_id": 48,
+      "stem": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04_20240118184138_jpg.rf.34d38c772080a56d5c305cea0d993ef7",
+      "filename": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04_20240118184138_jpg.rf.34d38c772080a56d5c305cea0d993ef7.jpg",
+      "camera": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04",
+      "cls_name": "Gerobak",
+      "area_pct": 0.376,
+      "size_bucket": "Far (0.25-1%)",
+      "crop_brightness_v": 68.6,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": true,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        537.0,
+        185.0,
+        565.0,
+        240.0
+      ]
+    },
+    {
+      "fn_id": 49,
+      "stem": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04_20240118195605_jpg.rf.e17cd7a1785072e3b933e7a55eab7d4a",
+      "filename": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04_20240118195605_jpg.rf.e17cd7a1785072e3b933e7a55eab7d4a.jpg",
+      "camera": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04",
+      "cls_name": "Gerobak",
+      "area_pct": 0.598,
+      "size_bucket": "Far (0.25-1%)",
+      "crop_brightness_v": 104.0,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.162,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        485.0,
+        126.0,
+        519.0,
+        198.0
+      ]
+    },
+    {
+      "fn_id": 50,
+      "stem": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04_20240118195605_jpg.rf.e17cd7a1785072e3b933e7a55eab7d4a",
+      "filename": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04_20240118195605_jpg.rf.e17cd7a1785072e3b933e7a55eab7d4a.jpg",
+      "camera": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04",
+      "cls_name": "Gerobak",
+      "area_pct": 0.862,
+      "size_bucket": "Far (0.25-1%)",
+      "crop_brightness_v": 89.6,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0175,
+      "max_conf_iou10": 0.0175,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        529.0,
+        159.0,
+        562.0,
+        266.0
+      ]
+    },
+    {
+      "fn_id": 51,
+      "stem": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04_20240118211032_jpg.rf.5a485b1a82180474b4d4d7826399664f",
+      "filename": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04_20240118211032_jpg.rf.5a485b1a82180474b4d4d7826399664f.jpg",
+      "camera": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04",
+      "cls_name": "Gerobak",
+      "area_pct": 1.533,
+      "size_bucket": "Medium (1-4%)",
+      "crop_brightness_v": 121.3,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0101,
+      "max_conf_iou10": 0.0101,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        499.0,
+        227.0,
+        539.0,
+        384.0
+      ]
+    },
+    {
+      "fn_id": 52,
+      "stem": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04_20240118211032_jpg.rf.5a485b1a82180474b4d4d7826399664f",
+      "filename": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04_20240118211032_jpg.rf.5a485b1a82180474b4d4d7826399664f.jpg",
+      "camera": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04",
+      "cls_name": "Gerobak",
+      "area_pct": 1.69,
+      "size_bucket": "Medium (1-4%)",
+      "crop_brightness_v": 86.1,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.2613,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "localization_miss",
+      "gt_bbox": [
+        540.0,
+        159.0,
+        583.0,
+        320.0
+      ]
+    },
+    {
+      "fn_id": 53,
+      "stem": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03_20240118172907_jpg.rf.62a17c56d0fad3e534918f15ec19b1c1",
+      "filename": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03_20240118172907_jpg.rf.62a17c56d0fad3e534918f15ec19b1c1.jpg",
+      "camera": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03",
+      "cls_name": "Gerobak",
+      "area_pct": 2.256,
+      "size_bucket": "Medium (1-4%)",
+      "crop_brightness_v": 128.6,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        542.0,
+        207.0,
+        626.0,
+        317.0
+      ]
+    },
+    {
+      "fn_id": 54,
+      "stem": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03_20240118172907_jpg.rf.62a17c56d0fad3e534918f15ec19b1c1",
+      "filename": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03_20240118172907_jpg.rf.62a17c56d0fad3e534918f15ec19b1c1.jpg",
+      "camera": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03",
+      "cls_name": "Terpal",
+      "area_pct": 0.29,
+      "size_bucket": "Far (0.25-1%)",
+      "crop_brightness_v": 143.3,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.4273,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "localization_miss",
+      "gt_bbox": [
+        456.0,
+        88.0,
+        500.0,
+        115.0
+      ]
+    },
+    {
+      "fn_id": 55,
+      "stem": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03_20240118184142_jpg.rf.d6964952af953a92168469e3c7b0ad2b",
+      "filename": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03_20240118184142_jpg.rf.d6964952af953a92168469e3c7b0ad2b.jpg",
+      "camera": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03",
+      "cls_name": "Terpal",
+      "area_pct": 0.455,
+      "size_bucket": "Far (0.25-1%)",
+      "crop_brightness_v": 107.7,
+      "image_lighting": "Night / Low-Light",
+      "is_low_light": true,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.1602,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        457.0,
+        76.0,
+        506.0,
+        114.0
+      ]
+    },
+    {
+      "fn_id": 56,
+      "stem": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03_20240118195609_jpg.rf.a65bdeefbc420064d0ddb82f39726cdd",
+      "filename": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03_20240118195609_jpg.rf.a65bdeefbc420064d0ddb82f39726cdd.jpg",
+      "camera": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03",
+      "cls_name": "Panggul",
+      "area_pct": 3.092,
+      "size_bucket": "Medium (1-4%)",
+      "crop_brightness_v": 99.6,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0883,
+      "max_conf_iou10": 0.0883,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "threshold_recoverable",
+      "gt_bbox": [
+        452.0,
+        196.0,
+        537.0,
+        345.0
+      ]
+    },
+    {
+      "fn_id": 57,
+      "stem": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03_20240118195609_jpg.rf.a65bdeefbc420064d0ddb82f39726cdd",
+      "filename": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03_20240118195609_jpg.rf.a65bdeefbc420064d0ddb82f39726cdd.jpg",
+      "camera": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03",
+      "cls_name": "Payung",
+      "area_pct": 0.346,
+      "size_bucket": "Far (0.25-1%)",
+      "crop_brightness_v": 168.8,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0497,
+      "max_conf_iou10": 0.0497,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        463.0,
+        86.0,
+        506.0,
+        119.0
+      ]
+    },
+    {
+      "fn_id": 58,
+      "stem": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03_20240119071245_jpg.rf.536b3281a9f4e6a7ddc16a4ace019ee1",
+      "filename": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03_20240119071245_jpg.rf.536b3281a9f4e6a7ddc16a4ace019ee1.jpg",
+      "camera": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03",
+      "cls_name": "Payung",
+      "area_pct": 0.044,
+      "size_bucket": "Tiny (<0.25%)",
+      "crop_brightness_v": 145.3,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0396,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        375.0,
+        85.0,
+        393.0,
+        95.0
+      ]
+    },
+    {
+      "fn_id": 59,
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240118172909_jpg.rf.5b374fec9aaddbadb91ce7be271a213c",
+      "filename": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240118172909_jpg.rf.5b374fec9aaddbadb91ce7be271a213c.jpg",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "cls_name": "Emperan",
+      "area_pct": 1.244,
+      "size_bucket": "Medium (1-4%)",
+      "crop_brightness_v": 92.6,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.1346,
+      "max_conf_iou10": 0.1346,
+      "pre_nms_max_conf_iou50": 0.1346,
+      "cause": "threshold_recoverable",
+      "gt_bbox": [
+        519.0,
+        350.0,
+        575.0,
+        441.0
+      ]
+    },
+    {
+      "fn_id": 60,
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240118184144_jpg.rf.20f73bd66c63ac92db8dbfbc1335f3b5",
+      "filename": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240118184144_jpg.rf.20f73bd66c63ac92db8dbfbc1335f3b5.jpg",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "cls_name": "Payung",
+      "area_pct": 2.142,
+      "size_bucket": "Medium (1-4%)",
+      "crop_brightness_v": 75.5,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0261,
+      "max_conf_iou10": 0.0261,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        480.0,
+        179.0,
+        587.0,
+        261.0
+      ]
+    },
+    {
+      "fn_id": 61,
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240118195611_jpg.rf.86a466ce3777d0d251eef8b819724b99",
+      "filename": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240118195611_jpg.rf.86a466ce3777d0d251eef8b819724b99.jpg",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "cls_name": "Gerobak",
+      "area_pct": 1.45,
+      "size_bucket": "Medium (1-4%)",
+      "crop_brightness_v": 90.0,
+      "image_lighting": "Night / Low-Light",
+      "is_low_light": true,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0674,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        398.0,
+        100.0,
+        464.0,
+        190.0
+      ]
+    },
+    {
+      "fn_id": 62,
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240118211038_jpg.rf.8cf689eda68077115c9e7070d0afed78",
+      "filename": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240118211038_jpg.rf.8cf689eda68077115c9e7070d0afed78.jpg",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "cls_name": "Gerobak",
+      "area_pct": 0.743,
+      "size_bucket": "Far (0.25-1%)",
+      "crop_brightness_v": 101.0,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.008,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0575,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        413.0,
+        116.0,
+        448.0,
+        203.0
+      ]
+    },
+    {
+      "fn_id": 63,
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240118222500_jpg.rf.1a5977ca9d81a79628238af461138520",
+      "filename": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240118222500_jpg.rf.1a5977ca9d81a79628238af461138520.jpg",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "cls_name": "Gerobak",
+      "area_pct": 1.411,
+      "size_bucket": "Medium (1-4%)",
+      "crop_brightness_v": 75.7,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.011,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.3075,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "localization_miss",
+      "gt_bbox": [
+        484.0,
+        184.0,
+        531.0,
+        307.0
+      ]
+    },
+    {
+      "fn_id": 64,
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240118222500_jpg.rf.1a5977ca9d81a79628238af461138520",
+      "filename": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240118222500_jpg.rf.1a5977ca9d81a79628238af461138520.jpg",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "cls_name": "Gerobak",
+      "area_pct": 0.931,
+      "size_bucket": "Far (0.25-1%)",
+      "crop_brightness_v": 90.9,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.011,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.034,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        445.0,
+        143.0,
+        486.0,
+        236.0
+      ]
+    },
+    {
+      "fn_id": 65,
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240118233925_jpg.rf.74da7ba92af04852cee0131bcea1fc1b",
+      "filename": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240118233925_jpg.rf.74da7ba92af04852cee0131bcea1fc1b.jpg",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "cls_name": "Gerobak",
+      "area_pct": 1.954,
+      "size_bucket": "Medium (1-4%)",
+      "crop_brightness_v": 84.4,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        436.0,
+        122.0,
+        494.0,
+        260.0
+      ]
+    },
+    {
+      "fn_id": 66,
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240119055731_jpg.rf.8d5473e5e85666e66961ba8ba1bd3648",
+      "filename": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240119055731_jpg.rf.8d5473e5e85666e66961ba8ba1bd3648.jpg",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "cls_name": "Emperan",
+      "area_pct": 1.854,
+      "size_bucket": "Medium (1-4%)",
+      "crop_brightness_v": 84.9,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": true,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.024,
+      "max_conf_iou10": 0.024,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        585.0,
+        310.0,
+        637.0,
+        456.0
+      ]
+    },
+    {
+      "fn_id": 67,
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240119082823_jpg.rf.3ddc74b7ac934b4eb1c94790d501f115",
+      "filename": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240119082823_jpg.rf.3ddc74b7ac934b4eb1c94790d501f115.jpg",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "cls_name": "Gerobak",
+      "area_pct": 1.501,
+      "size_bucket": "Medium (1-4%)",
+      "crop_brightness_v": 64.9,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": true,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.2155,
+      "max_conf_iou10": 0.2155,
+      "pre_nms_max_conf_iou50": 0.2155,
+      "cause": "threshold_recoverable",
+      "gt_bbox": [
+        451.0,
+        153.0,
+        492.0,
+        303.0
+      ]
+    },
+    {
+      "fn_id": 68,
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240119082823_jpg.rf.3ddc74b7ac934b4eb1c94790d501f115",
+      "filename": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240119082823_jpg.rf.3ddc74b7ac934b4eb1c94790d501f115.jpg",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "cls_name": "Payung",
+      "area_pct": 1.673,
+      "size_bucket": "Medium (1-4%)",
+      "crop_brightness_v": 109.7,
+      "image_lighting": "Dusk / Overcast",
+      "is_low_light": false,
+      "is_edge": false,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.034,
+      "max_conf_iou50": 0.216,
+      "max_conf_iou10": 0.216,
+      "pre_nms_max_conf_iou50": 0.216,
+      "cause": "threshold_recoverable",
+      "gt_bbox": [
+        499.0,
+        190.0,
+        588.0,
+        267.0
+      ]
+    },
+    {
+      "fn_id": 69,
+      "stem": "sep_jpg.rf.2168d6036c5cab5130a50c3a16bc8830",
+      "filename": "sep_jpg.rf.2168d6036c5cab5130a50c3a16bc8830.jpg",
+      "camera": "noncctv_sep",
+      "cls_name": "Sepeda-motor",
+      "area_pct": 66.762,
+      "size_bucket": "Near (>=4%)",
+      "crop_brightness_v": 107.6,
+      "image_lighting": "Day / Bright",
+      "is_low_light": false,
+      "is_edge": true,
+      "is_gt_overlap": false,
+      "max_peer_gt_iou": 0.0,
+      "max_conf_iou50": 0.0,
+      "max_conf_iou10": 0.0,
+      "pre_nms_max_conf_iou50": 0.0,
+      "cause": "true_model_miss",
+      "gt_bbox": [
+        97.0,
+        7.0,
+        529.0,
+        640.0
+      ]
+    }
+  ],
+  "low_confidence_detections": [
+    {
+      "stem": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01_20240118184050_jpg.rf.2cc7d354abb0b11e940c5dca4a88e210",
+      "camera": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01",
+      "score": 0.1026,
+      "lc_type": "low_conf_fp",
+      "matched_cls": null,
+      "best_iou": 0.429,
+      "bbox": [
+        137.5,
+        180.6,
+        171.8,
+        207.2
+      ]
+    },
+    {
+      "stem": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01_20240118195518_jpg.rf.4160e5c8157cfd13fa66029294830029",
+      "camera": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01",
+      "score": 0.1339,
+      "lc_type": "low_conf_fp",
+      "matched_cls": null,
+      "best_iou": 0.0,
+      "bbox": [
+        206.3,
+        43.0,
+        241.1,
+        63.1
+      ]
+    },
+    {
+      "stem": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01_20240118195518_jpg.rf.4160e5c8157cfd13fa66029294830029",
+      "camera": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01",
+      "score": 0.1214,
+      "lc_type": "low_conf_fp",
+      "matched_cls": null,
+      "best_iou": 0.0,
+      "bbox": [
+        0.0,
+        84.0,
+        43.4,
+        145.6
+      ]
+    },
+    {
+      "stem": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01_20240118210946_jpg.rf.8689ba7093900077f9c5ba33929f29ca",
+      "camera": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01",
+      "score": 0.2132,
+      "lc_type": "low_conf_fp",
+      "matched_cls": null,
+      "best_iou": 0.0,
+      "bbox": [
+        87.0,
+        184.0,
+        550.1,
+        640.0
+      ]
+    },
+    {
+      "stem": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01_20240119005302_jpg.rf.3c7fb0ee9fe61b7db8171996015e97d3",
+      "camera": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01",
+      "score": 0.1282,
+      "lc_type": "low_conf_fp",
+      "matched_cls": null,
+      "best_iou": 0.0,
+      "bbox": [
+        0.0,
+        87.2,
+        45.5,
+        141.8
+      ]
+    },
+    {
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118172808_jpg.rf.070a3977c9de4a3fcb14da5d3de30fde",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "score": 0.1917,
+      "lc_type": "low_conf_fp",
+      "matched_cls": null,
+      "best_iou": 0.0,
+      "bbox": [
+        321.6,
+        149.2,
+        347.4,
+        193.4
+      ]
+    },
+    {
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118222413_jpg.rf.46883db735b3bece8e92e88b1d471fea",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "score": 0.1831,
+      "lc_type": "low_conf_fp",
+      "matched_cls": null,
+      "best_iou": 0.459,
+      "bbox": [
+        528.1,
+        311.4,
+        640.0,
+        621.5
+      ]
+    },
+    {
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118233836_jpg.rf.5db8116ce00403677576fc0b885b6955",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "score": 0.1218,
+      "lc_type": "recoverable_tp",
+      "matched_cls": "Terpal",
+      "best_iou": 0.502,
+      "bbox": [
+        521.4,
+        316.9,
+        640.0,
+        618.4
+      ]
+    },
+    {
+      "stem": "501732_JKS_DISHUB_JL-PROF-DR-SATRIO-C01_CCTV-01_20240119082739_jpg.rf.24c8bc9fb6af18d76aa76fd19ef05979",
+      "camera": "501732_JKS_DISHUB_JL-PROF-DR-SATRIO-C01_CCTV-01",
+      "score": 0.1844,
+      "lc_type": "low_conf_fp",
+      "matched_cls": null,
+      "best_iou": 0.0,
+      "bbox": [
+        242.5,
+        124.9,
+        261.9,
+        154.0
+      ]
+    },
+    {
+      "stem": "501789_JKT_BPBD_JL-JATINEGARA-BARAT-C02_CCTV-02_20240119021105_jpg.rf.23c2264757682e85e4b1fec5ae4dc5fa",
+      "camera": "501789_JKT_BPBD_JL-JATINEGARA-BARAT-C02_CCTV-02",
+      "score": 0.1107,
+      "lc_type": "low_conf_fp",
+      "matched_cls": null,
+      "best_iou": 0.231,
+      "bbox": [
+        329.9,
+        370.6,
+        359.5,
+        444.2
+      ]
+    },
+    {
+      "stem": "501798_JKT_KESBANGPOL_JL-PEMUDA-C03_CCTV-01_20240119055653_jpg.rf.b9e1ceb629dd06032024156735160068",
+      "camera": "501798_JKT_KESBANGPOL_JL-PEMUDA-C03_CCTV-01",
+      "score": 0.2272,
+      "lc_type": "low_conf_fp",
+      "matched_cls": null,
+      "best_iou": 0.0,
+      "bbox": [
+        66.0,
+        613.9,
+        126.2,
+        639.7
+      ]
+    },
+    {
+      "stem": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02_20240119071215_jpg.rf.5dcc774409d57a11cf48fec1e316de02",
+      "camera": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02",
+      "score": 0.2236,
+      "lc_type": "low_conf_fp",
+      "matched_cls": null,
+      "best_iou": 0.0,
+      "bbox": [
+        136.4,
+        237.7,
+        162.7,
+        281.9
+      ]
+    },
+    {
+      "stem": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02_20240119071215_jpg.rf.5dcc774409d57a11cf48fec1e316de02",
+      "camera": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02",
+      "score": 0.1575,
+      "lc_type": "low_conf_fp",
+      "matched_cls": null,
+      "best_iou": 0.0,
+      "bbox": [
+        188.0,
+        237.1,
+        223.2,
+        305.9
+      ]
+    },
+    {
+      "stem": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02_20240119071215_jpg.rf.5dcc774409d57a11cf48fec1e316de02",
+      "camera": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02",
+      "score": 0.106,
+      "lc_type": "low_conf_fp",
+      "matched_cls": null,
+      "best_iou": 0.0,
+      "bbox": [
+        233.4,
+        529.0,
+        451.7,
+        640.0
+      ]
+    },
+    {
+      "stem": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02_20240119082749_jpg.rf.0445a6d4ec41e111ecd82b7703810658",
+      "camera": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02",
+      "score": 0.2274,
+      "lc_type": "low_conf_fp",
+      "matched_cls": null,
+      "best_iou": 0.0,
+      "bbox": [
+        482.2,
+        182.4,
+        511.8,
+        223.6
+      ]
+    },
+    {
+      "stem": "501813_JKS_DISHUB_STASIUN-DUREN-KALIBATA-C01_CCTV-02_20240119082753_jpg.rf.545e116fb5321f2202227856476b34a3",
+      "camera": "501813_JKS_DISHUB_STASIUN-DUREN-KALIBATA-C01_CCTV-02",
+      "score": 0.2051,
+      "lc_type": "low_conf_fp",
+      "matched_cls": null,
+      "best_iou": 0.0,
+      "bbox": [
+        271.3,
+        126.1,
+        298.3,
+        141.8
+      ]
+    },
+    {
+      "stem": "501813_JKS_DISHUB_STASIUN-DUREN-KALIBATA-C01_CCTV-02_20240119082753_jpg.rf.545e116fb5321f2202227856476b34a3",
+      "camera": "501813_JKS_DISHUB_STASIUN-DUREN-KALIBATA-C01_CCTV-02",
+      "score": 0.1656,
+      "lc_type": "low_conf_fp",
+      "matched_cls": null,
+      "best_iou": 0.0,
+      "bbox": [
+        197.5,
+        284.9,
+        231.2,
+        317.2
+      ]
+    },
+    {
+      "stem": "501840_JKS_DISHUB_JL-PROF-DR-SATRIO-C02_CCTV-01_20240119082803_jpg.rf.c70f0faec6185a762c34d64a490af49a",
+      "camera": "501840_JKS_DISHUB_JL-PROF-DR-SATRIO-C02_CCTV-01",
+      "score": 0.109,
+      "lc_type": "low_conf_fp",
+      "matched_cls": null,
+      "best_iou": 0.0,
+      "bbox": [
+        365.9,
+        61.8,
+        379.0,
+        97.6
+      ]
+    },
+    {
+      "stem": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04_20240118172902_jpg.rf.d8ab1778516c5c79548c12298aab7fc6",
+      "camera": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04",
+      "score": 0.2281,
+      "lc_type": "low_conf_fp",
+      "matched_cls": null,
+      "best_iou": 0.0,
+      "bbox": [
+        60.1,
+        496.6,
+        154.6,
+        621.5
+      ]
+    },
+    {
+      "stem": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04_20240118172902_jpg.rf.d8ab1778516c5c79548c12298aab7fc6",
+      "camera": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04",
+      "score": 0.1462,
+      "lc_type": "low_conf_fp",
+      "matched_cls": null,
+      "best_iou": 0.0,
+      "bbox": [
+        75.7,
+        501.9,
+        332.5,
+        640.0
+      ]
+    },
+    {
+      "stem": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04_20240118184138_jpg.rf.34d38c772080a56d5c305cea0d993ef7",
+      "camera": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04",
+      "score": 0.1814,
+      "lc_type": "recoverable_tp",
+      "matched_cls": "Gerobak",
+      "best_iou": 0.756,
+      "bbox": [
+        492.9,
+        140.0,
+        521.7,
+        186.6
+      ]
+    },
+    {
+      "stem": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04_20240118195605_jpg.rf.e17cd7a1785072e3b933e7a55eab7d4a",
+      "camera": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04",
+      "score": 0.162,
+      "lc_type": "low_conf_fp",
+      "matched_cls": null,
+      "best_iou": 0.421,
+      "bbox": [
+        493.4,
+        142.3,
+        518.7,
+        183.0
+      ]
+    },
+    {
+      "stem": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03_20240118184142_jpg.rf.d6964952af953a92168469e3c7b0ad2b",
+      "camera": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03",
+      "score": 0.1602,
+      "lc_type": "low_conf_fp",
+      "matched_cls": null,
+      "best_iou": 0.242,
+      "bbox": [
+        472.8,
+        92.7,
+        499.5,
+        109.6
+      ]
+    },
+    {
+      "stem": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03_20240118184142_jpg.rf.d6964952af953a92168469e3c7b0ad2b",
+      "camera": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03",
+      "score": 0.1202,
+      "lc_type": "low_conf_fp",
+      "matched_cls": null,
+      "best_iou": 0.0,
+      "bbox": [
+        486.6,
+        172.7,
+        522.7,
+        198.7
+      ]
+    },
+    {
+      "stem": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03_20240119071245_jpg.rf.536b3281a9f4e6a7ddc16a4ace019ee1",
+      "camera": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03",
+      "score": 0.1965,
+      "lc_type": "low_conf_fp",
+      "matched_cls": null,
+      "best_iou": 0.0,
+      "bbox": [
+        341.7,
+        106.1,
+        355.6,
+        148.0
+      ]
+    },
+    {
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240118172909_jpg.rf.5b374fec9aaddbadb91ce7be271a213c",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "score": 0.1346,
+      "lc_type": "recoverable_tp",
+      "matched_cls": "Emperan",
+      "best_iou": 0.701,
+      "bbox": [
+        517.1,
+        330.6,
+        576.4,
+        431.6
+      ]
+    },
+    {
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240118172909_jpg.rf.5b374fec9aaddbadb91ce7be271a213c",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "score": 0.1191,
+      "lc_type": "low_conf_fp",
+      "matched_cls": null,
+      "best_iou": 0.0,
+      "bbox": [
+        381.9,
+        197.2,
+        419.0,
+        282.2
+      ]
+    },
+    {
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240118172909_jpg.rf.5b374fec9aaddbadb91ce7be271a213c",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "score": 0.1066,
+      "lc_type": "low_conf_fp",
+      "matched_cls": null,
+      "best_iou": 0.0,
+      "bbox": [
+        299.1,
+        102.6,
+        421.6,
+        309.0
+      ]
+    },
+    {
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240119055731_jpg.rf.8d5473e5e85666e66961ba8ba1bd3648",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "score": 0.116,
+      "lc_type": "low_conf_fp",
+      "matched_cls": null,
+      "best_iou": 0.0,
+      "bbox": [
+        240.0,
+        43.6,
+        257.7,
+        75.5
+      ]
+    },
+    {
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240119082823_jpg.rf.3ddc74b7ac934b4eb1c94790d501f115",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "score": 0.216,
+      "lc_type": "recoverable_tp",
+      "matched_cls": "Payung",
+      "best_iou": 0.734,
+      "bbox": [
+        496.4,
+        207.6,
+        586.0,
+        267.3
+      ]
+    },
+    {
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240119082823_jpg.rf.3ddc74b7ac934b4eb1c94790d501f115",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "score": 0.2155,
+      "lc_type": "recoverable_tp",
+      "matched_cls": "Gerobak",
+      "best_iou": 0.586,
+      "bbox": [
+        450.8,
+        144.9,
+        499.8,
+        258.7
+      ]
+    },
+    {
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240119082823_jpg.rf.3ddc74b7ac934b4eb1c94790d501f115",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "score": 0.1624,
+      "lc_type": "low_conf_fp",
+      "matched_cls": null,
+      "best_iou": 0.0,
+      "bbox": [
+        313.6,
+        32.3,
+        327.2,
+        61.9
+      ]
+    }
+  ],
+  "per_image": [
+    {
+      "stem": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01_20240118172806_jpg.rf.8b95197a7dfa87aa518344de6172befe",
+      "camera": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01",
+      "gt": 2,
+      "tp": 0,
+      "fp": 0,
+      "fn": 2,
+      "low_conf_total": 0,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01_20240118184050_jpg.rf.2cc7d354abb0b11e940c5dca4a88e210",
+      "camera": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01",
+      "gt": 2,
+      "tp": 0,
+      "fp": 0,
+      "fn": 2,
+      "low_conf_total": 1,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01_20240118195518_jpg.rf.4160e5c8157cfd13fa66029294830029",
+      "camera": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01",
+      "gt": 1,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "low_conf_total": 2,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01_20240118210946_jpg.rf.8689ba7093900077f9c5ba33929f29ca",
+      "camera": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01",
+      "gt": 1,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "low_conf_total": 1,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01_20240118222411_jpg.rf.d49e1a4796f1de10a1496704ee9e31c1",
+      "camera": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01",
+      "gt": 1,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "low_conf_total": 0,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01_20240119005302_jpg.rf.3c7fb0ee9fe61b7db8171996015e97d3",
+      "camera": "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01",
+      "gt": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "low_conf_total": 1,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118172808_jpg.rf.070a3977c9de4a3fcb14da5d3de30fde",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "gt": 7,
+      "tp": 0,
+      "fp": 1,
+      "fn": 7,
+      "low_conf_total": 1,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118184052_jpg.rf.0480d12e360e81f8380c5e598d4adaa4",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "gt": 3,
+      "tp": 0,
+      "fp": 1,
+      "fn": 3,
+      "low_conf_total": 0,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118195520_jpg.rf.102be66a9f127efba0e8644e6cad18e9",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "gt": 2,
+      "tp": 0,
+      "fp": 1,
+      "fn": 2,
+      "low_conf_total": 0,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118210947_jpg.rf.cc164f7cf579e402249391854061f4d8",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "gt": 3,
+      "tp": 0,
+      "fp": 1,
+      "fn": 3,
+      "low_conf_total": 0,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118222413_jpg.rf.46883db735b3bece8e92e88b1d471fea",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "gt": 6,
+      "tp": 0,
+      "fp": 1,
+      "fn": 6,
+      "low_conf_total": 1,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118233836_jpg.rf.5db8116ce00403677576fc0b885b6955",
+      "camera": "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02",
+      "gt": 5,
+      "tp": 0,
+      "fp": 0,
+      "fn": 5,
+      "low_conf_total": 1,
+      "low_conf_recoverable_tp": 1
+    },
+    {
+      "stem": "501732_JKS_DISHUB_JL-PROF-DR-SATRIO-C01_CCTV-01_20240119082739_jpg.rf.24c8bc9fb6af18d76aa76fd19ef05979",
+      "camera": "501732_JKS_DISHUB_JL-PROF-DR-SATRIO-C01_CCTV-01",
+      "gt": 1,
+      "tp": 0,
+      "fp": 1,
+      "fn": 1,
+      "low_conf_total": 1,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501734_JKS_DISHUB_JL-TAMAN-MARGASATWA-RAYA-C01_CCTV-04_20240119071206_jpg.rf.020d103f77e077aef73022e7f21d72ff",
+      "camera": "501734_JKS_DISHUB_JL-TAMAN-MARGASATWA-RAYA-C01_CCTV-04",
+      "gt": 1,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "low_conf_total": 0,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501741_JKS_BPBD_JL-KP-DALAM-C01_CCTV-01_20240119082741_jpg.rf.54ec5914cb85d17a2bd23b36e285b75b",
+      "camera": "501741_JKS_BPBD_JL-KP-DALAM-C01_CCTV-01",
+      "gt": 2,
+      "tp": 2,
+      "fp": 1,
+      "fn": 0,
+      "low_conf_total": 0,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501789_JKT_BPBD_JL-JATINEGARA-BARAT-C02_CCTV-02_20240119021105_jpg.rf.23c2264757682e85e4b1fec5ae4dc5fa",
+      "camera": "501789_JKT_BPBD_JL-JATINEGARA-BARAT-C02_CCTV-02",
+      "gt": 2,
+      "tp": 1,
+      "fp": 1,
+      "fn": 1,
+      "low_conf_total": 1,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501789_JKT_BPBD_JL-JATINEGARA-BARAT-C02_CCTV-02_20240119044129_jpg.rf.9dec440321700c96c6946f83c31552f1",
+      "camera": "501789_JKT_BPBD_JL-JATINEGARA-BARAT-C02_CCTV-02",
+      "gt": 1,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "low_conf_total": 0,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501798_JKT_KESBANGPOL_JL-PEMUDA-C03_CCTV-01_20240119055653_jpg.rf.b9e1ceb629dd06032024156735160068",
+      "camera": "501798_JKT_KESBANGPOL_JL-PEMUDA-C03_CCTV-01",
+      "gt": 2,
+      "tp": 1,
+      "fp": 0,
+      "fn": 1,
+      "low_conf_total": 1,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02_20240119071215_jpg.rf.5dcc774409d57a11cf48fec1e316de02",
+      "camera": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02",
+      "gt": 5,
+      "tp": 3,
+      "fp": 0,
+      "fn": 2,
+      "low_conf_total": 3,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02_20240119082749_jpg.rf.0445a6d4ec41e111ecd82b7703810658",
+      "camera": "501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02",
+      "gt": 4,
+      "tp": 2,
+      "fp": 3,
+      "fn": 2,
+      "low_conf_total": 1,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501813_JKS_DISHUB_STASIUN-DUREN-KALIBATA-C01_CCTV-02_20240119082753_jpg.rf.545e116fb5321f2202227856476b34a3",
+      "camera": "501813_JKS_DISHUB_STASIUN-DUREN-KALIBATA-C01_CCTV-02",
+      "gt": 2,
+      "tp": 1,
+      "fp": 2,
+      "fn": 1,
+      "low_conf_total": 2,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501829_JKS_DISHUB_STASIUN-PASAR-MINGGU-C01_CCTV-01_20240118172840_jpg.rf.c87f20b3e6f2a3bd485c51f3a52ef693",
+      "camera": "501829_JKS_DISHUB_STASIUN-PASAR-MINGGU-C01_CCTV-01",
+      "gt": 4,
+      "tp": 1,
+      "fp": 0,
+      "fn": 3,
+      "low_conf_total": 0,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501840_JKS_DISHUB_JL-PROF-DR-SATRIO-C02_CCTV-01_20240119082803_jpg.rf.c70f0faec6185a762c34d64a490af49a",
+      "camera": "501840_JKS_DISHUB_JL-PROF-DR-SATRIO-C02_CCTV-01",
+      "gt": 1,
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "low_conf_total": 1,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04_20240118172902_jpg.rf.d8ab1778516c5c79548c12298aab7fc6",
+      "camera": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04",
+      "gt": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "low_conf_total": 2,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04_20240118184138_jpg.rf.34d38c772080a56d5c305cea0d993ef7",
+      "camera": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04",
+      "gt": 2,
+      "tp": 0,
+      "fp": 0,
+      "fn": 2,
+      "low_conf_total": 1,
+      "low_conf_recoverable_tp": 1
+    },
+    {
+      "stem": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04_20240118195605_jpg.rf.e17cd7a1785072e3b933e7a55eab7d4a",
+      "camera": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04",
+      "gt": 2,
+      "tp": 0,
+      "fp": 0,
+      "fn": 2,
+      "low_conf_total": 1,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04_20240118211032_jpg.rf.5a485b1a82180474b4d4d7826399664f",
+      "camera": "501877_JKU_DISHUB_JPO-PULO-MAS-C01_CCTV-04",
+      "gt": 2,
+      "tp": 0,
+      "fp": 1,
+      "fn": 2,
+      "low_conf_total": 0,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03_20240118172907_jpg.rf.62a17c56d0fad3e534918f15ec19b1c1",
+      "camera": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03",
+      "gt": 4,
+      "tp": 2,
+      "fp": 2,
+      "fn": 2,
+      "low_conf_total": 0,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03_20240118184142_jpg.rf.d6964952af953a92168469e3c7b0ad2b",
+      "camera": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03",
+      "gt": 2,
+      "tp": 1,
+      "fp": 0,
+      "fn": 1,
+      "low_conf_total": 2,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03_20240118195609_jpg.rf.a65bdeefbc420064d0ddb82f39726cdd",
+      "camera": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03",
+      "gt": 2,
+      "tp": 0,
+      "fp": 1,
+      "fn": 2,
+      "low_conf_total": 0,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03_20240119071245_jpg.rf.536b3281a9f4e6a7ddc16a4ace019ee1",
+      "camera": "501916_JKT_DISHUB_JPO-MATRAMAN-C01_CCTV-03",
+      "gt": 1,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "low_conf_total": 1,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240118172909_jpg.rf.5b374fec9aaddbadb91ce7be271a213c",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "gt": 3,
+      "tp": 2,
+      "fp": 1,
+      "fn": 1,
+      "low_conf_total": 3,
+      "low_conf_recoverable_tp": 1
+    },
+    {
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240118184144_jpg.rf.20f73bd66c63ac92db8dbfbc1335f3b5",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "gt": 2,
+      "tp": 1,
+      "fp": 0,
+      "fn": 1,
+      "low_conf_total": 0,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240118195611_jpg.rf.86a466ce3777d0d251eef8b819724b99",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "gt": 1,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "low_conf_total": 0,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240118211038_jpg.rf.8cf689eda68077115c9e7070d0afed78",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "gt": 2,
+      "tp": 1,
+      "fp": 1,
+      "fn": 1,
+      "low_conf_total": 0,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240118222500_jpg.rf.1a5977ca9d81a79628238af461138520",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "gt": 2,
+      "tp": 0,
+      "fp": 1,
+      "fn": 2,
+      "low_conf_total": 0,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240118233925_jpg.rf.74da7ba92af04852cee0131bcea1fc1b",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "gt": 1,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "low_conf_total": 0,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240119055731_jpg.rf.8d5473e5e85666e66961ba8ba1bd3648",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "gt": 2,
+      "tp": 1,
+      "fp": 1,
+      "fn": 1,
+      "low_conf_total": 1,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240119071247_jpg.rf.11446ccf645d1fa06f44717d851b827b",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "gt": 3,
+      "tp": 3,
+      "fp": 1,
+      "fn": 0,
+      "low_conf_total": 0,
+      "low_conf_recoverable_tp": 0
+    },
+    {
+      "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240119082823_jpg.rf.3ddc74b7ac934b4eb1c94790d501f115",
+      "camera": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01",
+      "gt": 4,
+      "tp": 2,
+      "fp": 0,
+      "fn": 2,
+      "low_conf_total": 3,
+      "low_conf_recoverable_tp": 2
+    },
+    {
+      "stem": "sep_jpg.rf.2168d6036c5cab5130a50c3a16bc8830",
+      "camera": "noncctv_sep",
+      "gt": 1,
+      "tp": 0,
+      "fp": 3,
+      "fn": 1,
+      "low_conf_total": 0,
+      "low_conf_recoverable_tp": 0
+    }
+  ]
+}

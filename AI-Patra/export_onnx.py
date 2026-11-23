@@ -35,6 +35,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--opset", type=int, default=12, help="ONNX opset version (default: 12)")
     parser.add_argument("--no-simplify", action="store_true", help="Nonaktifkan ONNX graph simplify")
     parser.add_argument("--no-copy-fe", action="store_true", help="Jangan salin otomatis ke FE-Patra/public/models/")
+    parser.add_argument(
+        "--preset",
+        type=str,
+        choices=("v2_ft", "v2_base", "v3_ft", "v3_base"),
+        default="",
+        help="Preset export singkat untuk eksperimen dataset_v2/v3 (--no-copy-fe).",
+    )
     return parser.parse_args()
 
 
@@ -72,6 +79,26 @@ def inspect_onnx(onnx_path: Path) -> None:
 
 def main() -> int:
     args = parse_args()
+    if args.preset == "v2_ft":
+        args.weights = AI_ROOT / "runs" / "patra_v2_curated_ft" / "weights" / "best.pt"
+        args.out = AI_ROOT / "model" / "patra_v2_curated_ft.onnx"
+        args.imgsz = 640
+        args.no_copy_fe = True
+    elif args.preset == "v2_base":
+        args.weights = AI_ROOT / "runs" / "patra_v2_curated_base" / "weights" / "best.pt"
+        args.out = AI_ROOT / "model" / "patra_v2_curated_base.onnx"
+        args.imgsz = 640
+        args.no_copy_fe = True
+    elif args.preset == "v3_ft":
+        args.weights = AI_ROOT / "runs" / "patra_v3_gerobak_ft" / "weights" / "best.pt"
+        args.out = AI_ROOT / "model" / "patra_v3_gerobak_ft.onnx"
+        args.imgsz = 640
+        args.no_copy_fe = True
+    elif args.preset == "v3_base":
+        args.weights = AI_ROOT / "runs" / "patra_v3_gerobak_base" / "weights" / "best.pt"
+        args.out = AI_ROOT / "model" / "patra_v3_gerobak_base.onnx"
+        args.imgsz = 640
+        args.no_copy_fe = True
     if not args.weights.exists():
         print(f"[ERR] File weights tidak ditemukan: {args.weights}")
         print("      Jalankan `python AI-Patra/yolo.py` terlebih dahulu.")

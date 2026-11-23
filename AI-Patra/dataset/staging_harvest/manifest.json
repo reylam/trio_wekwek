@@ -1,0 +1,741 @@
+{
+  "attempts": 65,
+  "captured": 45,
+  "flagged_fp_or_pkl": 13,
+  "clean_negative": 32,
+  "items": [
+    {
+      "tag": "CL#01",
+      "bucket": "clean_negative",
+      "filename": "hv_CL01_jkt_021_JKP_DBM_FLYOVER_LADOKGI_C01.jpg",
+      "camera_id": "jkt_021_JKP_DBM_FLYOVER_LADOKGI_C01",
+      "camera_name": "JKP DBM FLYOVER LADOKGI C01 (CCTV-01)",
+      "city": "Kota Jakarta Pusat",
+      "resolution": "640x360",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "CL#02",
+      "bucket": "clean_negative",
+      "filename": "hv_CL02_jkt_022_JKP_DBM_FLYOVER_LADOKGI_C01.jpg",
+      "camera_id": "jkt_022_JKP_DBM_FLYOVER_LADOKGI_C01",
+      "camera_name": "JKP DBM FLYOVER LADOKGI C01 (CCTV-02)",
+      "city": "Kota Jakarta Pusat",
+      "resolution": "640x360",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "CL#03",
+      "bucket": "clean_negative",
+      "filename": "hv_CL03_jkt_025_JKP_SATPOL_PP_SIMPANG_JL_MH.jpg",
+      "camera_id": "jkt_025_JKP_SATPOL_PP_SIMPANG_JL_MH",
+      "camera_name": "JKP SATPOL PP SIMPANG JL. MH. THAMRIN C08 (CCTV-01)",
+      "city": "Kota Jakarta Pusat",
+      "resolution": "640x360",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "CL#04",
+      "bucket": "clean_negative",
+      "filename": "hv_CL04_jkt_026_JKP_SATPOL_PP_SIMPANG_JL_MH.jpg",
+      "camera_id": "jkt_026_JKP_SATPOL_PP_SIMPANG_JL_MH",
+      "camera_name": "JKP SATPOL PP SIMPANG JL. MH. THAMRIN C08 (CCTV-02)",
+      "city": "Kota Jakarta Pusat",
+      "resolution": "640x360",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "CL#05",
+      "bucket": "clean_negative",
+      "filename": "hv_CL05_jkt_027_JKP_DISHUB_JL_MH_THAMRIN_C.jpg",
+      "camera_id": "jkt_027_JKP_DISHUB_JL_MH_THAMRIN_C",
+      "camera_name": "JKP DISHUB JL. MH. THAMRIN C01 (CCTV-01)",
+      "city": "Kota Jakarta Pusat",
+      "resolution": "640x360",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "CL#06",
+      "bucket": "clean_negative",
+      "filename": "hv_CL06_jkt_028_JKP_DISHUB_JL_MH_THAMRIN_C.jpg",
+      "camera_id": "jkt_028_JKP_DISHUB_JL_MH_THAMRIN_C",
+      "camera_name": "JKP DISHUB JL. MH. THAMRIN C01 (CCTV-02)",
+      "city": "Kota Jakarta Pusat",
+      "resolution": "640x360",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "CL#07",
+      "bucket": "clean_negative",
+      "filename": "hv_CL07_jkt_029_JKP_SATPOLPP_JL_MH_THAMRIN.jpg",
+      "camera_id": "jkt_029_JKP_SATPOLPP_JL_MH_THAMRIN",
+      "camera_name": "JKP SATPOLPP JL. MH. THAMRIN C02 (CCTV-01)",
+      "city": "Kota Jakarta Pusat",
+      "resolution": "640x360",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "CL#08",
+      "bucket": "clean_negative",
+      "filename": "hv_CL08_jkt_030_JKP_SATPOLPP_JL_MH_THAMRIN.jpg",
+      "camera_id": "jkt_030_JKP_SATPOLPP_JL_MH_THAMRIN",
+      "camera_name": "JKP SATPOLPP JL. MH. THAMRIN C02 (CCTV-02)",
+      "city": "Kota Jakarta Pusat",
+      "resolution": "640x480",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "CL#09",
+      "bucket": "clean_negative",
+      "filename": "hv_CL09_jkt_031_JKP_SATPOL_PP_SIMPANG_JL_MH.jpg",
+      "camera_id": "jkt_031_JKP_SATPOL_PP_SIMPANG_JL_MH",
+      "camera_name": "JKP SATPOL PP SIMPANG JL. MH. THAMRIN C09 (CCTV-01)",
+      "city": "Kota Jakarta Pusat",
+      "resolution": "640x360",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "CL#10",
+      "bucket": "clean_negative",
+      "filename": "hv_CL10_jkt_032_JKP_SATPOL_PP_SIMPANG_JL_MH.jpg",
+      "camera_id": "jkt_032_JKP_SATPOL_PP_SIMPANG_JL_MH",
+      "camera_name": "JKP SATPOL PP SIMPANG JL. MH. THAMRIN C09 (CCTV-02)",
+      "city": "Kota Jakarta Pusat",
+      "resolution": "640x360",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "FL#01",
+      "bucket": "flagged_fp_or_pkl",
+      "filename": "hv_FL01_jkt_033_JKP_POLRI_UOB_PLAZA_C01.jpg",
+      "camera_id": "jkt_033_JKP_POLRI_UOB_PLAZA_C01",
+      "camera_name": "JKP POLRI UOB PLAZA C01 (CCTV-01)",
+      "city": "Kota Jakarta Pusat",
+      "resolution": "640x360",
+      "num_dets": 1,
+      "max_conf": 0.267,
+      "dets": [
+        {
+          "score": 0.267,
+          "bbox": [
+            344.4,
+            126.2,
+            403.5,
+            161.3
+          ]
+        }
+      ]
+    },
+    {
+      "tag": "CL#11",
+      "bucket": "clean_negative",
+      "filename": "hv_CL11_jkt_034_JKP_POLRI_UOB_PLAZA_C01.jpg",
+      "camera_id": "jkt_034_JKP_POLRI_UOB_PLAZA_C01",
+      "camera_name": "JKP POLRI UOB PLAZA C01 (CCTV-02)",
+      "city": "Kota Jakarta Pusat",
+      "resolution": "640x360",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "CL#12",
+      "bucket": "clean_negative",
+      "filename": "hv_CL12_jkt_035_JKP_POLRI_UOB_PLAZA_C01.jpg",
+      "camera_id": "jkt_035_JKP_POLRI_UOB_PLAZA_C01",
+      "camera_name": "JKP POLRI UOB PLAZA C01 (CCTV-03)",
+      "city": "Kota Jakarta Pusat",
+      "resolution": "640x360",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "CL#13",
+      "bucket": "clean_negative",
+      "filename": "hv_CL13_jkt_044_Jl_KH_Mas_Mansyur-C02.jpg",
+      "camera_id": "jkt_044_Jl_KH_Mas_Mansyur-C02",
+      "camera_name": "Jl. KH. Mas Mansyur-C02 (CCTV-01)",
+      "city": "Kota Jakarta Pusat",
+      "resolution": "640x360",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "CL#14",
+      "bucket": "clean_negative",
+      "filename": "hv_CL14_jkt_045_Jl_KH_Mas_Mansyur-C02.jpg",
+      "camera_id": "jkt_045_Jl_KH_Mas_Mansyur-C02",
+      "camera_name": "Jl. KH. Mas Mansyur-C02 (CCTV-02)",
+      "city": "Kota Jakarta Pusat",
+      "resolution": "640x360",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "FL#02",
+      "bucket": "flagged_fp_or_pkl",
+      "filename": "hv_FL02_jkt_046_Jl_Jati_Baru_Raya-C02.jpg",
+      "camera_id": "jkt_046_Jl_Jati_Baru_Raya-C02",
+      "camera_name": "Jl. Jati Baru Raya-C02 (CCTV-01)",
+      "city": "Kota Jakarta Pusat",
+      "resolution": "640x360",
+      "num_dets": 2,
+      "max_conf": 0.413,
+      "dets": [
+        {
+          "score": 0.413,
+          "bbox": [
+            442.0,
+            131.4,
+            554.8,
+            249.8
+          ]
+        },
+        {
+          "score": 0.41,
+          "bbox": [
+            561.9,
+            128.3,
+            632.6,
+            201.7
+          ]
+        }
+      ]
+    },
+    {
+      "tag": "CL#15",
+      "bucket": "clean_negative",
+      "filename": "hv_CL15_jkt_049_Senayan_018.jpg",
+      "camera_id": "jkt_049_Senayan_018",
+      "camera_name": "Senayan 018",
+      "city": "Kota Jakarta Pusat",
+      "resolution": "1280x720",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "CL#16",
+      "bucket": "clean_negative",
+      "filename": "hv_CL16_jkt_050_Senayan_001.jpg",
+      "camera_id": "jkt_050_Senayan_001",
+      "camera_name": "Senayan 001",
+      "city": "Kota Jakarta Pusat",
+      "resolution": "1920x1080",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "CL#17",
+      "bucket": "clean_negative",
+      "filename": "hv_CL17_jkt_051_Bendungan_Hilir_003.jpg",
+      "camera_id": "jkt_051_Bendungan_Hilir_003",
+      "camera_name": "Bendungan Hilir 003",
+      "city": "Kota Jakarta Pusat",
+      "resolution": "1920x1080",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "FL#03",
+      "bucket": "flagged_fp_or_pkl",
+      "filename": "hv_FL03_jkt_052_Kebon_Melati_010.jpg",
+      "camera_id": "jkt_052_Kebon_Melati_010",
+      "camera_name": "Kebon Melati 010",
+      "city": "Kota Jakarta Pusat",
+      "resolution": "1280x720",
+      "num_dets": 1,
+      "max_conf": 0.538,
+      "dets": [
+        {
+          "score": 0.538,
+          "bbox": [
+            237.1,
+            184.3,
+            1250.2,
+            720.0
+          ]
+        }
+      ]
+    },
+    {
+      "tag": "FL#04",
+      "bucket": "flagged_fp_or_pkl",
+      "filename": "hv_FL04_jkt_037_Simpang_Jl_Panglima_Polim-C.jpg",
+      "camera_id": "jkt_037_Simpang_Jl_Panglima_Polim-C",
+      "camera_name": "Simpang Jl. Panglima Polim-C01 (CCTV-02)",
+      "city": "Kota Jakarta Selatan",
+      "resolution": "640x360",
+      "num_dets": 7,
+      "max_conf": 0.79,
+      "dets": [
+        {
+          "score": 0.79,
+          "bbox": [
+            362.9,
+            182.3,
+            483.5,
+            253.5
+          ]
+        },
+        {
+          "score": 0.741,
+          "bbox": [
+            465.6,
+            145.8,
+            566.2,
+            203.7
+          ]
+        },
+        {
+          "score": 0.61,
+          "bbox": [
+            379.6,
+            42.9,
+            423.6,
+            71.4
+          ]
+        },
+        {
+          "score": 0.597,
+          "bbox": [
+            304.9,
+            276.1,
+            482.6,
+            360.0
+          ]
+        },
+        {
+          "score": 0.586,
+          "bbox": [
+            366.0,
+            64.4,
+            436.8,
+            103.2
+          ]
+        },
+        {
+          "score": 0.492,
+          "bbox": [
+            399.1,
+            95.6,
+            470.5,
+            143.0
+          ]
+        },
+        {
+          "score": 0.236,
+          "bbox": [
+            439.4,
+            87.9,
+            478.3,
+            122.9
+          ]
+        }
+      ]
+    },
+    {
+      "tag": "FL#05",
+      "bucket": "flagged_fp_or_pkl",
+      "filename": "hv_FL05_jkt_047_Simpang_Jl_Nurdin_Raya_C01.jpg",
+      "camera_id": "jkt_047_Simpang_Jl_Nurdin_Raya_C01",
+      "camera_name": "Simpang Jl Nurdin Raya C01 (CCTV-01)",
+      "city": "Kota Jakarta Timur",
+      "resolution": "640x360",
+      "num_dets": 1,
+      "max_conf": 0.305,
+      "dets": [
+        {
+          "score": 0.305,
+          "bbox": [
+            0.1,
+            133.4,
+            19.5,
+            158.3
+          ]
+        }
+      ]
+    },
+    {
+      "tag": "FL#06",
+      "bucket": "flagged_fp_or_pkl",
+      "filename": "hv_FL06_jkt_048_Simpang_Jl_Nurdin_Raya_C01.jpg",
+      "camera_id": "jkt_048_Simpang_Jl_Nurdin_Raya_C01",
+      "camera_name": "Simpang Jl Nurdin Raya C01 (CCTV-02)",
+      "city": "Kota Jakarta Timur",
+      "resolution": "640x360",
+      "num_dets": 1,
+      "max_conf": 0.404,
+      "dets": [
+        {
+          "score": 0.404,
+          "bbox": [
+            292.4,
+            62.4,
+            639.5,
+            360.0
+          ]
+        }
+      ]
+    },
+    {
+      "tag": "CL#18",
+      "bucket": "clean_negative",
+      "filename": "hv_CL18_band_001_SP_BATUNUNGGAL.jpg",
+      "camera_id": "band_001_SP_BATUNUNGGAL",
+      "camera_name": "SP BATUNUNGGAL",
+      "city": "Kota Bandung",
+      "resolution": "640x480",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "FL#07",
+      "bucket": "flagged_fp_or_pkl",
+      "filename": "hv_FL07_band_002_SP_BUAHBATU.jpg",
+      "camera_id": "band_002_SP_BUAHBATU",
+      "camera_name": "SP BUAHBATU",
+      "city": "Kota Bandung",
+      "resolution": "640x480",
+      "num_dets": 1,
+      "max_conf": 0.794,
+      "dets": [
+        {
+          "score": 0.794,
+          "bbox": [
+            323.0,
+            238.6,
+            362.0,
+            262.2
+          ]
+        }
+      ]
+    },
+    {
+      "tag": "CL#19",
+      "bucket": "clean_negative",
+      "filename": "hv_CL19_band_009_SP_INHOPTANK.jpg",
+      "camera_id": "band_009_SP_INHOPTANK",
+      "camera_name": "SP INHOPTANK",
+      "city": "Kota Bandung",
+      "resolution": "640x480",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "CL#20",
+      "bucket": "clean_negative",
+      "filename": "hv_CL20_band_014_SP_PAHLAWAN.jpg",
+      "camera_id": "band_014_SP_PAHLAWAN",
+      "camera_name": "SP PAHLAWAN",
+      "city": "Kota Bandung",
+      "resolution": "640x480",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "CL#21",
+      "bucket": "clean_negative",
+      "filename": "hv_CL21_band_017_SP_SAMSAT.jpg",
+      "camera_id": "band_017_SP_SAMSAT",
+      "camera_name": "SP SAMSAT",
+      "city": "Kota Bandung",
+      "resolution": "640x480",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "CL#22",
+      "bucket": "clean_negative",
+      "filename": "hv_CL22_band_018_VID_BATUNUNGGAL_Dari_Arah_B.jpg",
+      "camera_id": "band_018_VID_BATUNUNGGAL_Dari_Arah_B",
+      "camera_name": "VID BATUNUNGGAL (Dari Arah Barat)",
+      "city": "Kota Bandung",
+      "resolution": "640x480",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "CL#23",
+      "bucket": "clean_negative",
+      "filename": "hv_CL23_band_020_VID_BUAH_BATU_Dari_Arah_Bar.jpg",
+      "camera_id": "band_020_VID_BUAH_BATU_Dari_Arah_Bar",
+      "camera_name": "VID BUAH BATU (Dari Arah Barat)",
+      "city": "Kota Bandung",
+      "resolution": "640x480",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "CL#24",
+      "bucket": "clean_negative",
+      "filename": "hv_CL24_band_022_VID_BUAH_BATU_Dari_Arah_Tim.jpg",
+      "camera_id": "band_022_VID_BUAH_BATU_Dari_Arah_Tim",
+      "camera_name": "VID BUAH BATU (Dari Arah Timur)",
+      "city": "Kota Bandung",
+      "resolution": "640x480",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "FL#08",
+      "bucket": "flagged_fp_or_pkl",
+      "filename": "hv_FL08_band_023_VID_GEDEBAGE_Dari_Arah_Bara.jpg",
+      "camera_id": "band_023_VID_GEDEBAGE_Dari_Arah_Bara",
+      "camera_name": "VID GEDEBAGE (Dari Arah Barat)",
+      "city": "Kota Bandung",
+      "resolution": "640x480",
+      "num_dets": 1,
+      "max_conf": 0.311,
+      "dets": [
+        {
+          "score": 0.311,
+          "bbox": [
+            162.2,
+            0.0,
+            640.0,
+            480.0
+          ]
+        }
+      ]
+    },
+    {
+      "tag": "FL#09",
+      "bucket": "flagged_fp_or_pkl",
+      "filename": "hv_FL09_band_024_VID_GEDEBAGE_Dari_Arah_Sela.jpg",
+      "camera_id": "band_024_VID_GEDEBAGE_Dari_Arah_Sela",
+      "camera_name": "VID GEDEBAGE (Dari Arah Selatan)",
+      "city": "Kota Bandung",
+      "resolution": "640x480",
+      "num_dets": 1,
+      "max_conf": 0.285,
+      "dets": [
+        {
+          "score": 0.285,
+          "bbox": [
+            101.1,
+            0.0,
+            640.0,
+            480.0
+          ]
+        }
+      ]
+    },
+    {
+      "tag": "CL#25",
+      "bucket": "clean_negative",
+      "filename": "hv_CL25_band_025_VID_MOH_TOHA_Dari_Arah_Bara.jpg",
+      "camera_id": "band_025_VID_MOH_TOHA_Dari_Arah_Bara",
+      "camera_name": "VID MOH TOHA (Dari Arah Barat)",
+      "city": "Kota Bandung",
+      "resolution": "640x480",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "FL#10",
+      "bucket": "flagged_fp_or_pkl",
+      "filename": "hv_FL10_band_026_VID_MOH_TOHA_Dari_Arah_Sela.jpg",
+      "camera_id": "band_026_VID_MOH_TOHA_Dari_Arah_Sela",
+      "camera_name": "VID MOH TOHA (Dari Arah Selatan)",
+      "city": "Kota Bandung",
+      "resolution": "640x480",
+      "num_dets": 1,
+      "max_conf": 0.265,
+      "dets": [
+        {
+          "score": 0.265,
+          "bbox": [
+            160.2,
+            0.0,
+            608.7,
+            405.7
+          ]
+        }
+      ]
+    },
+    {
+      "tag": "FL#11",
+      "bucket": "flagged_fp_or_pkl",
+      "filename": "hv_FL11_band_027_VID_MOH_TOHA_Dari_Arah_Timu.jpg",
+      "camera_id": "band_027_VID_MOH_TOHA_Dari_Arah_Timu",
+      "camera_name": "VID MOH TOHA (Dari Arah Timur)",
+      "city": "Kota Bandung",
+      "resolution": "640x480",
+      "num_dets": 1,
+      "max_conf": 0.268,
+      "dets": [
+        {
+          "score": 0.268,
+          "bbox": [
+            135.2,
+            0.0,
+            640.0,
+            480.0
+          ]
+        }
+      ]
+    },
+    {
+      "tag": "CL#26",
+      "bucket": "clean_negative",
+      "filename": "hv_CL26_band_028_VID_MOH_TOHA_Dari_Arah_Utar.jpg",
+      "camera_id": "band_028_VID_MOH_TOHA_Dari_Arah_Utar",
+      "camera_name": "VID MOH TOHA (Dari Arah Utara)",
+      "city": "Kota Bandung",
+      "resolution": "640x480",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "CL#27",
+      "bucket": "clean_negative",
+      "filename": "hv_CL27_band_034_VID_SAMSAT_Dari_Arah_Selata.jpg",
+      "camera_id": "band_034_VID_SAMSAT_Dari_Arah_Selata",
+      "camera_name": "VID SAMSAT (Dari Arah Selatan)",
+      "city": "Kota Bandung",
+      "resolution": "640x480",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "FL#12",
+      "bucket": "flagged_fp_or_pkl",
+      "filename": "hv_FL12_band_035_VID_SAMSAT_Dari_Arah_Utara.jpg",
+      "camera_id": "band_035_VID_SAMSAT_Dari_Arah_Utara",
+      "camera_name": "VID SAMSAT (Dari Arah Utara)",
+      "city": "Kota Bandung",
+      "resolution": "640x480",
+      "num_dets": 1,
+      "max_conf": 0.295,
+      "dets": [
+        {
+          "score": 0.295,
+          "bbox": [
+            79.5,
+            0.0,
+            640.0,
+            477.9
+          ]
+        }
+      ]
+    },
+    {
+      "tag": "CL#28",
+      "bucket": "clean_negative",
+      "filename": "hv_CL28_smg_1305_KALIGARANG.jpg",
+      "camera_id": "smg_1305_KALIGARANG",
+      "camera_name": "KALIGARANG",
+      "city": "Kota Semarang",
+      "resolution": "352x288",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "FL#13",
+      "bucket": "flagged_fp_or_pkl",
+      "filename": "hv_FL13_smg_1307_TLOGOSARI.jpg",
+      "camera_id": "smg_1307_TLOGOSARI",
+      "camera_name": "TLOGOSARI",
+      "city": "Kota Semarang",
+      "resolution": "352x288",
+      "num_dets": 1,
+      "max_conf": 0.466,
+      "dets": [
+        {
+          "score": 0.466,
+          "bbox": [
+            306.2,
+            0.0,
+            351.8,
+            70.2
+          ]
+        }
+      ]
+    },
+    {
+      "tag": "CL#29",
+      "bucket": "clean_negative",
+      "filename": "hv_CL29_smg_1621_BUNDARAN_DIPONEGORO.jpg",
+      "camera_id": "smg_1621_BUNDARAN_DIPONEGORO",
+      "camera_name": "BUNDARAN DIPONEGORO",
+      "city": "Kota Semarang",
+      "resolution": "704x576",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "CL#30",
+      "bucket": "clean_negative",
+      "filename": "hv_CL30_smg_2105_TITIK_NOL.jpg",
+      "camera_id": "smg_2105_TITIK_NOL",
+      "camera_name": "TITIK NOL",
+      "city": "Kota Semarang",
+      "resolution": "640x480",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "CL#31",
+      "bucket": "clean_negative",
+      "filename": "hv_CL31_smg_2798_Jembatan_Mberok.jpg",
+      "camera_id": "smg_2798_Jembatan_Mberok",
+      "camera_name": "Jembatan Mberok",
+      "city": "Kota Semarang",
+      "resolution": "1920x1080",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    },
+    {
+      "tag": "CL#32",
+      "bucket": "clean_negative",
+      "filename": "hv_CL32_smg_307_KYAI_SALEH.jpg",
+      "camera_id": "smg_307_KYAI_SALEH",
+      "camera_name": "KYAI SALEH",
+      "city": "Kota Semarang",
+      "resolution": "352x288",
+      "num_dets": 0,
+      "max_conf": 0.0,
+      "dets": []
+    }
+  ]
+}

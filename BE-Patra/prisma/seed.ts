@@ -16,6 +16,175 @@ import {
 
 const DEMO_PASSWORD = process.env.SEED_DEMO_PASSWORD || 'PatraDemo2026!';
 
+// 15 kota/kabupaten publik tambahan dari katalog indonesia_sources.py (total 17 kota, 594 CCTV)
+const EXTRA_PUBLIC_REGIONS = [
+  {
+    code: 'yogyakarta',
+    city: 'Kota Yogyakarta',
+    province: 'DI Yogyakarta',
+    island: 'Jawa',
+    satpolAgencyName: 'Satpol PP Kota Yogyakarta',
+    umkmAgencyName: 'Dinas Perdagangan & Koperasi UMKM Kota Yogyakarta',
+    centerLat: -7.79963,
+    centerLng: 110.37152,
+    defaultZoom: 13,
+  },
+  {
+    code: 'pekanbaru',
+    city: 'Kota Pekanbaru',
+    province: 'Riau',
+    island: 'Sumatera',
+    satpolAgencyName: 'Satpol PP Kota Pekanbaru',
+    umkmAgencyName: 'Dinas Koperasi dan UMKM Kota Pekanbaru',
+    centerLat: 0.5072,
+    centerLng: 101.44767,
+    defaultZoom: 13,
+  },
+  {
+    code: 'pekalongan',
+    city: 'Kota Pekalongan',
+    province: 'Jawa Tengah',
+    island: 'Jawa',
+    satpolAgencyName: 'Satpol PP Kota Pekalongan',
+    umkmAgencyName: 'Dindagkop UKM Kota Pekalongan',
+    centerLat: -6.89521,
+    centerLng: 109.67294,
+    defaultZoom: 13,
+  },
+  {
+    code: 'cianjur',
+    city: 'Kabupaten Cianjur',
+    province: 'Jawa Barat',
+    island: 'Jawa',
+    satpolAgencyName: 'Satpol PP Kabupaten Cianjur',
+    umkmAgencyName: 'Diskumdagin Kabupaten Cianjur',
+    centerLat: -6.79982,
+    centerLng: 107.12414,
+    defaultZoom: 12,
+  },
+  {
+    code: 'magelang',
+    city: 'Kota Magelang',
+    province: 'Jawa Tengah',
+    island: 'Jawa',
+    satpolAgencyName: 'Satpol PP Kota Magelang',
+    umkmAgencyName: 'Disperindagkop UKM Kota Magelang',
+    centerLat: -7.47156,
+    centerLng: 110.21771,
+    defaultZoom: 14,
+  },
+  {
+    code: 'banda-aceh',
+    city: 'Kota Banda Aceh',
+    province: 'Aceh',
+    island: 'Sumatera',
+    satpolAgencyName: 'Satpol PP dan WH Kota Banda Aceh',
+    umkmAgencyName: 'Diskopukmdag Kota Banda Aceh',
+    centerLat: 5.54904,
+    centerLng: 95.31116,
+    defaultZoom: 13,
+  },
+  {
+    code: 'bandung',
+    city: 'Kota Bandung',
+    province: 'Jawa Barat',
+    island: 'Jawa',
+    satpolAgencyName: 'Satpol PP Kota Bandung',
+    umkmAgencyName: 'Dinas Koperasi dan UKM Kota Bandung',
+    centerLat: -6.9261,
+    centerLng: 107.62107,
+    defaultZoom: 13,
+  },
+  {
+    code: 'palembang',
+    city: 'Kota Palembang',
+    province: 'Sumatera Selatan',
+    island: 'Sumatera',
+    satpolAgencyName: 'Satpol PP Kota Palembang',
+    umkmAgencyName: 'Dinas Koperasi dan UKM Kota Palembang',
+    centerLat: -2.98371,
+    centerLng: 104.75023,
+    defaultZoom: 13,
+  },
+  {
+    code: 'mataram',
+    city: 'Kota Mataram',
+    province: 'Nusa Tenggara Barat',
+    island: 'Bali & Nusa Tenggara',
+    satpolAgencyName: 'Satpol PP Kota Mataram',
+    umkmAgencyName: 'Dinas Perindustrian, Koperasi & UKM Kota Mataram',
+    centerLat: -8.5879,
+    centerLng: 116.11257,
+    defaultZoom: 13,
+  },
+  {
+    code: 'jkt-selatan',
+    city: 'Kota Jakarta Selatan',
+    province: 'DKI Jakarta',
+    island: 'Jawa',
+    satpolAgencyName: 'Satpol PP Kota Administrasi Jakarta Selatan',
+    umkmAgencyName: 'Suku Dinas PPKUKM Jakarta Selatan',
+    centerLat: -6.235,
+    centerLng: 106.82,
+    defaultZoom: 13,
+  },
+  {
+    code: 'tasikmalaya',
+    city: 'Kota Tasikmalaya',
+    province: 'Jawa Barat',
+    island: 'Jawa',
+    satpolAgencyName: 'Satpol PP Kota Tasikmalaya',
+    umkmAgencyName: 'Dinas KUMKM Perindag Kota Tasikmalaya',
+    centerLat: -7.32638,
+    centerLng: 108.22062,
+    defaultZoom: 13,
+  },
+  {
+    code: 'bengkulu',
+    city: 'Kota Bengkulu',
+    province: 'Bengkulu',
+    island: 'Sumatera',
+    satpolAgencyName: 'Satpol PP Kota Bengkulu',
+    umkmAgencyName: 'Dinas Koperasi dan UKM Kota Bengkulu',
+    centerLat: -3.80604,
+    centerLng: 102.28475,
+    defaultZoom: 13,
+  },
+  {
+    code: 'padang',
+    city: 'Kota Padang',
+    province: 'Sumatera Barat',
+    island: 'Sumatera',
+    satpolAgencyName: 'Satpol PP Kota Padang',
+    umkmAgencyName: 'Dinas Koperasi dan UKM Kota Padang',
+    centerLat: -0.92147,
+    centerLng: 100.38818,
+    defaultZoom: 13,
+  },
+  {
+    code: 'jkt-barat',
+    city: 'Kota Jakarta Barat',
+    province: 'DKI Jakarta',
+    island: 'Jawa',
+    satpolAgencyName: 'Satpol PP Kota Administrasi Jakarta Barat',
+    umkmAgencyName: 'Suku Dinas PPKUKM Jakarta Barat',
+    centerLat: -6.17799,
+    centerLng: 106.79264,
+    defaultZoom: 13,
+  },
+  {
+    code: 'jkt-timur',
+    city: 'Kota Jakarta Timur',
+    province: 'DKI Jakarta',
+    island: 'Jawa',
+    satpolAgencyName: 'Satpol PP Kota Administrasi Jakarta Timur',
+    umkmAgencyName: 'Suku Dinas PPKUKM Jakarta Timur',
+    centerLat: -6.22951,
+    centerLng: 106.90083,
+    defaultZoom: 13,
+  },
+] as const;
+
 function loadExternalCctvSnapshot() {
   const snapshotPath = path.resolve(
     process.cwd(),
@@ -42,10 +211,11 @@ async function main() {
   const prisma = getPrisma();
   console.log('[seed] Memulai seeding database PATRA (idempoten)...');
 
-  // 1. Upsert 2 Region pilot
+  // 1. Upsert 2 Region pilot + 15 Region publik Indonesia (total 17 kota)
+  const allRegions = [...SEED_REGIONS, ...EXTRA_PUBLIC_REGIONS];
   const regionByCode = new Map<string, { id: string; city: string }>();
   const regionByCity = new Map<string, string>();
-  for (const r of SEED_REGIONS) {
+  for (const r of allRegions) {
     const row = await prisma.region.upsert({
       where: { code: r.code },
       update: {
@@ -64,10 +234,21 @@ async function main() {
     regionByCity.set(row.city.trim().toLowerCase(), row.id);
   }
 
-  // 2. Upsert 4 User demo (bcrypt hash)
+  // 2. Upsert 4 User demo pilot + 15 User demo Satpol PP kota publik (bcrypt hash)
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
+  const allDemoUsers = [
+    ...SEED_USERS,
+    ...EXTRA_PUBLIC_REGIONS.map((r) => ({
+      regionCode: r.code,
+      email: `satpol.${r.code}@patra.demo`,
+      fullName: `Petugas ${r.satpolAgencyName}`,
+      role: 'SATPOL_PP' as const,
+      isDemo: true,
+      demoKey: `satpol-${r.code}`,
+    })),
+  ];
   const userByDemoKey = new Map<string, string>();
-  for (const u of SEED_USERS) {
+  for (const u of allDemoUsers) {
     const region = regionByCode.get(u.regionCode);
     if (!region) continue;
     const row = await prisma.user.upsert({
@@ -299,7 +480,7 @@ async function main() {
   }
 
   console.log(
-    `[seed] Selesai! Regions=${SEED_REGIONS.length}, DemoUsers=${SEED_USERS.length}, CamerasSynced=${syncedCameras}, Zones=${SEED_ZONES.length}, RelocationSites=${SEED_RELOCATION_SITES.length}, NewReports=${createdReports}.`,
+    `[seed] Selesai! Regions=${allRegions.length}, DemoUsers=${allDemoUsers.length}, CamerasSynced=${syncedCameras}, Zones=${SEED_ZONES.length}, RelocationSites=${SEED_RELOCATION_SITES.length}, NewReports=${createdReports}.`,
   );
 }
 

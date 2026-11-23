@@ -4,12 +4,39 @@
 // - Dual-format postprocessing: [1, N, 6] (end2end NMS) & [1, 4+nc, 8400] (raw head + NMS)
 // - Selalu memanggil tensor.dispose() agar 0 memory leak saat inferensi 1 FPS
 
-import * as ort from 'onnxruntime-web';
-import wasmSimdUrl from 'onnxruntime-web/ort-wasm-simd-threaded.wasm?url';
+import * as ort from 'onnxruntime-web/webgpu';
 import mjsSimdUrl from 'onnxruntime-web/ort-wasm-simd-threaded.mjs?url';
+import wasmSimdUrl from 'onnxruntime-web/ort-wasm-simd-threaded.wasm?url';
 import wasmJsepUrl from 'onnxruntime-web/ort-wasm-simd-threaded.jsep.wasm?url';
 import mjsJsepUrl from 'onnxruntime-web/ort-wasm-simd-threaded.jsep.mjs?url';
+import wasmAsyncUrl from 'onnxruntime-web/ort-wasm-simd-threaded.asyncify.wasm?url';
+import mjsAsyncUrl from 'onnxruntime-web/ort-wasm-simd-threaded.asyncify.mjs?url';
 import type { RawDetection } from './roiAndTracker';
+
+// Map seluruh varian asset WASM/MJS lewat Vite ?url (pola teruji dari Civision)
+// agar dev server & production build tidak pernah mengembalikan index.html untuk .wasm
+ort.env.wasm.wasmPaths = {
+  'ort-wasm-simd-threaded.mjs': mjsSimdUrl,
+  'ort-wasm-simd-threaded.wasm': wasmSimdUrl,
+  'ort-wasm-simd-threaded.jsep.wasm': wasmJsepUrl,
+  'ort-wasm-simd-threaded.jsep.mjs': mjsJsepUrl,
+  'ort-wasm-simd-threaded.asyncify.wasm': wasmAsyncUrl,
+  'ort-wasm-simd-threaded.asyncify.mjs': mjsAsyncUrl,
+} as unknown as typeof ort.env.wasm.wasmPaths;
+ort.env.wasm.numThreads = 1;
+ort.env.wasm.proxy = false;
+
+type GpuNavigator = Navigator & { gpu?: { requestAdapter(): Promise<unknown> } };
+
+async function isWebGpuAvailable(): Promise<boolean> {
+  if (typeof navigator === 'undefined' || !(navigator as GpuNavigator).gpu) return false;
+  try {
+    const adapter = await (navigator as GpuNavigator).gpu!.requestAdapter();
+    return Boolean(adapter);
+  } catch {
+    return false;
+  }
+}
 
 const MODEL_URL = '/models/best.onnx';
 const INPUT_SIZE = 640;
@@ -80,53 +107,33 @@ async function createSessionInternal(): Promise<LoadedSession> {
     );
   }
 
-  // Konfigurasi WASM single-thread agar aman tanpa header COOP/COEP (tidak memblokir HLS lintas domain)
-  ort.env.wasm.numThreads = 1;
-  ort.env.wasm.proxy = false;
+  const preferWebGpu = await isWebGpuAvailable();
+  const backendsToTry: YoloBackend[] = preferWebGpu ? ['webgpu', 'wasm'] : ['wasm'];
 
-  const hasWebGpu = typeof navigator !== 'undefined' && 'gpu' in navigator;
-
-  if (hasWebGpu) {
+  let lastError: unknown = null;
+  for (const backend of backendsToTry) {
     try {
-      ort.env.wasm.wasmPaths = {
-        wasm: wasmJsepUrl,
-        mjs: mjsJsepUrl,
-      };
       const session = await ort.InferenceSession.create(bytes, {
-        executionProviders: ['webgpu'],
+        executionProviders: [backend],
         graphOptimizationLevel: 'all',
       });
       const loaded: LoadedSession = {
         session,
         inputName: session.inputNames[0] ?? 'images',
         outputName: session.outputNames[0] ?? 'output0',
-        backend: 'webgpu',
+        backend,
       };
       sessionInstance = loaded;
       sessionError = null;
       return loaded;
-    } catch {
-      // Fallback otomatis ke WASM bila WebGPU tidak didukung driver/model opset
+    } catch (err) {
+      lastError = err;
     }
   }
 
-  ort.env.wasm.wasmPaths = {
-    wasm: wasmSimdUrl,
-    mjs: mjsSimdUrl,
-  };
-  const session = await ort.InferenceSession.create(bytes, {
-    executionProviders: ['wasm'],
-    graphOptimizationLevel: 'all',
-  });
-  const loaded: LoadedSession = {
-    session,
-    inputName: session.inputNames[0] ?? 'images',
-    outputName: session.outputNames[0] ?? 'output0',
-    backend: 'wasm',
-  };
-  sessionInstance = loaded;
-  sessionError = null;
-  return loaded;
+  throw lastError instanceof Error
+    ? lastError
+    : new Error('Gagal menginisialisasi sesi inferensi ONNX Runtime Web.');
 }
 
 export function ensureYoloSession(): Promise<LoadedSession> {

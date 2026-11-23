@@ -1,0 +1,1953 @@
+{
+  "split": "valid",
+  "num_images": 61,
+  "num_gt": 139,
+  "iou_thresh": 0.5,
+  "op_conf": 0.25,
+  "models": [
+    {
+      "model_name": "patra_orig",
+      "model_path": "C:\\Users\\rey\\Downloads\\Competition\\stack_2026_mpruy\\AI-Patra\\model\\best_patra_highangle.onnx",
+      "size_mb": 9.85,
+      "imgsz": 640,
+      "input_shape": [
+        1,
+        3,
+        640,
+        640
+      ],
+      "output_shape": [
+        1,
+        5,
+        8400
+      ],
+      "providers": [
+        "CPUExecutionProvider"
+      ],
+      "latency": {
+        "infer_mean_ms": 32.58,
+        "infer_p95_ms": 34.83,
+        "infer_fps": 30.69,
+        "e2e_mean_ms": 43.12,
+        "e2e_fps": 23.19
+      },
+      "map50": 0.3092,
+      "map50_95": 0.1368,
+      "ap_by_iou": {
+        "0.50": 0.3092,
+        "0.55": 0.2801,
+        "0.60": 0.2483,
+        "0.65": 0.1969,
+        "0.70": 0.1563,
+        "0.75": 0.092,
+        "0.80": 0.0614,
+        "0.85": 0.015,
+        "0.90": 0.009,
+        "0.95": 0.0
+      },
+      "best_f1": {
+        "tp": 46,
+        "fp": 29,
+        "fn": 93,
+        "precision": 0.6133,
+        "recall": 0.3309,
+        "f1": 0.4299,
+        "conf": 0.15,
+        "avg_tp_iou": 0.7267
+      },
+      "threshold_sweep": [
+        {
+          "tp": 47,
+          "fp": 44,
+          "fn": 92,
+          "precision": 0.5165,
+          "recall": 0.3381,
+          "f1": 0.4087,
+          "conf": 0.1,
+          "avg_tp_iou": 0.7262
+        },
+        {
+          "tp": 46,
+          "fp": 29,
+          "fn": 93,
+          "precision": 0.6133,
+          "recall": 0.3309,
+          "f1": 0.4299,
+          "conf": 0.15,
+          "avg_tp_iou": 0.7267
+        },
+        {
+          "tp": 43,
+          "fp": 21,
+          "fn": 96,
+          "precision": 0.6719,
+          "recall": 0.3094,
+          "f1": 0.4236,
+          "conf": 0.2,
+          "avg_tp_iou": 0.7264
+        },
+        {
+          "tp": 39,
+          "fp": 19,
+          "fn": 100,
+          "precision": 0.6724,
+          "recall": 0.2806,
+          "f1": 0.3959,
+          "conf": 0.25,
+          "avg_tp_iou": 0.7302
+        },
+        {
+          "tp": 37,
+          "fp": 15,
+          "fn": 102,
+          "precision": 0.7115,
+          "recall": 0.2662,
+          "f1": 0.3874,
+          "conf": 0.3,
+          "avg_tp_iou": 0.737
+        },
+        {
+          "tp": 36,
+          "fp": 14,
+          "fn": 103,
+          "precision": 0.72,
+          "recall": 0.259,
+          "f1": 0.381,
+          "conf": 0.35,
+          "avg_tp_iou": 0.7388
+        },
+        {
+          "tp": 31,
+          "fp": 12,
+          "fn": 108,
+          "precision": 0.7209,
+          "recall": 0.223,
+          "f1": 0.3407,
+          "conf": 0.4,
+          "avg_tp_iou": 0.7539
+        },
+        {
+          "tp": 30,
+          "fp": 11,
+          "fn": 109,
+          "precision": 0.7317,
+          "recall": 0.2158,
+          "f1": 0.3333,
+          "conf": 0.45,
+          "avg_tp_iou": 0.7583
+        },
+        {
+          "tp": 27,
+          "fp": 10,
+          "fn": 112,
+          "precision": 0.7297,
+          "recall": 0.1942,
+          "f1": 0.3068,
+          "conf": 0.5,
+          "avg_tp_iou": 0.7626
+        },
+        {
+          "tp": 21,
+          "fp": 6,
+          "fn": 118,
+          "precision": 0.7778,
+          "recall": 0.1511,
+          "f1": 0.253,
+          "conf": 0.6,
+          "avg_tp_iou": 0.7752
+        }
+      ],
+      "op_conf": 0.25,
+      "confusion_analysis": {
+        "by_subclass": {
+          "Emperan": {
+            "gt": 7,
+            "tp": 1,
+            "fn": 6,
+            "recall": 0.1429,
+            "avg_iou": 0.5793
+          },
+          "Gerobak": {
+            "gt": 57,
+            "tp": 5,
+            "fn": 52,
+            "recall": 0.0877,
+            "avg_iou": 0.6893
+          },
+          "Panggul": {
+            "gt": 1,
+            "tp": 0,
+            "fn": 1,
+            "recall": 0.0,
+            "avg_iou": 0.0
+          },
+          "Payung": {
+            "gt": 35,
+            "tp": 18,
+            "fn": 17,
+            "recall": 0.5143,
+            "avg_iou": 0.7794
+          },
+          "Sepeda-motor": {
+            "gt": 2,
+            "tp": 0,
+            "fn": 2,
+            "recall": 0.0,
+            "avg_iou": 0.0
+          },
+          "Terpal": {
+            "gt": 37,
+            "tp": 15,
+            "fn": 22,
+            "recall": 0.4054,
+            "avg_iou": 0.6949
+          }
+        },
+        "fp_types": {
+          "background_fp": 12,
+          "localization_error": 7
+        },
+        "background_images": 3,
+        "fp_on_background_images": 0
+      },
+      "distance_size_eval": {
+        "Near (>=4%)": {
+          "tp": 6,
+          "fp": 0,
+          "fn": 5,
+          "precision": 1.0,
+          "recall": 0.5455,
+          "f1": 0.7059,
+          "gt": 11,
+          "avg_iou": 0.8046
+        },
+        "Medium (1-4%)": {
+          "tp": 13,
+          "fp": 10,
+          "fn": 20,
+          "precision": 0.5652,
+          "recall": 0.3939,
+          "f1": 0.4643,
+          "gt": 33,
+          "avg_iou": 0.72
+        },
+        "Far (<1%)": {
+          "tp": 20,
+          "fp": 9,
+          "fn": 75,
+          "precision": 0.6897,
+          "recall": 0.2105,
+          "f1": 0.3226,
+          "gt": 95,
+          "avg_iou": 0.7146
+        },
+        "Sub-slice Tiny (<0.25%)": {
+          "gt": 38,
+          "tp": 3,
+          "fn": 35,
+          "recall": 0.0789
+        }
+      },
+      "group_eval": {
+        "camera_angle": {
+          "High-Angle JPO/Overpass": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 2,
+            "gt": 2
+          },
+          "High-Angle Street CCTV": {
+            "tp": 39,
+            "fp": 19,
+            "fn": 98,
+            "precision": 0.6724,
+            "recall": 0.2847,
+            "f1": 0.4,
+            "images": 59,
+            "gt": 137
+          }
+        },
+        "resolution_bucket": {
+          "640x640 (Roboflow Stretch)": {
+            "tp": 39,
+            "fp": 19,
+            "fn": 100,
+            "precision": 0.6724,
+            "recall": 0.2806,
+            "f1": 0.3959,
+            "images": 61,
+            "gt": 139
+          }
+        },
+        "lighting": {
+          "Dusk / Overcast": {
+            "tp": 38,
+            "fp": 18,
+            "fn": 94,
+            "precision": 0.6786,
+            "recall": 0.2879,
+            "f1": 0.4043,
+            "images": 58,
+            "gt": 132
+          },
+          "Night / Low-Light": {
+            "tp": 1,
+            "fp": 1,
+            "fn": 6,
+            "precision": 0.5,
+            "recall": 0.1429,
+            "f1": 0.2222,
+            "images": 3,
+            "gt": 7
+          }
+        },
+        "quality": {
+          "Sharp / High Detail": {
+            "tp": 39,
+            "fp": 19,
+            "fn": 100,
+            "precision": 0.6724,
+            "recall": 0.2806,
+            "f1": 0.3959,
+            "images": 61,
+            "gt": 139
+          }
+        },
+        "camera_group": {
+          "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-02": {
+            "tp": 3,
+            "fp": 0,
+            "fn": 11,
+            "precision": 1.0,
+            "recall": 0.2143,
+            "f1": 0.3529,
+            "images": 6,
+            "gt": 14
+          },
+          "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-01": {
+            "tp": 5,
+            "fp": 0,
+            "fn": 6,
+            "precision": 1.0,
+            "recall": 0.4545,
+            "f1": 0.625,
+            "images": 5,
+            "gt": 11
+          },
+          "501719_JKU_DISHUB_JL-PEGANGSAAN-DUA-C01_CCTV-01": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 2,
+            "gt": 2
+          },
+          "501732_JKS_DISHUB_JL-PROF-DR-SATRIO-C01_CCTV-03": {
+            "tp": 1,
+            "fp": 1,
+            "fn": 12,
+            "precision": 0.5,
+            "recall": 0.0769,
+            "f1": 0.1333,
+            "images": 6,
+            "gt": 13
+          },
+          "501803_JKT_KESBANGPOL_TMII-C03_CCTV-02": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 1,
+            "gt": 2
+          },
+          "501808_JKU_BPBD_JL-PLUIT-SELATAN-RAYA-C02_CCTV-02": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 1,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 1,
+            "gt": 1
+          },
+          "501812_JKT_DISHUB_JL-I-GUSTI-NGURAH-RAI-C02_CCTV-02": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 1,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 1,
+            "gt": 1
+          },
+          "501813_JKS_DISHUB_STASIUN-DUREN-KALIBATA-C01_CCTV-01": {
+            "tp": 1,
+            "fp": 3,
+            "fn": 0,
+            "precision": 0.25,
+            "recall": 1.0,
+            "f1": 0.4,
+            "images": 1,
+            "gt": 1
+          },
+          "501815_JKS_DISHUB_JL-MOH-KAHFI-II-C02_CCTV-02": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 1,
+            "precision": 1.0,
+            "recall": 0.5,
+            "f1": 0.6667,
+            "images": 1,
+            "gt": 2
+          },
+          "501819_JKU_DISHUB_JL-TAMAN-STASIUN-C01_CCTV-02": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 2,
+            "gt": 2
+          },
+          "501821_JKT_DISHUB_JL-ALVARO-C01_CCTV-02": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 4,
+            "precision": 1.0,
+            "recall": 0.3333,
+            "f1": 0.5,
+            "images": 3,
+            "gt": 6
+          },
+          "501823_JKU_DISHUB_JL-TAMAN-STASIUN-C02_CCTV-01": {
+            "tp": 11,
+            "fp": 2,
+            "fn": 30,
+            "precision": 0.8462,
+            "recall": 0.2683,
+            "f1": 0.4074,
+            "images": 9,
+            "gt": 41
+          },
+          "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-02": {
+            "tp": 9,
+            "fp": 11,
+            "fn": 17,
+            "precision": 0.45,
+            "recall": 0.3462,
+            "f1": 0.3913,
+            "images": 13,
+            "gt": 26
+          },
+          "501860_JKS_DISHUB_JL-PANGERAN-ANTASARI-C01_CCTV-04": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 1,
+            "precision": 1.0,
+            "recall": 0.5,
+            "f1": 0.6667,
+            "images": 1,
+            "gt": 2
+          },
+          "501868_JKT_DISHUB_JL-JEND-BASUKI-RACHMAT-C01_CCTV-03": {
+            "tp": 5,
+            "fp": 2,
+            "fn": 8,
+            "precision": 0.7143,
+            "recall": 0.3846,
+            "f1": 0.5,
+            "images": 7,
+            "gt": 13
+          },
+          "501870_JKS_DISHUB_JPO-BUNG-KARNO-C01_CCTV-02": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 1,
+            "gt": 2
+          },
+          "501871_JKS_DISHUB_JPO-POLDA-METRO-JAYA-C01_CCTV-02": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 1,
+            "gt": 0
+          }
+        }
+      }
+    },
+    {
+      "model_name": "expA_640",
+      "model_path": "C:\\Users\\rey\\Downloads\\Competition\\stack_2026_mpruy\\AI-Patra\\model\\ft_expA_640_lowlr.onnx",
+      "size_mb": 9.85,
+      "imgsz": 640,
+      "input_shape": [
+        1,
+        3,
+        640,
+        640
+      ],
+      "output_shape": [
+        1,
+        5,
+        8400
+      ],
+      "providers": [
+        "CPUExecutionProvider"
+      ],
+      "latency": {
+        "infer_mean_ms": 32.53,
+        "infer_p95_ms": 37.43,
+        "infer_fps": 30.74,
+        "e2e_mean_ms": 46.56,
+        "e2e_fps": 21.48
+      },
+      "map50": 0.3487,
+      "map50_95": 0.155,
+      "ap_by_iou": {
+        "0.50": 0.3487,
+        "0.55": 0.3248,
+        "0.60": 0.2686,
+        "0.65": 0.2169,
+        "0.70": 0.1756,
+        "0.75": 0.1044,
+        "0.80": 0.0647,
+        "0.85": 0.0283,
+        "0.90": 0.0182,
+        "0.95": 0.0
+      },
+      "best_f1": {
+        "tp": 43,
+        "fp": 23,
+        "fn": 96,
+        "precision": 0.6515,
+        "recall": 0.3094,
+        "f1": 0.4195,
+        "conf": 0.25,
+        "avg_tp_iou": 0.7379
+      },
+      "threshold_sweep": [
+        {
+          "tp": 49,
+          "fp": 67,
+          "fn": 90,
+          "precision": 0.4224,
+          "recall": 0.3525,
+          "f1": 0.3843,
+          "conf": 0.1,
+          "avg_tp_iou": 0.733
+        },
+        {
+          "tp": 47,
+          "fp": 46,
+          "fn": 92,
+          "precision": 0.5054,
+          "recall": 0.3381,
+          "f1": 0.4052,
+          "conf": 0.15,
+          "avg_tp_iou": 0.7344
+        },
+        {
+          "tp": 45,
+          "fp": 33,
+          "fn": 94,
+          "precision": 0.5769,
+          "recall": 0.3237,
+          "f1": 0.4147,
+          "conf": 0.2,
+          "avg_tp_iou": 0.7337
+        },
+        {
+          "tp": 43,
+          "fp": 23,
+          "fn": 96,
+          "precision": 0.6515,
+          "recall": 0.3094,
+          "f1": 0.4195,
+          "conf": 0.25,
+          "avg_tp_iou": 0.7379
+        },
+        {
+          "tp": 40,
+          "fp": 18,
+          "fn": 99,
+          "precision": 0.6897,
+          "recall": 0.2878,
+          "f1": 0.4061,
+          "conf": 0.3,
+          "avg_tp_iou": 0.7391
+        },
+        {
+          "tp": 38,
+          "fp": 14,
+          "fn": 101,
+          "precision": 0.7308,
+          "recall": 0.2734,
+          "f1": 0.3979,
+          "conf": 0.35,
+          "avg_tp_iou": 0.7392
+        },
+        {
+          "tp": 38,
+          "fp": 14,
+          "fn": 101,
+          "precision": 0.7308,
+          "recall": 0.2734,
+          "f1": 0.3979,
+          "conf": 0.4,
+          "avg_tp_iou": 0.7392
+        },
+        {
+          "tp": 36,
+          "fp": 8,
+          "fn": 103,
+          "precision": 0.8182,
+          "recall": 0.259,
+          "f1": 0.3934,
+          "conf": 0.45,
+          "avg_tp_iou": 0.7424
+        },
+        {
+          "tp": 29,
+          "fp": 7,
+          "fn": 110,
+          "precision": 0.8056,
+          "recall": 0.2086,
+          "f1": 0.3314,
+          "conf": 0.5,
+          "avg_tp_iou": 0.7548
+        },
+        {
+          "tp": 21,
+          "fp": 5,
+          "fn": 118,
+          "precision": 0.8077,
+          "recall": 0.1511,
+          "f1": 0.2545,
+          "conf": 0.6,
+          "avg_tp_iou": 0.7791
+        }
+      ],
+      "op_conf": 0.25,
+      "confusion_analysis": {
+        "by_subclass": {
+          "Emperan": {
+            "gt": 7,
+            "tp": 1,
+            "fn": 6,
+            "recall": 0.1429,
+            "avg_iou": 0.5814
+          },
+          "Gerobak": {
+            "gt": 57,
+            "tp": 8,
+            "fn": 49,
+            "recall": 0.1404,
+            "avg_iou": 0.6897
+          },
+          "Panggul": {
+            "gt": 1,
+            "tp": 0,
+            "fn": 1,
+            "recall": 0.0,
+            "avg_iou": 0.0
+          },
+          "Payung": {
+            "gt": 35,
+            "tp": 20,
+            "fn": 15,
+            "recall": 0.5714,
+            "avg_iou": 0.7695
+          },
+          "Sepeda-motor": {
+            "gt": 2,
+            "tp": 0,
+            "fn": 2,
+            "recall": 0.0,
+            "avg_iou": 0.0
+          },
+          "Terpal": {
+            "gt": 37,
+            "tp": 14,
+            "fn": 23,
+            "recall": 0.3784,
+            "avg_iou": 0.7315
+          }
+        },
+        "fp_types": {
+          "background_fp": 12,
+          "localization_error": 11
+        },
+        "background_images": 3,
+        "fp_on_background_images": 0
+      },
+      "distance_size_eval": {
+        "Near (>=4%)": {
+          "tp": 5,
+          "fp": 0,
+          "fn": 6,
+          "precision": 1.0,
+          "recall": 0.4545,
+          "f1": 0.625,
+          "gt": 11,
+          "avg_iou": 0.8674
+        },
+        "Medium (1-4%)": {
+          "tp": 15,
+          "fp": 11,
+          "fn": 18,
+          "precision": 0.5769,
+          "recall": 0.4545,
+          "f1": 0.5085,
+          "gt": 33,
+          "avg_iou": 0.7379
+        },
+        "Far (<1%)": {
+          "tp": 23,
+          "fp": 12,
+          "fn": 72,
+          "precision": 0.6571,
+          "recall": 0.2421,
+          "f1": 0.3538,
+          "gt": 95,
+          "avg_iou": 0.7098
+        },
+        "Sub-slice Tiny (<0.25%)": {
+          "gt": 38,
+          "tp": 3,
+          "fn": 35,
+          "recall": 0.0789
+        }
+      },
+      "group_eval": {
+        "camera_angle": {
+          "High-Angle JPO/Overpass": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 2,
+            "gt": 2
+          },
+          "High-Angle Street CCTV": {
+            "tp": 43,
+            "fp": 23,
+            "fn": 94,
+            "precision": 0.6515,
+            "recall": 0.3139,
+            "f1": 0.4236,
+            "images": 59,
+            "gt": 137
+          }
+        },
+        "resolution_bucket": {
+          "640x640 (Roboflow Stretch)": {
+            "tp": 43,
+            "fp": 23,
+            "fn": 96,
+            "precision": 0.6515,
+            "recall": 0.3094,
+            "f1": 0.4195,
+            "images": 61,
+            "gt": 139
+          }
+        },
+        "lighting": {
+          "Dusk / Overcast": {
+            "tp": 42,
+            "fp": 22,
+            "fn": 90,
+            "precision": 0.6562,
+            "recall": 0.3182,
+            "f1": 0.4286,
+            "images": 58,
+            "gt": 132
+          },
+          "Night / Low-Light": {
+            "tp": 1,
+            "fp": 1,
+            "fn": 6,
+            "precision": 0.5,
+            "recall": 0.1429,
+            "f1": 0.2222,
+            "images": 3,
+            "gt": 7
+          }
+        },
+        "quality": {
+          "Sharp / High Detail": {
+            "tp": 43,
+            "fp": 23,
+            "fn": 96,
+            "precision": 0.6515,
+            "recall": 0.3094,
+            "f1": 0.4195,
+            "images": 61,
+            "gt": 139
+          }
+        },
+        "camera_group": {
+          "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-02": {
+            "tp": 3,
+            "fp": 1,
+            "fn": 11,
+            "precision": 0.75,
+            "recall": 0.2143,
+            "f1": 0.3333,
+            "images": 6,
+            "gt": 14
+          },
+          "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-01": {
+            "tp": 5,
+            "fp": 0,
+            "fn": 6,
+            "precision": 1.0,
+            "recall": 0.4545,
+            "f1": 0.625,
+            "images": 5,
+            "gt": 11
+          },
+          "501719_JKU_DISHUB_JL-PEGANGSAAN-DUA-C01_CCTV-01": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 2,
+            "gt": 2
+          },
+          "501732_JKS_DISHUB_JL-PROF-DR-SATRIO-C01_CCTV-03": {
+            "tp": 2,
+            "fp": 1,
+            "fn": 11,
+            "precision": 0.6667,
+            "recall": 0.1538,
+            "f1": 0.25,
+            "images": 6,
+            "gt": 13
+          },
+          "501803_JKT_KESBANGPOL_TMII-C03_CCTV-02": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 1,
+            "gt": 2
+          },
+          "501808_JKU_BPBD_JL-PLUIT-SELATAN-RAYA-C02_CCTV-02": {
+            "tp": 0,
+            "fp": 2,
+            "fn": 1,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 1,
+            "gt": 1
+          },
+          "501812_JKT_DISHUB_JL-I-GUSTI-NGURAH-RAI-C02_CCTV-02": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 1,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 1,
+            "gt": 1
+          },
+          "501813_JKS_DISHUB_STASIUN-DUREN-KALIBATA-C01_CCTV-01": {
+            "tp": 1,
+            "fp": 1,
+            "fn": 0,
+            "precision": 0.5,
+            "recall": 1.0,
+            "f1": 0.6667,
+            "images": 1,
+            "gt": 1
+          },
+          "501815_JKS_DISHUB_JL-MOH-KAHFI-II-C02_CCTV-02": {
+            "tp": 2,
+            "fp": 1,
+            "fn": 0,
+            "precision": 0.6667,
+            "recall": 1.0,
+            "f1": 0.8,
+            "images": 1,
+            "gt": 2
+          },
+          "501819_JKU_DISHUB_JL-TAMAN-STASIUN-C01_CCTV-02": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 2,
+            "gt": 2
+          },
+          "501821_JKT_DISHUB_JL-ALVARO-C01_CCTV-02": {
+            "tp": 2,
+            "fp": 1,
+            "fn": 4,
+            "precision": 0.6667,
+            "recall": 0.3333,
+            "f1": 0.4444,
+            "images": 3,
+            "gt": 6
+          },
+          "501823_JKU_DISHUB_JL-TAMAN-STASIUN-C02_CCTV-01": {
+            "tp": 14,
+            "fp": 1,
+            "fn": 27,
+            "precision": 0.9333,
+            "recall": 0.3415,
+            "f1": 0.5,
+            "images": 9,
+            "gt": 41
+          },
+          "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-02": {
+            "tp": 8,
+            "fp": 13,
+            "fn": 18,
+            "precision": 0.381,
+            "recall": 0.3077,
+            "f1": 0.3404,
+            "images": 13,
+            "gt": 26
+          },
+          "501860_JKS_DISHUB_JL-PANGERAN-ANTASARI-C01_CCTV-04": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "images": 1,
+            "gt": 2
+          },
+          "501868_JKT_DISHUB_JL-JEND-BASUKI-RACHMAT-C01_CCTV-03": {
+            "tp": 4,
+            "fp": 2,
+            "fn": 9,
+            "precision": 0.6667,
+            "recall": 0.3077,
+            "f1": 0.4211,
+            "images": 7,
+            "gt": 13
+          },
+          "501870_JKS_DISHUB_JPO-BUNG-KARNO-C01_CCTV-02": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 1,
+            "gt": 2
+          },
+          "501871_JKS_DISHUB_JPO-POLDA-METRO-JAYA-C01_CCTV-02": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 1,
+            "gt": 0
+          }
+        }
+      }
+    },
+    {
+      "model_name": "expB_640",
+      "model_path": "C:\\Users\\rey\\Downloads\\Competition\\stack_2026_mpruy\\AI-Patra\\model\\ft_expB_640_freeze_loc.onnx",
+      "size_mb": 9.85,
+      "imgsz": 640,
+      "input_shape": [
+        1,
+        3,
+        640,
+        640
+      ],
+      "output_shape": [
+        1,
+        5,
+        8400
+      ],
+      "providers": [
+        "CPUExecutionProvider"
+      ],
+      "latency": {
+        "infer_mean_ms": 31.24,
+        "infer_p95_ms": 34.53,
+        "infer_fps": 32.01,
+        "e2e_mean_ms": 42.91,
+        "e2e_fps": 23.3
+      },
+      "map50": 0.3446,
+      "map50_95": 0.1391,
+      "ap_by_iou": {
+        "0.50": 0.3446,
+        "0.55": 0.2814,
+        "0.60": 0.2601,
+        "0.65": 0.2043,
+        "0.70": 0.1357,
+        "0.75": 0.0883,
+        "0.80": 0.048,
+        "0.85": 0.0283,
+        "0.90": 0.0,
+        "0.95": 0.0
+      },
+      "best_f1": {
+        "tp": 46,
+        "fp": 24,
+        "fn": 93,
+        "precision": 0.6571,
+        "recall": 0.3309,
+        "f1": 0.4402,
+        "conf": 0.3,
+        "avg_tp_iou": 0.7094
+      },
+      "threshold_sweep": [
+        {
+          "tp": 52,
+          "fp": 77,
+          "fn": 87,
+          "precision": 0.4031,
+          "recall": 0.3741,
+          "f1": 0.3881,
+          "conf": 0.1,
+          "avg_tp_iou": 0.6977
+        },
+        {
+          "tp": 49,
+          "fp": 57,
+          "fn": 90,
+          "precision": 0.4623,
+          "recall": 0.3525,
+          "f1": 0.4,
+          "conf": 0.15,
+          "avg_tp_iou": 0.7001
+        },
+        {
+          "tp": 48,
+          "fp": 44,
+          "fn": 91,
+          "precision": 0.5217,
+          "recall": 0.3453,
+          "f1": 0.4156,
+          "conf": 0.2,
+          "avg_tp_iou": 0.7031
+        },
+        {
+          "tp": 47,
+          "fp": 36,
+          "fn": 92,
+          "precision": 0.5663,
+          "recall": 0.3381,
+          "f1": 0.4234,
+          "conf": 0.25,
+          "avg_tp_iou": 0.7064
+        },
+        {
+          "tp": 46,
+          "fp": 24,
+          "fn": 93,
+          "precision": 0.6571,
+          "recall": 0.3309,
+          "f1": 0.4402,
+          "conf": 0.3,
+          "avg_tp_iou": 0.7094
+        },
+        {
+          "tp": 43,
+          "fp": 22,
+          "fn": 96,
+          "precision": 0.6615,
+          "recall": 0.3094,
+          "f1": 0.4216,
+          "conf": 0.35,
+          "avg_tp_iou": 0.711
+        },
+        {
+          "tp": 36,
+          "fp": 20,
+          "fn": 103,
+          "precision": 0.6429,
+          "recall": 0.259,
+          "f1": 0.3692,
+          "conf": 0.4,
+          "avg_tp_iou": 0.7167
+        },
+        {
+          "tp": 34,
+          "fp": 16,
+          "fn": 105,
+          "precision": 0.68,
+          "recall": 0.2446,
+          "f1": 0.3598,
+          "conf": 0.45,
+          "avg_tp_iou": 0.7206
+        },
+        {
+          "tp": 31,
+          "fp": 13,
+          "fn": 108,
+          "precision": 0.7045,
+          "recall": 0.223,
+          "f1": 0.3388,
+          "conf": 0.5,
+          "avg_tp_iou": 0.7268
+        },
+        {
+          "tp": 27,
+          "fp": 5,
+          "fn": 112,
+          "precision": 0.8438,
+          "recall": 0.1942,
+          "f1": 0.3158,
+          "conf": 0.6,
+          "avg_tp_iou": 0.7319
+        }
+      ],
+      "op_conf": 0.25,
+      "confusion_analysis": {
+        "by_subclass": {
+          "Emperan": {
+            "gt": 7,
+            "tp": 1,
+            "fn": 6,
+            "recall": 0.1429,
+            "avg_iou": 0.541
+          },
+          "Gerobak": {
+            "gt": 57,
+            "tp": 11,
+            "fn": 46,
+            "recall": 0.193,
+            "avg_iou": 0.6832
+          },
+          "Panggul": {
+            "gt": 1,
+            "tp": 0,
+            "fn": 1,
+            "recall": 0.0,
+            "avg_iou": 0.0
+          },
+          "Payung": {
+            "gt": 35,
+            "tp": 19,
+            "fn": 16,
+            "recall": 0.5429,
+            "avg_iou": 0.7594
+          },
+          "Sepeda-motor": {
+            "gt": 2,
+            "tp": 0,
+            "fn": 2,
+            "recall": 0.0,
+            "avg_iou": 0.0
+          },
+          "Terpal": {
+            "gt": 37,
+            "tp": 16,
+            "fn": 21,
+            "recall": 0.4324,
+            "avg_iou": 0.6698
+          }
+        },
+        "fp_types": {
+          "background_fp": 25,
+          "localization_error": 11
+        },
+        "background_images": 3,
+        "fp_on_background_images": 1
+      },
+      "distance_size_eval": {
+        "Near (>=4%)": {
+          "tp": 6,
+          "fp": 6,
+          "fn": 5,
+          "precision": 0.5,
+          "recall": 0.5455,
+          "f1": 0.5217,
+          "gt": 11,
+          "avg_iou": 0.8132
+        },
+        "Medium (1-4%)": {
+          "tp": 14,
+          "fp": 14,
+          "fn": 19,
+          "precision": 0.5,
+          "recall": 0.4242,
+          "f1": 0.459,
+          "gt": 33,
+          "avg_iou": 0.7064
+        },
+        "Far (<1%)": {
+          "tp": 27,
+          "fp": 16,
+          "fn": 68,
+          "precision": 0.6279,
+          "recall": 0.2842,
+          "f1": 0.3913,
+          "gt": 95,
+          "avg_iou": 0.6827
+        },
+        "Sub-slice Tiny (<0.25%)": {
+          "gt": 38,
+          "tp": 5,
+          "fn": 33,
+          "recall": 0.1316
+        }
+      },
+      "group_eval": {
+        "camera_angle": {
+          "High-Angle JPO/Overpass": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 2,
+            "gt": 2
+          },
+          "High-Angle Street CCTV": {
+            "tp": 47,
+            "fp": 36,
+            "fn": 90,
+            "precision": 0.5663,
+            "recall": 0.3431,
+            "f1": 0.4273,
+            "images": 59,
+            "gt": 137
+          }
+        },
+        "resolution_bucket": {
+          "640x640 (Roboflow Stretch)": {
+            "tp": 47,
+            "fp": 36,
+            "fn": 92,
+            "precision": 0.5663,
+            "recall": 0.3381,
+            "f1": 0.4234,
+            "images": 61,
+            "gt": 139
+          }
+        },
+        "lighting": {
+          "Dusk / Overcast": {
+            "tp": 45,
+            "fp": 35,
+            "fn": 87,
+            "precision": 0.5625,
+            "recall": 0.3409,
+            "f1": 0.4245,
+            "images": 58,
+            "gt": 132
+          },
+          "Night / Low-Light": {
+            "tp": 2,
+            "fp": 1,
+            "fn": 5,
+            "precision": 0.6667,
+            "recall": 0.2857,
+            "f1": 0.4,
+            "images": 3,
+            "gt": 7
+          }
+        },
+        "quality": {
+          "Sharp / High Detail": {
+            "tp": 47,
+            "fp": 36,
+            "fn": 92,
+            "precision": 0.5663,
+            "recall": 0.3381,
+            "f1": 0.4234,
+            "images": 61,
+            "gt": 139
+          }
+        },
+        "camera_group": {
+          "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-02": {
+            "tp": 3,
+            "fp": 2,
+            "fn": 11,
+            "precision": 0.6,
+            "recall": 0.2143,
+            "f1": 0.3158,
+            "images": 6,
+            "gt": 14
+          },
+          "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-01": {
+            "tp": 5,
+            "fp": 1,
+            "fn": 6,
+            "precision": 0.8333,
+            "recall": 0.4545,
+            "f1": 0.5882,
+            "images": 5,
+            "gt": 11
+          },
+          "501719_JKU_DISHUB_JL-PEGANGSAAN-DUA-C01_CCTV-01": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 2,
+            "gt": 2
+          },
+          "501732_JKS_DISHUB_JL-PROF-DR-SATRIO-C01_CCTV-03": {
+            "tp": 2,
+            "fp": 7,
+            "fn": 11,
+            "precision": 0.2222,
+            "recall": 0.1538,
+            "f1": 0.1818,
+            "images": 6,
+            "gt": 13
+          },
+          "501803_JKT_KESBANGPOL_TMII-C03_CCTV-02": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 1,
+            "gt": 2
+          },
+          "501808_JKU_BPBD_JL-PLUIT-SELATAN-RAYA-C02_CCTV-02": {
+            "tp": 0,
+            "fp": 1,
+            "fn": 1,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 1,
+            "gt": 1
+          },
+          "501812_JKT_DISHUB_JL-I-GUSTI-NGURAH-RAI-C02_CCTV-02": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 1,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 1,
+            "gt": 1
+          },
+          "501813_JKS_DISHUB_STASIUN-DUREN-KALIBATA-C01_CCTV-01": {
+            "tp": 1,
+            "fp": 2,
+            "fn": 0,
+            "precision": 0.3333,
+            "recall": 1.0,
+            "f1": 0.5,
+            "images": 1,
+            "gt": 1
+          },
+          "501815_JKS_DISHUB_JL-MOH-KAHFI-II-C02_CCTV-02": {
+            "tp": 2,
+            "fp": 1,
+            "fn": 0,
+            "precision": 0.6667,
+            "recall": 1.0,
+            "f1": 0.8,
+            "images": 1,
+            "gt": 2
+          },
+          "501819_JKU_DISHUB_JL-TAMAN-STASIUN-C01_CCTV-02": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 2,
+            "gt": 2
+          },
+          "501821_JKT_DISHUB_JL-ALVARO-C01_CCTV-02": {
+            "tp": 3,
+            "fp": 0,
+            "fn": 3,
+            "precision": 1.0,
+            "recall": 0.5,
+            "f1": 0.6667,
+            "images": 3,
+            "gt": 6
+          },
+          "501823_JKU_DISHUB_JL-TAMAN-STASIUN-C02_CCTV-01": {
+            "tp": 15,
+            "fp": 5,
+            "fn": 26,
+            "precision": 0.75,
+            "recall": 0.3659,
+            "f1": 0.4918,
+            "images": 9,
+            "gt": 41
+          },
+          "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-02": {
+            "tp": 9,
+            "fp": 16,
+            "fn": 17,
+            "precision": 0.36,
+            "recall": 0.3462,
+            "f1": 0.3529,
+            "images": 13,
+            "gt": 26
+          },
+          "501860_JKS_DISHUB_JL-PANGERAN-ANTASARI-C01_CCTV-04": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 1,
+            "gt": 2
+          },
+          "501868_JKT_DISHUB_JL-JEND-BASUKI-RACHMAT-C01_CCTV-03": {
+            "tp": 7,
+            "fp": 1,
+            "fn": 6,
+            "precision": 0.875,
+            "recall": 0.5385,
+            "f1": 0.6667,
+            "images": 7,
+            "gt": 13
+          },
+          "501870_JKS_DISHUB_JPO-BUNG-KARNO-C01_CCTV-02": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 1,
+            "gt": 2
+          },
+          "501871_JKS_DISHUB_JPO-POLDA-METRO-JAYA-C01_CCTV-02": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 1,
+            "gt": 0
+          }
+        }
+      }
+    },
+    {
+      "model_name": "expD_640",
+      "model_path": "C:\\Users\\rey\\Downloads\\Competition\\stack_2026_mpruy\\AI-Patra\\model\\ft_expD_640_ultralow.onnx",
+      "size_mb": 9.85,
+      "imgsz": 640,
+      "input_shape": [
+        1,
+        3,
+        640,
+        640
+      ],
+      "output_shape": [
+        1,
+        5,
+        8400
+      ],
+      "providers": [
+        "CPUExecutionProvider"
+      ],
+      "latency": {
+        "infer_mean_ms": 30.05,
+        "infer_p95_ms": 33.27,
+        "infer_fps": 33.27,
+        "e2e_mean_ms": 39.95,
+        "e2e_fps": 25.03
+      },
+      "map50": 0.329,
+      "map50_95": 0.1613,
+      "ap_by_iou": {
+        "0.50": 0.329,
+        "0.55": 0.2915,
+        "0.60": 0.2727,
+        "0.65": 0.2464,
+        "0.70": 0.1855,
+        "0.75": 0.1336,
+        "0.80": 0.095,
+        "0.85": 0.0407,
+        "0.90": 0.0182,
+        "0.95": 0.0
+      },
+      "best_f1": {
+        "tp": 45,
+        "fp": 37,
+        "fn": 94,
+        "precision": 0.5488,
+        "recall": 0.3237,
+        "f1": 0.4072,
+        "conf": 0.1,
+        "avg_tp_iou": 0.7365
+      },
+      "threshold_sweep": [
+        {
+          "tp": 45,
+          "fp": 37,
+          "fn": 94,
+          "precision": 0.5488,
+          "recall": 0.3237,
+          "f1": 0.4072,
+          "conf": 0.1,
+          "avg_tp_iou": 0.7365
+        },
+        {
+          "tp": 39,
+          "fp": 21,
+          "fn": 100,
+          "precision": 0.65,
+          "recall": 0.2806,
+          "f1": 0.392,
+          "conf": 0.15,
+          "avg_tp_iou": 0.7405
+        },
+        {
+          "tp": 35,
+          "fp": 15,
+          "fn": 104,
+          "precision": 0.7,
+          "recall": 0.2518,
+          "f1": 0.3704,
+          "conf": 0.2,
+          "avg_tp_iou": 0.7549
+        },
+        {
+          "tp": 32,
+          "fp": 10,
+          "fn": 107,
+          "precision": 0.7619,
+          "recall": 0.2302,
+          "f1": 0.3536,
+          "conf": 0.25,
+          "avg_tp_iou": 0.7665
+        },
+        {
+          "tp": 28,
+          "fp": 9,
+          "fn": 111,
+          "precision": 0.7568,
+          "recall": 0.2014,
+          "f1": 0.3182,
+          "conf": 0.3,
+          "avg_tp_iou": 0.7804
+        },
+        {
+          "tp": 26,
+          "fp": 7,
+          "fn": 113,
+          "precision": 0.7879,
+          "recall": 0.1871,
+          "f1": 0.3023,
+          "conf": 0.35,
+          "avg_tp_iou": 0.7803
+        },
+        {
+          "tp": 26,
+          "fp": 6,
+          "fn": 113,
+          "precision": 0.8125,
+          "recall": 0.1871,
+          "f1": 0.3041,
+          "conf": 0.4,
+          "avg_tp_iou": 0.7803
+        },
+        {
+          "tp": 22,
+          "fp": 4,
+          "fn": 117,
+          "precision": 0.8462,
+          "recall": 0.1583,
+          "f1": 0.2667,
+          "conf": 0.45,
+          "avg_tp_iou": 0.8008
+        },
+        {
+          "tp": 18,
+          "fp": 3,
+          "fn": 121,
+          "precision": 0.8571,
+          "recall": 0.1295,
+          "f1": 0.225,
+          "conf": 0.5,
+          "avg_tp_iou": 0.8233
+        },
+        {
+          "tp": 15,
+          "fp": 3,
+          "fn": 124,
+          "precision": 0.8333,
+          "recall": 0.1079,
+          "f1": 0.1911,
+          "conf": 0.6,
+          "avg_tp_iou": 0.8381
+        }
+      ],
+      "op_conf": 0.25,
+      "confusion_analysis": {
+        "by_subclass": {
+          "Emperan": {
+            "gt": 7,
+            "tp": 0,
+            "fn": 7,
+            "recall": 0.0,
+            "avg_iou": 0.0
+          },
+          "Gerobak": {
+            "gt": 57,
+            "tp": 6,
+            "fn": 51,
+            "recall": 0.1053,
+            "avg_iou": 0.7259
+          },
+          "Panggul": {
+            "gt": 1,
+            "tp": 0,
+            "fn": 1,
+            "recall": 0.0,
+            "avg_iou": 0.0
+          },
+          "Payung": {
+            "gt": 35,
+            "tp": 13,
+            "fn": 22,
+            "recall": 0.3714,
+            "avg_iou": 0.8086
+          },
+          "Sepeda-motor": {
+            "gt": 2,
+            "tp": 0,
+            "fn": 2,
+            "recall": 0.0,
+            "avg_iou": 0.0
+          },
+          "Terpal": {
+            "gt": 37,
+            "tp": 13,
+            "fn": 24,
+            "recall": 0.3514,
+            "avg_iou": 0.7431
+          }
+        },
+        "fp_types": {
+          "background_fp": 3,
+          "localization_error": 7
+        },
+        "background_images": 3,
+        "fp_on_background_images": 0
+      },
+      "distance_size_eval": {
+        "Near (>=4%)": {
+          "tp": 5,
+          "fp": 0,
+          "fn": 6,
+          "precision": 1.0,
+          "recall": 0.4545,
+          "f1": 0.625,
+          "gt": 11,
+          "avg_iou": 0.8647
+        },
+        "Medium (1-4%)": {
+          "tp": 12,
+          "fp": 4,
+          "fn": 21,
+          "precision": 0.75,
+          "recall": 0.3636,
+          "f1": 0.4898,
+          "gt": 33,
+          "avg_iou": 0.7608
+        },
+        "Far (<1%)": {
+          "tp": 15,
+          "fp": 6,
+          "fn": 80,
+          "precision": 0.7143,
+          "recall": 0.1579,
+          "f1": 0.2586,
+          "gt": 95,
+          "avg_iou": 0.7382
+        },
+        "Sub-slice Tiny (<0.25%)": {
+          "gt": 38,
+          "tp": 2,
+          "fn": 36,
+          "recall": 0.0526
+        }
+      },
+      "group_eval": {
+        "camera_angle": {
+          "High-Angle JPO/Overpass": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 2,
+            "gt": 2
+          },
+          "High-Angle Street CCTV": {
+            "tp": 32,
+            "fp": 10,
+            "fn": 105,
+            "precision": 0.7619,
+            "recall": 0.2336,
+            "f1": 0.3575,
+            "images": 59,
+            "gt": 137
+          }
+        },
+        "resolution_bucket": {
+          "640x640 (Roboflow Stretch)": {
+            "tp": 32,
+            "fp": 10,
+            "fn": 107,
+            "precision": 0.7619,
+            "recall": 0.2302,
+            "f1": 0.3536,
+            "images": 61,
+            "gt": 139
+          }
+        },
+        "lighting": {
+          "Dusk / Overcast": {
+            "tp": 31,
+            "fp": 10,
+            "fn": 101,
+            "precision": 0.7561,
+            "recall": 0.2348,
+            "f1": 0.3584,
+            "images": 58,
+            "gt": 132
+          },
+          "Night / Low-Light": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 6,
+            "precision": 1.0,
+            "recall": 0.1429,
+            "f1": 0.25,
+            "images": 3,
+            "gt": 7
+          }
+        },
+        "quality": {
+          "Sharp / High Detail": {
+            "tp": 32,
+            "fp": 10,
+            "fn": 107,
+            "precision": 0.7619,
+            "recall": 0.2302,
+            "f1": 0.3536,
+            "images": 61,
+            "gt": 139
+          }
+        },
+        "camera_group": {
+          "501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-02": {
+            "tp": 3,
+            "fp": 0,
+            "fn": 11,
+            "precision": 1.0,
+            "recall": 0.2143,
+            "f1": 0.3529,
+            "images": 6,
+            "gt": 14
+          },
+          "501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-01": {
+            "tp": 5,
+            "fp": 0,
+            "fn": 6,
+            "precision": 1.0,
+            "recall": 0.4545,
+            "f1": 0.625,
+            "images": 5,
+            "gt": 11
+          },
+          "501719_JKU_DISHUB_JL-PEGANGSAAN-DUA-C01_CCTV-01": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 2,
+            "gt": 2
+          },
+          "501732_JKS_DISHUB_JL-PROF-DR-SATRIO-C01_CCTV-03": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 12,
+            "precision": 1.0,
+            "recall": 0.0769,
+            "f1": 0.1429,
+            "images": 6,
+            "gt": 13
+          },
+          "501803_JKT_KESBANGPOL_TMII-C03_CCTV-02": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 1,
+            "gt": 2
+          },
+          "501808_JKU_BPBD_JL-PLUIT-SELATAN-RAYA-C02_CCTV-02": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 1,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 1,
+            "gt": 1
+          },
+          "501812_JKT_DISHUB_JL-I-GUSTI-NGURAH-RAI-C02_CCTV-02": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 1,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 1,
+            "gt": 1
+          },
+          "501813_JKS_DISHUB_STASIUN-DUREN-KALIBATA-C01_CCTV-01": {
+            "tp": 1,
+            "fp": 1,
+            "fn": 0,
+            "precision": 0.5,
+            "recall": 1.0,
+            "f1": 0.6667,
+            "images": 1,
+            "gt": 1
+          },
+          "501815_JKS_DISHUB_JL-MOH-KAHFI-II-C02_CCTV-02": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 1,
+            "precision": 1.0,
+            "recall": 0.5,
+            "f1": 0.6667,
+            "images": 1,
+            "gt": 2
+          },
+          "501819_JKU_DISHUB_JL-TAMAN-STASIUN-C01_CCTV-02": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 1,
+            "precision": 1.0,
+            "recall": 0.5,
+            "f1": 0.6667,
+            "images": 2,
+            "gt": 2
+          },
+          "501821_JKT_DISHUB_JL-ALVARO-C01_CCTV-02": {
+            "tp": 3,
+            "fp": 1,
+            "fn": 3,
+            "precision": 0.75,
+            "recall": 0.5,
+            "f1": 0.6,
+            "images": 3,
+            "gt": 6
+          },
+          "501823_JKU_DISHUB_JL-TAMAN-STASIUN-C02_CCTV-01": {
+            "tp": 6,
+            "fp": 1,
+            "fn": 35,
+            "precision": 0.8571,
+            "recall": 0.1463,
+            "f1": 0.25,
+            "images": 9,
+            "gt": 41
+          },
+          "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-02": {
+            "tp": 8,
+            "fp": 5,
+            "fn": 18,
+            "precision": 0.6154,
+            "recall": 0.3077,
+            "f1": 0.4103,
+            "images": 13,
+            "gt": 26
+          },
+          "501860_JKS_DISHUB_JL-PANGERAN-ANTASARI-C01_CCTV-04": {
+            "tp": 0,
+            "fp": 1,
+            "fn": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 1,
+            "gt": 2
+          },
+          "501868_JKT_DISHUB_JL-JEND-BASUKI-RACHMAT-C01_CCTV-03": {
+            "tp": 3,
+            "fp": 1,
+            "fn": 10,
+            "precision": 0.75,
+            "recall": 0.2308,
+            "f1": 0.3529,
+            "images": 7,
+            "gt": 13
+          },
+          "501870_JKS_DISHUB_JPO-BUNG-KARNO-C01_CCTV-02": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 1,
+            "gt": 2
+          },
+          "501871_JKS_DISHUB_JPO-POLDA-METRO-JAYA-C01_CCTV-02": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "images": 1,
+            "gt": 0
+          }
+        }
+      }
+    }
+  ]
+}

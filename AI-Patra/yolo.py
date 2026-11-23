@@ -47,12 +47,35 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--mosaic", type=float, default=0.4, help="Probabilitas mosaic (default: 0.4, aman untuk tiny objects)")
     parser.add_argument("--close-mosaic", type=int, default=25, help="Matikan mosaic N epoch terakhir (default: 25)")
     parser.add_argument("--scale", type=float, default=0.25, help="Random scale gain (default: 0.25, agar tiny objects tidak hilang)")
+    parser.add_argument("--translate", type=float, default=0.05, help="Random translation fraction (default: 0.05)")
+    parser.add_argument("--hsv-v", type=float, default=0.35, help="HSV value/brightness augmentation gain (default: 0.35)")
+    parser.add_argument("--box", type=float, default=7.5, help="Box regression loss gain (default: 7.5)")
+    parser.add_argument("--warmup-epochs", type=float, default=5.0, help="Jumlah warmup epoch (default: 5.0)")
     parser.add_argument("--seed", type=int, default=42, help="Random seed deterministik")
     parser.add_argument("--name", type=str, default="patra_yolo26n_pkl", help="Nama folder eksperimen di runs/")
+    parser.add_argument(
+        "--eval-split",
+        type=str,
+        choices=("valid", "test", "none"),
+        default="valid",
+        help="Split evaluasi pasca-training (default: valid agar test set tidak bocor saat tuning)",
+    )
+    parser.add_argument(
+        "--no-copy-best",
+        action="store_true",
+        help="Jangan timpa AI-Patra/model/best.pt (simpan bobot hanya di AI-Patra/runs/<name>/weights/best.pt)",
+    )
     parser.add_argument(
         "--multi-cls",
         action="store_true",
         help="Latih 6 sub-kelas terpisah (default: single_cls=True -> 1 kelas PKL)",
+    )
+    parser.add_argument(
+        "--preset",
+        type=str,
+        choices=("v2_ft", "v2_base", "v3_ft", "v3_base"),
+        default="",
+        help="Preset konfigurasi eksperimen singkat agar perintah CLI tidak terpotong.",
     )
     parser.add_argument(
         "--skip-audit",
@@ -62,8 +85,62 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def apply_preset(args: argparse.Namespace) -> None:
+    if not args.preset:
+        return
+    args.data = AI_ROOT / "dataset_v2" / "data_v2.yaml"
+    args.imgsz = 640
+    args.batch = 16
+    args.device = "0"
+    args.scale = 0.35
+    args.translate = 0.08
+    args.hsv_v = 0.45
+    args.skip_audit = True
+    args.no_copy_best = True
+    args.eval_split = "valid"
+    if args.preset == "v2_ft":
+        args.model = str(MODEL_DIR / "best.pt")
+        args.name = "patra_v2_curated_ft"
+        args.epochs = 60
+        args.patience = 25
+        args.lr0 = 0.00025
+        args.warmup_epochs = 2.0
+        args.mosaic = 0.35
+        args.close_mosaic = 15
+    elif args.preset == "v2_base":
+        args.model = "yolo26n.pt"
+        args.name = "patra_v2_curated_base"
+        args.epochs = 120
+        args.patience = 35
+        args.lr0 = 0.001
+        args.warmup_epochs = 5.0
+        args.mosaic = 0.40
+        args.close_mosaic = 25
+    elif args.preset == "v3_ft":
+        args.data = AI_ROOT / "dataset_v3_gerobak" / "data_v3.yaml"
+        args.model = str(MODEL_DIR / "best.pt")
+        args.name = "patra_v3_gerobak_ft"
+        args.epochs = 60
+        args.patience = 25
+        args.lr0 = 0.0003
+        args.warmup_epochs = 2.0
+        args.mosaic = 0.35
+        args.close_mosaic = 15
+    elif args.preset == "v3_base":
+        args.data = AI_ROOT / "dataset_v3_gerobak" / "data_v3.yaml"
+        args.model = "yolo26n.pt"
+        args.name = "patra_v3_gerobak_base"
+        args.epochs = 120
+        args.patience = 35
+        args.lr0 = 0.001
+        args.warmup_epochs = 5.0
+        args.mosaic = 0.40
+        args.close_mosaic = 25
+
+
 def main() -> int:
     args = parse_args()
+    apply_preset(args)
 
     if not args.skip_audit:
         print("[1/4] Menjalankan audit integritas & anti-leakage dataset...")
@@ -112,8 +189,9 @@ def main() -> int:
         optimizer=args.optimizer,
         lr0=args.lr0,
         lrf=0.01,
-        warmup_epochs=5.0,
+        warmup_epochs=args.warmup_epochs,
         weight_decay=args.weight_decay,
+        box=args.box,
         cos_lr=True,
         project=str(RUNS_DIR),
         name=args.name,
@@ -122,9 +200,9 @@ def main() -> int:
         # CCTV & tiny-object-safe augmentations
         hsv_h=0.015,
         hsv_s=0.45,
-        hsv_v=0.35,     # Adaptasi siang/malam tanpa membuat frame malam terlalu gelap
-        degrees=3.0,    # Kemiringan kamera CCTV tipis
-        translate=0.05, # Jaga objek PKL di tepi frame tidak terpotong habis
+        hsv_v=args.hsv_v,  # Adaptasi siang/malam & silau lampu malam CCTV
+        degrees=3.0,       # Kemiringan kamera CCTV tipis
+        translate=args.translate,
         scale=args.scale,
         fliplr=0.50,
         flipud=0.0,     # CCTV tidak pernah upside-down
@@ -145,38 +223,50 @@ def main() -> int:
         print(f"[ERR] File bobot terbaik tidak ditemukan di: {best_pt_src}")
         return 1
 
-    best_pt_dst = MODEL_DIR / "best.pt"
-    shutil.copy2(best_pt_src, best_pt_dst)
-    print(f"[3/4] Bobot terbaik disalin ke: {best_pt_dst} ({best_pt_dst.stat().st_size / 1e6:.2f} MB)")
+    if args.no_copy_best:
+        eval_weights = best_pt_src
+        print(
+            f"[3/4] --no-copy-best aktif: AI-Patra/model/best.pt dipertahankan. "
+            f"Bobot eksperimen tersimpan di: {best_pt_src} ({best_pt_src.stat().st_size / 1e6:.2f} MB)"
+        )
+    else:
+        best_pt_dst = MODEL_DIR / "best.pt"
+        shutil.copy2(best_pt_src, best_pt_dst)
+        eval_weights = best_pt_dst
+        print(f"[3/4] Bobot terbaik disalin ke: {best_pt_dst} ({best_pt_dst.stat().st_size / 1e6:.2f} MB)")
 
-    # Evaluasi resmi pada split `test` (kamera yang belum pernah dilihat saat train/valid)
-    print("[4/4] Mengevaluasi bobot terbaik pada split `test` (unseen CCTV cameras)...")
-    best_model = YOLO(str(best_pt_dst))
-    val_kwargs = dict(
-        data=str(args.data),
-        split="test",
-        imgsz=args.imgsz,
-        single_cls=single_cls,
-        project=str(RUNS_DIR),
-        name=f"{args.name}_test_eval",
-        exist_ok=True,
-    )
-    if args.device:
-        val_kwargs["device"] = args.device
+    if args.eval_split != "none":
+        split_label = "val" if args.eval_split == "valid" else args.eval_split
+        print(f"[4/4] Mengevaluasi bobot terbaik pada split `{args.eval_split}`...")
+        best_model = YOLO(str(eval_weights))
+        val_kwargs = dict(
+            data=str(args.data),
+            split=split_label,
+            imgsz=args.imgsz,
+            workers=args.workers,
+            single_cls=single_cls,
+            project=str(RUNS_DIR),
+            name=f"{args.name}_{args.eval_split}_eval",
+            exist_ok=True,
+        )
+        if args.device:
+            val_kwargs["device"] = args.device
 
-    metrics = best_model.val(**val_kwargs)
-    box = getattr(metrics, "box", None)
-    if box is not None:
-        print("\n================ TEST SPLIT METRICS ================")
-        print(f"Precision : {box.mp:.4f}")
-        print(f"Recall    : {box.mr:.4f}")
-        print(f"mAP@50    : {box.map50:.4f}")
-        print(f"mAP@50-95 : {box.map:.4f}")
-        print("====================================================")
+        metrics = best_model.val(**val_kwargs)
+        box = getattr(metrics, "box", None)
+        if box is not None:
+            print(f"\n================ {args.eval_split.upper()} SPLIT METRICS ================")
+            print(f"Precision : {box.mp:.4f}")
+            print(f"Recall    : {box.mr:.4f}")
+            print(f"mAP@50    : {box.map50:.4f}")
+            print(f"mAP@50-95 : {box.map:.4f}")
+            print("====================================================")
+    else:
+        print("[4/4] Evaluasi pasca-training dilewati (--eval-split none).")
 
     print("\nLangkah berikutnya:")
-    print("  1) python AI-Patra/export_onnx.py")
-    print("  2) python AI-Patra/verify_onnx.py")
+    print(f"  1) Export ONNX eksperimen: python AI-Patra/export_onnx.py --weights {eval_weights} --out AI-Patra/model/{args.name}.onnx --imgsz {args.imgsz} --no-copy-fe")
+    print(f"  2) Evaluasi pada valid   : python AI-Patra/evaluate_models.py --split valid --models patra_orig=AI-Patra/model/best_patra_highangle.onnx {args.name}=AI-Patra/model/{args.name}.onnx --run-name cmp_valid_{args.name}")
     return 0
 
 

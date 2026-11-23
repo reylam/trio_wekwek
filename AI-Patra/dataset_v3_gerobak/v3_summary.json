@@ -1,0 +1,56 @@
+{
+  "train": {
+    "images": 342,
+    "background_images": 131,
+    "background_pct": 38.3,
+    "total_boxes": 344,
+    "kept_classes": {
+      "Gerobak": 308,
+      "Emperan": 36
+    },
+    "skipped_classes": {
+      "Terpal": 190,
+      "Payung": 192,
+      "Sepeda-motor": 7,
+      "Panggul": 1
+    },
+    "excluded_outlier_images": 14,
+    "added_live_negatives": 35
+  },
+  "valid": {
+    "images": 61,
+    "background_images": 23,
+    "background_pct": 37.7,
+    "total_boxes": 64,
+    "kept_classes": {
+      "Gerobak": 57,
+      "Emperan": 7
+    },
+    "skipped_classes": {
+      "Payung": 35,
+      "Terpal": 37,
+      "Sepeda-motor": 2,
+      "Panggul": 1
+    },
+    "excluded_outlier_images": 0,
+    "added_live_negatives": 0
+  },
+  "test": {
+    "images": 41,
+    "background_images": 13,
+    "background_pct": 31.7,
+    "total_boxes": 44,
+    "kept_classes": {
+      "Gerobak": 39,
+      "Emperan": 5
+    },
+    "skipped_classes": {
+      "Terpal": 24,
+      "Payung": 24,
+      "Panggul": 1,
+      "Sepeda-motor": 1
+    },
+    "excluded_outlier_images": 0,
+    "added_live_negatives": 0
+  }
+}
