@@ -6,6 +6,7 @@ import logger from './middlewares/logger.js';
 import errorHandler from './middlewares/errorHandler.js';
 import healthRoute from './routes/health.route.js';
 import authRoute from './routes/auth.route.js';
+import publicRoute from './routes/public.route.js';
 import cctvRoute from './routes/cctv.route.js';
 import zoneRoute from './routes/zone.route.js';
 import reportRoute from './routes/report.route.js';
@@ -38,6 +39,7 @@ app.use(express.json());
 
 app.use('/', healthRoute);
 app.use('/api/auth', authRoute);
+app.use('/api/public', publicRoute);
 app.use('/api/cctv', cctvRoute);
 app.use('/api/zones', zoneRoute);
 app.use('/api/reports', reportRoute);
