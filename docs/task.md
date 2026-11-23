@@ -174,7 +174,7 @@ Dengan waktu efektif **26 hari kalender**, 5 area berikut memiliki risiko keterl
 **Target Waktu:** 12 Desember – 18 Desember 2026 (7 hari)  
 **Goal Sprint:** Portal Publik SDG 16 selesai dan bebas bocor privasi, seluruh edge case & performa teruji di URL produksi publik, video demo & dokumentasi pengumpulan Techcomfest 2027 siap sebelum 18 Desember 2026.
 
-- [ ] **`T3-01` `[Dev 1 - Fullstack]` — Backend & Frontend Portal Publik (Tanpa Login)**
+- [x] **`T3-01` `[Dev 1 - Fullstack]` — Backend & Frontend Portal Publik (Tanpa Login)**
   - **Target:** `BE-Patra/src/{routes,controller,service}/public.*`, `FE-Patra/src/pages/feat-public/PublicHomePage.tsx`
   - **Dependency:** `T2-03`, `T1-09`
   - **Acceptance Criteria:** Filter Kabupaten/Kota dinamis (Jakarta Pusat, Semarang, Semua Kota); 4 Kartu KPI _real-time_; Peta Transparansi Interaktif (Poligon Zona, _Hotspot_ tanpa foto mentah, Pin Lokasi Binaan); Linimasa Akuntabilitas (_Public Audit Feed_ `Deteksi -> Tindak -> Validasi`); tombol jelas menuju `/login` & Demo 1-Klik.

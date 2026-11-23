@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   BrowserRouter,
@@ -7,20 +8,33 @@ import {
 } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import ErrorBoundary from '@/components/ui/ErrorBoundary';
 import { ToastProvider } from '@/components/ui/Toast';
-import SatpolLayout from '@/components/layout/SatpolLayout';
-import DinasLayout from '@/components/layout/DinasLayout';
-import LoginPage from '@/pages/feat-login/LoginPage';
-import CctvListPage from '@/pages/feat-cctv/CctvListPage';
-import CctvLivePage from '@/pages/feat-cctv/CctvLivePage';
-import RegionalMapPage from '@/pages/feat-maps/RegionalMapPage';
-import ReportsListPage from '@/pages/feat-reports/ReportsListPage';
-import ReportDetailPage from '@/pages/feat-reports/ReportDetailPage';
-import DinasDashboardPage from '@/pages/feat-dinas-dashboard/DinasDashboardPage';
-import ValidationListPage from '@/pages/feat-validation/ValidationListPage';
-import ValidationSplitPage from '@/pages/feat-validation/ValidationSplitPage';
-import RelocationSitesPage from '@/pages/feat-relocation/RelocationSitesPage';
 import type { UserRole } from '@/types';
+
+const PublicHomePage = lazy(() => import('@/pages/feat-public/PublicHomePage'));
+const LoginPage = lazy(() => import('@/pages/feat-login/LoginPage'));
+
+const SatpolLayout = lazy(() => import('@/components/layout/SatpolLayout'));
+const CctvListPage = lazy(() => import('@/pages/feat-cctv/CctvListPage'));
+const CctvLivePage = lazy(() => import('@/pages/feat-cctv/CctvLivePage'));
+const RegionalMapPage = lazy(() => import('@/pages/feat-maps/RegionalMapPage'));
+const ReportsListPage = lazy(() => import('@/pages/feat-reports/ReportsListPage'));
+const ReportDetailPage = lazy(() => import('@/pages/feat-reports/ReportDetailPage'));
+
+const DinasLayout = lazy(() => import('@/components/layout/DinasLayout'));
+const DinasDashboardPage = lazy(
+  () => import('@/pages/feat-dinas-dashboard/DinasDashboardPage'),
+);
+const ValidationListPage = lazy(
+  () => import('@/pages/feat-validation/ValidationListPage'),
+);
+const ValidationSplitPage = lazy(
+  () => import('@/pages/feat-validation/ValidationSplitPage'),
+);
+const RelocationSitesPage = lazy(
+  () => import('@/pages/feat-relocation/RelocationSitesPage'),
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,7 +50,7 @@ function FullPageLoader() {
     <div className="flex min-h-screen items-center justify-center bg-canvas">
       <div className="flex items-center gap-3 rounded-2xl border border-accent/60 bg-white px-5 py-3.5 text-sm font-semibold text-primary shadow-sm">
         <Loader2 className="h-4 w-4 animate-spin" />
-        <span>Memuat sesi PATRA...</span>
+        <span>Memuat halaman PATRA...</span>
       </div>
     </div>
   );
@@ -77,73 +91,67 @@ function GuestOnly({ children }: { children: JSX.Element }) {
   return children;
 }
 
-function RootRedirect() {
-  const { user, isLoading } = useAuth();
-  if (isLoading) return <FullPageLoader />;
-  if (!user) return <Navigate to="/login" replace />;
-  return (
-    <Navigate
-      to={user.role === 'SATPOL_PP' ? '/satpol/cctv' : '/dinas/dashboard'}
-      replace
-    />
-  );
-}
-
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <ToastProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<RootRedirect />} />
-              <Route
-                path="/login"
-                element={
-                  <GuestOnly>
-                    <LoginPage />
-                  </GuestOnly>
-                }
-              />
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <ToastProvider>
+            <BrowserRouter>
+              <Suspense fallback={<FullPageLoader />}>
+                <Routes>
+                  {/* Portal Publik Transparansi SDG 16 (Tanpa Login) */}
+                  <Route path="/" element={<PublicHomePage />} />
 
-              {/* Portal Satpol PP (Region-Locked — Hanya 3 Menu Inti) */}
-              <Route
-                path="/satpol"
-                element={
-                  <RequireRole role="SATPOL_PP">
-                    <SatpolLayout />
-                  </RequireRole>
-                }
-              >
-                <Route index element={<Navigate to="cctv" replace />} />
-                <Route path="cctv" element={<CctvListPage />} />
-                <Route path="cctv/:cameraId" element={<CctvLivePage />} />
-                <Route path="peta" element={<RegionalMapPage />} />
-                <Route path="laporan" element={<ReportsListPage />} />
-                <Route path="laporan/:reportId" element={<ReportDetailPage />} />
-              </Route>
+                  <Route
+                    path="/login"
+                    element={
+                      <GuestOnly>
+                        <LoginPage />
+                      </GuestOnly>
+                    }
+                  />
 
-              {/* Portal Dinas UMKM (Region-Locked — Hanya 3 Menu Inti) */}
-              <Route
-                path="/dinas"
-                element={
-                  <RequireRole role="DINAS_UMKM">
-                    <DinasLayout />
-                  </RequireRole>
-                }
-              >
-                <Route index element={<Navigate to="dashboard" replace />} />
-                <Route path="dashboard" element={<DinasDashboardPage />} />
-                <Route path="validasi" element={<ValidationListPage />} />
-                <Route path="validasi/:reportId" element={<ValidationSplitPage />} />
-                <Route path="lokasi-binaan" element={<RelocationSitesPage />} />
-              </Route>
+                  {/* Portal Satpol PP (Region-Locked — Hanya 3 Menu Inti) */}
+                  <Route
+                    path="/satpol"
+                    element={
+                      <RequireRole role="SATPOL_PP">
+                        <SatpolLayout />
+                      </RequireRole>
+                    }
+                  >
+                    <Route index element={<Navigate to="cctv" replace />} />
+                    <Route path="cctv" element={<CctvListPage />} />
+                    <Route path="cctv/:cameraId" element={<CctvLivePage />} />
+                    <Route path="peta" element={<RegionalMapPage />} />
+                    <Route path="laporan" element={<ReportsListPage />} />
+                    <Route path="laporan/:reportId" element={<ReportDetailPage />} />
+                  </Route>
 
-              <Route path="*" element={<RootRedirect />} />
-            </Routes>
-          </BrowserRouter>
-        </ToastProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+                  {/* Portal Dinas UMKM (Region-Locked — Hanya 3 Menu Inti) */}
+                  <Route
+                    path="/dinas"
+                    element={
+                      <RequireRole role="DINAS_UMKM">
+                        <DinasLayout />
+                      </RequireRole>
+                    }
+                  >
+                    <Route index element={<Navigate to="dashboard" replace />} />
+                    <Route path="dashboard" element={<DinasDashboardPage />} />
+                    <Route path="validasi" element={<ValidationListPage />} />
+                    <Route path="validasi/:reportId" element={<ValidationSplitPage />} />
+                    <Route path="lokasi-binaan" element={<RelocationSitesPage />} />
+                  </Route>
+
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </Suspense>
+            </BrowserRouter>
+          </ToastProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

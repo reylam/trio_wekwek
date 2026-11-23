@@ -62,14 +62,14 @@ export function DinasTopHeader({
     pendingQuery.data?.pagination.totalItems ?? pendingReports.length;
 
   return (
-    <header className="flex items-start justify-between gap-4 pb-5">
-      <div className="min-w-0">
+    <header className="flex items-start justify-between gap-3 pb-5 sm:gap-4">
+      <div className="min-w-0 flex-1">
         {leftSlot ? (
           leftSlot
         ) : (
           <>
-            <div className="flex flex-wrap items-center gap-2.5">
-              <h1 className="truncate text-2xl font-extrabold tracking-tight text-primary sm:text-[28px]">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="break-words text-lg font-extrabold leading-snug tracking-tight text-primary sm:text-2xl lg:text-[28px]">
                 {title ?? user?.region.umkmAgencyName ?? 'Portal Dinas UMKM'}
               </h1>
               <span className="inline-flex items-center gap-1 rounded-full bg-[#E9F1FD] px-2.5 py-1 text-[11px] font-bold text-primary">
@@ -77,18 +77,18 @@ export function DinasTopHeader({
                 <span>{user?.region.city}</span>
               </span>
             </div>
-            <p className="mt-1 font-mono text-xs font-medium text-primary/75 sm:text-sm">
+            <p className="mt-1 font-mono text-[11px] font-medium text-primary/75 sm:text-sm">
               {subtitle ?? `${user?.region.province ?? ''} • ${clockText}`}
             </p>
           </>
         )}
       </div>
 
-      <div className="relative flex shrink-0 items-center gap-3">
+      <div className="relative flex shrink-0 items-center gap-2 sm:gap-3">
         <button
           type="button"
           onClick={() => setBellOpen((prev) => !prev)}
-          className="relative flex h-10 w-10 items-center justify-center rounded-full text-primary transition hover:bg-accent/25"
+          className="relative flex h-9 w-9 items-center justify-center rounded-full text-primary transition hover:bg-accent/25 sm:h-10 sm:w-10"
           aria-label="Notifikasi laporan menunggu validasi"
         >
           <Bell className="h-5 w-5" />
@@ -103,15 +103,15 @@ export function DinasTopHeader({
         <button
           type="button"
           onClick={() => navigate('/dinas/validasi')}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-white shadow-sm transition hover:bg-primary/90"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-white shadow-sm transition hover:bg-primary/90 sm:h-10 sm:w-10"
           title={user?.fullName ?? 'Akun Dinas UMKM'}
           aria-label="Buka antrean validasi"
         >
-          <UserCircle2 className="h-6 w-6" />
+          <UserCircle2 className="h-5 w-5 sm:h-6 sm:w-6" />
         </button>
 
         {bellOpen && (
-          <div className="absolute right-0 top-12 z-50 w-80 rounded-2xl border border-accent/60 bg-white p-4 shadow-xl">
+          <div className="absolute right-0 top-12 z-50 w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-accent/60 bg-white p-4 shadow-xl">
             <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
               <div>
                 <p className="text-sm font-bold text-primary">Menunggu Validasi</p>
