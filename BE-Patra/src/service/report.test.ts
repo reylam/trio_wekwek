@@ -448,7 +448,11 @@ function makeTestHarness(opts: { cooldownSec?: number; nowMs?: number } = {}) {
 function makeSnapshotForm(payload: Record<string, unknown>, includeFile = true) {
   const form = new FormData();
   if (includeFile) {
-    form.append('snapshot', new Blob([new Uint8Array([1, 2, 3])], { type: 'image/jpeg' }), 'snap.jpg');
+    form.append(
+      'snapshot',
+      new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10])], { type: 'image/jpeg' }),
+      'snap.jpg',
+    );
   }
   form.append('payload', JSON.stringify(payload));
   return form;
@@ -457,7 +461,11 @@ function makeSnapshotForm(payload: Record<string, unknown>, includeFile = true) 
 function makeActionForm(payload: Record<string, unknown>, includeFile = true) {
   const form = new FormData();
   if (includeFile) {
-    form.append('afterPhoto', new Blob([new Uint8Array([4, 5, 6])], { type: 'image/jpeg' }), 'after.jpg');
+    form.append(
+      'afterPhoto',
+      new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10])], { type: 'image/jpeg' }),
+      'after.jpg',
+    );
   }
   form.append('payload', JSON.stringify(payload));
   return form;

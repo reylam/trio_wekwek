@@ -11,7 +11,8 @@ import {
   createAuthenticateMiddleware,
   requireRole,
 } from '../middlewares/auth.js';
-import photoUpload from '../middlewares/upload.js';
+import photoUpload, { validateImageMagicBytes } from '../middlewares/upload.js';
+import { createAutoDetectRateLimiter } from '../middlewares/security.js';
 import {
   validateBody,
   validateMultipartPayload,
@@ -30,12 +31,15 @@ export function createReportRouter(options?: {
   const authGuard = options?.jwtSecret
     ? createAuthenticateMiddleware(options.jwtSecret)
     : authenticate;
+  const autoDetectLimiter = createAutoDetectRateLimiter();
 
   router.post(
     '/auto-detect',
     authGuard,
     requireRole('SATPOL_PP'),
+    autoDetectLimiter,
     photoUpload.single('snapshot'),
+    validateImageMagicBytes,
     validateMultipartPayload(autoDetectPayloadSchema),
     controller.autoDetect,
   );
@@ -60,6 +64,7 @@ export function createReportRouter(options?: {
     authGuard,
     requireRole('SATPOL_PP'),
     photoUpload.single('afterPhoto'),
+    validateImageMagicBytes,
     validateMultipartPayload(submitReportActionSchema),
     controller.submitAction,
   );

@@ -4,6 +4,12 @@ import cors from 'cors';
 import config from './config/config.js';
 import logger from './middlewares/logger.js';
 import errorHandler from './middlewares/errorHandler.js';
+import {
+  createApiDefaultRateLimiter,
+  createAuthRateLimiter,
+  createPublicRateLimiter,
+  securityHeaders,
+} from './middlewares/security.js';
 import healthRoute from './routes/health.route.js';
 import authRoute from './routes/auth.route.js';
 import publicRoute from './routes/public.route.js';
@@ -17,7 +23,10 @@ import relocationSiteRoute from './routes/relocationSite.route.js';
 dns.setDefaultResultOrder('ipv4first');
 
 const app = express();
+app.disable('x-powered-by');
+app.set('trust proxy', 1);
 
+app.use(securityHeaders);
 app.use(logger);
 app.use(
   cors({
@@ -35,11 +44,12 @@ app.use(
     },
   }),
 );
-app.use(express.json());
+app.use(express.json({ limit: '100kb' }));
 
 app.use('/', healthRoute);
-app.use('/api/auth', authRoute);
-app.use('/api/public', publicRoute);
+app.use('/api', createApiDefaultRateLimiter());
+app.use('/api/auth', createAuthRateLimiter(), authRoute);
+app.use('/api/public', createPublicRateLimiter(), publicRoute);
 app.use('/api/cctv', cctvRoute);
 app.use('/api/zones', zoneRoute);
 app.use('/api/reports', reportRoute);
