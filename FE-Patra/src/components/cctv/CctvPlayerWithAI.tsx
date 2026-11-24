@@ -694,166 +694,349 @@ export default function CctvPlayerWithAI({
   const canCapture = streamStatus === 'LIVE_HLS' && !corsRestricted;
 
   return (
-    <div className="animate-patra-enter space-y-4">
-      {/* Full-width 16:9 Live CCTV Video Frame */}
-      <div
-        ref={containerRef}
-        className="relative aspect-video w-full overflow-hidden rounded-2xl bg-video-frame shadow-lg ring-1 ring-primary/15"
-      >
-        <video
-          ref={videoRef}
+    <div className="animate-patra-enter space-y-3.5 sm:space-y-4">
+      {/* Unified Video Card (+ Integrated Mobile Bottom Toggle Bar matching Inspect Mobile mockup) */}
+      <div className="overflow-hidden rounded-2xl shadow-lg ring-1 ring-primary/15">
+        {/* Full-width 16:9 Live CCTV Video Frame */}
+        <div
+          ref={containerRef}
           className={cn(
-            'h-full w-full object-fill transition-opacity duration-500',
-            streamStatus === 'LIVE_HLS' ? 'opacity-100' : 'opacity-20',
+            'relative w-full overflow-hidden bg-video-frame',
+            isFullscreen
+              ? 'flex h-screen w-screen items-center justify-center bg-black'
+              : 'aspect-video',
           )}
-          muted
-          playsInline
-        />
+        >
+          {/* Dedicated 16:9 Stage (preserves exact proportion & AI/ROI alignment in fullscreen) */}
+          <div
+            className={cn(
+              'relative overflow-hidden bg-video-frame',
+              isFullscreen
+                ? 'aspect-video w-[min(100vw,calc(100vh*16/9))] max-h-full max-w-full'
+                : 'h-full w-full',
+            )}
+          >
+            <video
+              ref={videoRef}
+              className={cn(
+                'h-full w-full object-fill transition-opacity duration-500',
+                streamStatus === 'LIVE_HLS' ? 'opacity-100' : 'opacity-20',
+              )}
+              muted
+              playsInline
+            />
 
-        {/* Subtle AI Vision Scanline Sweep Animation saat LIVE + AI aktif */}
-        {streamStatus === 'LIVE_HLS' && aiEnabled && !corsRestricted && !isEditingRoi && (
-          <div className="pointer-events-none absolute inset-0 overflow-hidden">
-            <div className="animate-patra-scan h-16 w-full bg-gradient-to-b from-transparent via-sky-400/15 to-transparent" />
+            {/* Subtle AI Vision Scanline Sweep Animation saat LIVE + AI aktif */}
+            {streamStatus === 'LIVE_HLS' && aiEnabled && !corsRestricted && !isEditingRoi && (
+              <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                <div className="animate-patra-scan h-16 w-full bg-gradient-to-b from-transparent via-sky-400/15 to-transparent" />
+              </div>
+            )}
+
+            {/* Transparent AI & ROI Canvas Overlay */}
+            <canvas
+              ref={overlayCanvasRef}
+              width={960}
+              height={540}
+              onClick={handleOverlayClick}
+              className={cn(
+                'absolute inset-0 h-full w-full',
+                isEditingRoi ? 'z-10 cursor-crosshair' : 'pointer-events-none',
+              )}
+            />
           </div>
-        )}
 
-        {/* Transparent AI & ROI Canvas Overlay */}
-        <canvas
-          ref={overlayCanvasRef}
-          width={960}
-          height={540}
-          onClick={handleOverlayClick}
-          className={cn(
-            'absolute inset-0 h-full w-full',
-            isEditingRoi ? 'z-10 cursor-crosshair' : 'pointer-events-none',
-          )}
-        />
-
-        {/* Loading Overlay saat menghubungkan stream */}
-        {streamStatus === 'INITIALIZING' && (
-          <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-950/55 text-white backdrop-blur-[2px]">
-            <div className="animate-patra-glow flex h-14 w-14 items-center justify-center rounded-full bg-primary/30 ring-1 ring-accent/50">
-              <Loader2 className="h-7 w-7 animate-spin text-accent" />
-            </div>
-            <p className="mt-3 text-sm font-semibold tracking-tight">
-              Menghubungkan Live CCTV {camera.city}...
-            </p>
-            <p className="mt-1 text-xs text-blue-100/75">{camera.name}</p>
-          </div>
-        )}
-
-        {/* Offline / Error Overlay (tanpa mode simulasi palsu) */}
-        {streamStatus === 'ERROR' && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-gradient-to-br from-[#0F1B36] via-[#0B132B] to-[#070C1C] px-6 text-center text-white">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-500/15 text-red-300 ring-1 ring-red-400/30">
-              <WifiOff className="h-7 w-7" />
-            </div>
-            <h3 className="mt-4 text-base font-bold text-white">
-              Kamera CCTV Sedang Offline
-            </h3>
-            <p className="mt-1.5 max-w-md text-xs leading-relaxed text-slate-300">
-              {offlineReason ??
-                'Feed langsung dari server Pemda belum merespons. Silakan coba muat ulang atau pilih kamera rekomendasi di bawah.'}
-            </p>
-            <button
-              type="button"
-              onClick={() => setRetryNonce((n) => n + 1)}
-              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-white shadow transition hover:scale-[1.02] hover:bg-primary/90 active:scale-[0.98]"
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-              <span>Coba Hubungkan Ulang</span>
-            </button>
-          </div>
-        )}
-
-        {/* Top-Left Stream & AI Model Status Pill */}
-        <div className="absolute left-4 top-4 z-20 flex flex-wrap items-center gap-2">
+          {/* Loading Overlay saat menghubungkan stream */}
           {streamStatus === 'INITIALIZING' && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-900/80 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm">
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-accent" />
-              Menghubungkan Live HLS...
-            </span>
+            <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-950/55 text-white backdrop-blur-[2px]">
+              <div className="animate-patra-glow flex h-14 w-14 items-center justify-center rounded-full bg-primary/30 ring-1 ring-accent/50">
+                <Loader2 className="h-7 w-7 animate-spin text-accent" />
+              </div>
+              <p className="mt-3 text-sm font-semibold tracking-tight">
+                Menghubungkan Live CCTV {camera.city}...
+              </p>
+              <p className="mt-1 text-xs text-blue-100/75">{camera.name}</p>
+            </div>
           )}
-          {streamStatus === 'LIVE_HLS' && !corsRestricted && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-950/85 px-3 py-1 text-xs font-semibold text-emerald-200 backdrop-blur-sm">
-              <Radio className="h-3.5 w-3.5 animate-pulse text-emerald-400" />
-              LIVE HLS • {camera.city}
-            </span>
-          )}
-          {streamStatus === 'LIVE_HLS' && corsRestricted && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-950/85 px-3 py-1 text-xs font-semibold text-amber-200 backdrop-blur-sm">
-              <Radio className="h-3.5 w-3.5 animate-pulse text-amber-400" />
-              LIVE HLS (AI Terbatas CORS)
-            </span>
-          )}
-          {streamStatus === 'ERROR' && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-red-950/85 px-3 py-1 text-xs font-semibold text-red-200 backdrop-blur-sm">
-              <WifiOff className="h-3.5 w-3.5 text-red-400" />
-              Kamera Offline
-            </span>
-          )}
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-900/80 px-2.5 py-1 font-mono text-[11px] font-medium text-blue-100 backdrop-blur-sm">
-            <Cpu className="h-3 w-3 text-accent" />
-            {modelStatus === 'loading'
-              ? 'Memuat best.onnx...'
-              : modelStatus === 'ready'
-                ? `YOLO ONNX (${(aiBackend ?? 'wasm').toUpperCase()})${telemetry.inferenceMs ? ` • ${telemetry.inferenceMs}ms` : ''}`
-                : 'Model ONNX Error'}
-          </span>
-          <span className="rounded-full bg-slate-900/75 px-2.5 py-1 text-[11px] font-medium text-slate-200 backdrop-blur-sm">
-            {hasRoi ? `ROI Trotoar (${activeRoi?.length} titik)` : 'Area Penuh (Full-Frame)'}
-          </span>
-        </div>
 
-        {/* Top-Right ROI Drawing Controls saat Mode Edit ROI aktif */}
-        {isEditingRoi && (
-          <div className="animate-patra-enter absolute right-4 top-4 z-20 flex flex-wrap items-center gap-1.5 rounded-xl bg-slate-950/85 p-2 shadow-lg backdrop-blur-sm">
-            <button
-              type="button"
-              disabled={draftRoi.length < 3 || isSavingRoi}
-              onClick={() => void handleSaveRoi(draftRoi)}
-              className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50"
-            >
-              <Check className="h-3.5 w-3.5" />
-              Simpan ROI
-            </button>
-            <button
-              type="button"
-              disabled={draftRoi.length === 0 || isSavingRoi}
-              onClick={() => setDraftRoi((prev) => prev.slice(0, -1))}
-              className="inline-flex items-center gap-1 rounded-lg bg-slate-700 px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-600 disabled:opacity-50"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              Undo
-            </button>
-            {hasRoi && (
+          {/* Offline / Error Overlay (tanpa mode simulasi palsu) */}
+          {streamStatus === 'ERROR' && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-gradient-to-br from-[#0F1B36] via-[#0B132B] to-[#070C1C] px-6 text-center text-white">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-500/15 text-red-300 ring-1 ring-red-400/30">
+                <WifiOff className="h-7 w-7" />
+              </div>
+              <h3 className="mt-4 text-base font-bold text-white">
+                Kamera CCTV Sedang Offline
+              </h3>
+              <p className="mt-1.5 max-w-md text-xs leading-relaxed text-slate-300">
+                {offlineReason ??
+                  'Feed langsung dari server Pemda belum merespons. Silakan coba muat ulang atau pilih kamera rekomendasi di bawah.'}
+              </p>
+              <button
+                type="button"
+                onClick={() => setRetryNonce((n) => n + 1)}
+                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-white shadow transition hover:scale-[1.02] hover:bg-primary/90 active:scale-[0.98]"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                <span>Coba Hubungkan Ulang</span>
+              </button>
+            </div>
+          )}
+
+          {/* Top-Left Stream & AI Model Status Pill */}
+          <div className="absolute left-2.5 top-2.5 z-20 flex flex-wrap items-center gap-1.5 sm:left-4 sm:top-4 sm:gap-2">
+            {streamStatus === 'INITIALIZING' && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-900/80 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm sm:px-3 sm:py-1 sm:text-xs">
+                <Loader2 className="h-3 w-3 animate-spin text-accent sm:h-3.5 sm:w-3.5" />
+                Menghubungkan Live HLS...
+              </span>
+            )}
+            {streamStatus === 'LIVE_HLS' && !corsRestricted && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-950/85 px-2 py-0.5 text-[10px] font-semibold text-emerald-200 backdrop-blur-sm sm:px-3 sm:py-1 sm:text-xs">
+                <Radio className="h-3 w-3 animate-pulse text-emerald-400 sm:h-3.5 sm:w-3.5" />
+                LIVE HLS • {camera.city}
+              </span>
+            )}
+            {streamStatus === 'LIVE_HLS' && corsRestricted && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-950/85 px-2 py-0.5 text-[10px] font-semibold text-amber-200 backdrop-blur-sm sm:px-3 sm:py-1 sm:text-xs">
+                <Radio className="h-3 w-3 animate-pulse text-amber-400 sm:h-3.5 sm:w-3.5" />
+                LIVE HLS (AI Terbatas CORS)
+              </span>
+            )}
+            {streamStatus === 'ERROR' && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-red-950/85 px-2 py-0.5 text-[10px] font-semibold text-red-200 backdrop-blur-sm sm:px-3 sm:py-1 sm:text-xs">
+                <WifiOff className="h-3 w-3 text-red-400 sm:h-3.5 sm:w-3.5" />
+                Kamera Offline
+              </span>
+            )}
+            <span className="inline-flex items-center gap-1 rounded-full bg-slate-900/80 px-2 py-0.5 font-mono text-[10px] font-medium text-blue-100 backdrop-blur-sm sm:gap-1.5 sm:px-2.5 sm:py-1 sm:text-[11px]">
+              <Cpu className="h-3 w-3 text-accent" />
+              {modelStatus === 'loading'
+                ? 'Memuat best.onnx...'
+                : modelStatus === 'ready'
+                  ? `YOLO ONNX (${(aiBackend ?? 'wasm').toUpperCase()})${telemetry.inferenceMs ? ` • ${telemetry.inferenceMs}ms` : ''}`
+                  : 'Model ONNX Error'}
+            </span>
+            <span className="hidden rounded-full bg-slate-900/75 px-2.5 py-1 text-[11px] font-medium text-slate-200 backdrop-blur-sm sm:inline-flex">
+              {hasRoi ? `ROI Trotoar (${activeRoi?.length} titik)` : 'Area Penuh (Full-Frame)'}
+            </span>
+          </div>
+
+          {/* Top-Right ROI Drawing Controls saat Mode Edit ROI aktif */}
+          {isEditingRoi && (
+            <div className="animate-patra-enter absolute right-2.5 top-2.5 z-20 flex flex-wrap items-center gap-1.5 rounded-xl bg-slate-950/85 p-1.5 shadow-lg backdrop-blur-sm sm:right-4 sm:top-4 sm:p-2">
+              <button
+                type="button"
+                disabled={draftRoi.length < 3 || isSavingRoi}
+                onClick={() => void handleSaveRoi(draftRoi)}
+                className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2 py-1 text-[11px] font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50 sm:px-2.5 sm:py-1.5 sm:text-xs"
+              >
+                <Check className="h-3.5 w-3.5" />
+                Simpan ROI
+              </button>
+              <button
+                type="button"
+                disabled={draftRoi.length === 0 || isSavingRoi}
+                onClick={() => setDraftRoi((prev) => prev.slice(0, -1))}
+                className="inline-flex items-center gap-1 rounded-lg bg-slate-700 px-2 py-1 text-[11px] font-semibold text-white transition hover:bg-slate-600 disabled:opacity-50 sm:px-2.5 sm:py-1.5 sm:text-xs"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Undo
+              </button>
+              {hasRoi && (
+                <button
+                  type="button"
+                  disabled={isSavingRoi}
+                  onClick={() => void handleSaveRoi(null)}
+                  className="inline-flex items-center gap-1 rounded-lg bg-amber-600 px-2 py-1 text-[11px] font-semibold text-white transition hover:bg-amber-500 disabled:opacity-50 sm:px-2.5 sm:py-1.5 sm:text-xs"
+                >
+                  Full-Frame
+                </button>
+              )}
               <button
                 type="button"
                 disabled={isSavingRoi}
-                onClick={() => void handleSaveRoi(null)}
-                className="inline-flex items-center gap-1 rounded-lg bg-amber-600 px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-amber-500 disabled:opacity-50"
+                onClick={() => {
+                  setIsEditingRoi(false);
+                  setDraftRoi([]);
+                }}
+                className="inline-flex items-center gap-1 rounded-lg bg-slate-800 px-2 py-1 text-[11px] font-semibold text-slate-200 transition hover:bg-slate-700 sm:px-2.5 sm:py-1.5 sm:text-xs"
               >
-                Full-Frame
+                <X className="h-3.5 w-3.5" />
+                Batal
               </button>
+            </div>
+          )}
+
+          {/* Mobile Compact Fullscreen Corner Button (matching Inspect - Mobile.png) */}
+          <button
+            type="button"
+            onClick={() => void toggleFullscreen()}
+            aria-label={isFullscreen ? 'Keluar layar penuh' : 'Layar penuh'}
+            className="absolute bottom-2.5 right-2.5 z-20 flex h-8 w-8 items-center justify-center rounded-lg bg-[#9EC1EB]/85 text-primary shadow backdrop-blur-sm transition hover:bg-[#9EC1EB] md:hidden"
+          >
+            {isFullscreen ? (
+              <Minimize2 className="h-4 w-4" />
+            ) : (
+              <Maximize2 className="h-4 w-4" />
             )}
+          </button>
+
+          {/* Desktop Bottom-Right Floating Controls */}
+          <div className="absolute bottom-4 right-4 z-20 hidden flex-wrap items-center gap-2 md:flex">
+            {/* Edit ROI Trotoar Button */}
             <button
               type="button"
-              disabled={isSavingRoi}
               onClick={() => {
-                setIsEditingRoi(false);
-                setDraftRoi([]);
+                if (isEditingRoi) {
+                  setIsEditingRoi(false);
+                  setDraftRoi([]);
+                } else {
+                  setShowRoi(true);
+                  setDraftRoi([]);
+                  setIsEditingRoi(true);
+                }
               }}
-              className="inline-flex items-center gap-1 rounded-lg bg-slate-800 px-2.5 py-1.5 text-xs font-semibold text-slate-200 transition hover:bg-slate-700"
+              className={cn(
+                'flex h-[52px] min-w-[76px] flex-col items-center justify-center rounded-xl px-3 shadow-md backdrop-blur-sm transition duration-200 hover:-translate-y-0.5 active:translate-y-0',
+                isEditingRoi
+                  ? 'bg-red-600 text-white hover:bg-red-500'
+                  : 'bg-[#9EC1EB]/90 text-primary hover:bg-[#9EC1EB]',
+              )}
             >
-              <X className="h-3.5 w-3.5" />
-              Batal
+              <Pencil className="h-4 w-4" />
+              <span className="mt-1 text-[11px] font-semibold leading-none">
+                {isEditingRoi ? 'Editing...' : 'Atur ROI'}
+              </span>
+            </button>
+
+            {/* AI Detection Toggle */}
+            <button
+              type="button"
+              onClick={() => setAiEnabled((prev) => !prev)}
+              className="flex flex-col items-center rounded-xl bg-[#9EC1EB]/90 px-3.5 py-2 text-primary shadow-md backdrop-blur-sm transition duration-200 hover:-translate-y-0.5 hover:bg-[#9EC1EB] active:translate-y-0"
+            >
+              <span className="text-[11px] font-semibold leading-none">AI Detection</span>
+              <span className="mt-1.5 flex items-center gap-2">
+                <span
+                  className={cn(
+                    'relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200',
+                    aiEnabled ? 'bg-primary' : 'bg-white/90',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'inline-block h-3.5 w-3.5 transform rounded-full transition-transform duration-200',
+                      aiEnabled
+                        ? 'translate-x-[18px] bg-white'
+                        : 'translate-x-1 bg-slate-300',
+                    )}
+                  />
+                </span>
+                <span className="w-6 text-left text-[11px] font-bold">
+                  {aiEnabled ? 'ON' : 'OFF'}
+                </span>
+              </span>
+            </button>
+
+            {/* Show ROI Trotoar Toggle */}
+            <button
+              type="button"
+              onClick={() => setShowRoi((prev) => !prev)}
+              title={
+                hasRoi
+                  ? 'Menyembunyikan/menampilkan garis visual ROI tanpa mematikan pengecekan zona'
+                  : 'Menampilkan batas area pantau Full-Frame (klik Atur ROI untuk menggambar poligon trotoar)'
+              }
+              className="flex flex-col items-center rounded-xl bg-[#9EC1EB]/90 px-3.5 py-2 text-primary shadow-md backdrop-blur-sm transition duration-200 hover:-translate-y-0.5 hover:bg-[#9EC1EB] active:translate-y-0"
+            >
+              <span className="text-[11px] font-semibold leading-none">Show ROI Trotoar</span>
+              <span className="mt-1.5 flex items-center gap-2">
+                <span
+                  className={cn(
+                    'relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200',
+                    showRoi ? 'bg-primary' : 'bg-white/90',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'inline-block h-3.5 w-3.5 transform rounded-full transition-transform duration-200',
+                      showRoi
+                        ? 'translate-x-[18px] bg-white'
+                        : 'translate-x-1 bg-slate-300',
+                    )}
+                  />
+                </span>
+                <span className="w-6 text-left text-[11px] font-bold">
+                  {showRoi ? 'ON' : 'OFF'}
+                </span>
+              </span>
+            </button>
+
+            {/* Fullscreen Button */}
+            <button
+              type="button"
+              onClick={() => void toggleFullscreen()}
+              className="flex h-[52px] min-w-[76px] flex-col items-center justify-center rounded-xl bg-[#9EC1EB]/90 px-3 text-primary shadow-md backdrop-blur-sm transition duration-200 hover:-translate-y-0.5 hover:bg-[#9EC1EB] active:translate-y-0"
+            >
+              {isFullscreen ? (
+                <Minimize2 className="h-4 w-4" />
+              ) : (
+                <Maximize2 className="h-4 w-4" />
+              )}
+              <span className="mt-1 text-[11px] font-semibold leading-none">
+                {isFullscreen ? 'Exit' : 'Fullscreen'}
+              </span>
             </button>
           </div>
-        )}
+        </div>
 
-        {/* Bottom-Right Floating Controls */}
-        <div className="absolute bottom-4 right-4 z-20 flex flex-wrap items-center gap-2">
-          {/* Edit ROI Trotoar Button */}
+        {/* Integrated Mobile Bottom Toggle Bar (matching CCTV Monitoring (Satpol PP) Inspect - Mobile.png) */}
+        <div className="flex items-center justify-between gap-2 bg-[#9EC1EB] px-3 py-2.5 text-primary md:hidden">
+          <button
+            type="button"
+            onClick={() => setAiEnabled((prev) => !prev)}
+            className="flex min-w-0 items-center gap-2"
+          >
+            <span className="whitespace-nowrap text-[11px] font-semibold">AI Detection</span>
+            <span
+              className={cn(
+                'relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200',
+                aiEnabled ? 'bg-primary' : 'bg-white/90',
+              )}
+            >
+              <span
+                className={cn(
+                  'inline-block h-3.5 w-3.5 transform rounded-full transition-transform duration-200',
+                  aiEnabled ? 'translate-x-[18px] bg-white' : 'translate-x-1 bg-slate-300',
+                )}
+              />
+            </span>
+          </button>
+
+          <span className="h-5 w-px shrink-0 bg-primary/20" aria-hidden="true" />
+
+          <button
+            type="button"
+            onClick={() => setShowRoi((prev) => !prev)}
+            className="flex min-w-0 items-center gap-2"
+          >
+            <span className="whitespace-nowrap text-[11px] font-semibold">Show ROI Trotoar</span>
+            <span
+              className={cn(
+                'relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200',
+                showRoi ? 'bg-primary' : 'bg-white/90',
+              )}
+            >
+              <span
+                className={cn(
+                  'inline-block h-3.5 w-3.5 transform rounded-full transition-transform duration-200',
+                  showRoi ? 'translate-x-[18px] bg-white' : 'translate-x-1 bg-slate-300',
+                )}
+              />
+            </span>
+          </button>
+
           <button
             type="button"
             onClick={() => {
@@ -866,112 +1049,32 @@ export default function CctvPlayerWithAI({
                 setIsEditingRoi(true);
               }
             }}
+            aria-label="Atur ROI Trotoar"
+            title={isEditingRoi ? 'Batal Edit ROI' : 'Atur ROI Trotoar'}
             className={cn(
-              'flex h-[52px] min-w-[76px] flex-col items-center justify-center rounded-xl px-3 shadow-md backdrop-blur-sm transition duration-200 hover:-translate-y-0.5 active:translate-y-0',
+              'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg shadow-sm transition',
               isEditingRoi
-                ? 'bg-red-600 text-white hover:bg-red-500'
-                : 'bg-[#9EC1EB]/90 text-primary hover:bg-[#9EC1EB]',
+                ? 'bg-red-600 text-white'
+                : 'bg-white/80 text-primary hover:bg-white',
             )}
           >
-            <Pencil className="h-4 w-4" />
-            <span className="mt-1 text-[11px] font-semibold leading-none">
-              {isEditingRoi ? 'Editing...' : 'Atur ROI'}
-            </span>
-          </button>
-
-          {/* AI Detection Toggle */}
-          <button
-            type="button"
-            onClick={() => setAiEnabled((prev) => !prev)}
-            className="flex flex-col items-center rounded-xl bg-[#9EC1EB]/90 px-3.5 py-2 text-primary shadow-md backdrop-blur-sm transition duration-200 hover:-translate-y-0.5 hover:bg-[#9EC1EB] active:translate-y-0"
-          >
-            <span className="text-[11px] font-semibold leading-none">AI Detection</span>
-            <span className="mt-1.5 flex items-center gap-2">
-              <span
-                className={cn(
-                  'relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200',
-                  aiEnabled ? 'bg-primary' : 'bg-white/90',
-                )}
-              >
-                <span
-                  className={cn(
-                    'inline-block h-3.5 w-3.5 transform rounded-full transition-transform duration-200',
-                    aiEnabled
-                      ? 'translate-x-[18px] bg-white'
-                      : 'translate-x-1 bg-slate-300',
-                  )}
-                />
-              </span>
-              <span className="w-6 text-left text-[11px] font-bold">
-                {aiEnabled ? 'ON' : 'OFF'}
-              </span>
-            </span>
-          </button>
-
-          {/* Show ROI Trotoar Toggle */}
-          <button
-            type="button"
-            onClick={() => setShowRoi((prev) => !prev)}
-            title={
-              hasRoi
-                ? 'Menyembunyikan/menampilkan garis visual ROI tanpa mematikan pengecekan zona'
-                : 'Menampilkan batas area pantau Full-Frame (klik Atur ROI untuk menggambar poligon trotoar)'
-            }
-            className="flex flex-col items-center rounded-xl bg-[#9EC1EB]/90 px-3.5 py-2 text-primary shadow-md backdrop-blur-sm transition duration-200 hover:-translate-y-0.5 hover:bg-[#9EC1EB] active:translate-y-0"
-          >
-            <span className="text-[11px] font-semibold leading-none">Show ROI Trotoar</span>
-            <span className="mt-1.5 flex items-center gap-2">
-              <span
-                className={cn(
-                  'relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200',
-                  showRoi ? 'bg-primary' : 'bg-white/90',
-                )}
-              >
-                <span
-                  className={cn(
-                    'inline-block h-3.5 w-3.5 transform rounded-full transition-transform duration-200',
-                    showRoi
-                      ? 'translate-x-[18px] bg-white'
-                      : 'translate-x-1 bg-slate-300',
-                  )}
-                />
-              </span>
-              <span className="w-6 text-left text-[11px] font-bold">
-                {showRoi ? 'ON' : 'OFF'}
-              </span>
-            </span>
-          </button>
-
-          {/* Fullscreen Button */}
-          <button
-            type="button"
-            onClick={() => void toggleFullscreen()}
-            className="flex h-[52px] min-w-[76px] flex-col items-center justify-center rounded-xl bg-[#9EC1EB]/90 px-3 text-primary shadow-md backdrop-blur-sm transition duration-200 hover:-translate-y-0.5 hover:bg-[#9EC1EB] active:translate-y-0"
-          >
-            {isFullscreen ? (
-              <Minimize2 className="h-4 w-4" />
-            ) : (
-              <Maximize2 className="h-4 w-4" />
-            )}
-            <span className="mt-1 text-[11px] font-semibold leading-none">
-              {isFullscreen ? 'Exit' : 'Fullscreen'}
-            </span>
+            <Pencil className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
 
-      {/* 1 Clean Action Bar directly below video */}
+      {/* Status Alert Banner & 2-Column Action Buttons (matching Inspect - Mobile.png) */}
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        {/* Left Real-Time Detection Status Pill */}
+        {/* Real-Time Detection Status Pill */}
         <div
           className={cn(
-            'flex flex-1 items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-colors duration-300',
+            'flex flex-1 items-center gap-2.5 rounded-xl px-4 py-3 text-xs font-semibold transition-colors duration-300 sm:gap-3 sm:text-sm',
             streamStatus === 'ERROR'
               ? 'border border-red-200 bg-red-50 text-red-800'
               : corsRestricted
                 ? 'border border-amber-200 bg-amber-50 text-amber-800'
                 : telemetry.inRoiCount > 0 && aiEnabled
-                  ? 'animate-patra-glow bg-[#D8E7FA] text-primary'
+                  ? 'animate-patra-glow bg-[#FDE2E2] text-[#B91C1C]'
                   : 'border border-emerald-200/80 bg-emerald-50 text-emerald-800',
           )}
         >
@@ -1009,37 +1112,42 @@ export default function CctvPlayerWithAI({
           )}
         </div>
 
-        {/* Right Primary Actions */}
-        <div className="flex flex-wrap items-start gap-2.5">
-          <div className="flex flex-col items-center">
-            <button
-              type="button"
-              disabled={isCapturing || !canCapture}
-              onClick={() => void handleManualCapture()}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:bg-primary/90 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isCapturing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Camera className="h-4 w-4" />
-              )}
-              <span>Capture &amp; Report</span>
-            </button>
-            <span className="mt-1 text-[11px] font-medium text-primary/70">
-              Auto-capture active ({violationThresholdSec}s)
-            </span>
-          </div>
-
+        {/* Right Primary Actions (2-column grid on mobile: View on Map left, Capture & Report right) */}
+        <div className="grid w-full grid-cols-2 items-start gap-2.5 md:flex md:w-auto md:flex-wrap">
           {onViewOnMap && (
             <button
               type="button"
               onClick={onViewOnMap}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:bg-primary/90 active:translate-y-0"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-xs font-semibold text-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:bg-primary/90 active:translate-y-0 sm:px-4 sm:text-sm md:order-2 md:w-auto"
             >
-              <MapIcon className="h-4 w-4" />
-              <span>View on Map</span>
+              <MapIcon className="h-4 w-4 shrink-0" />
+              <span className="whitespace-nowrap">View on Map</span>
             </button>
           )}
+
+          <div
+            className={cn(
+              'flex flex-col items-center md:order-1',
+              !onViewOnMap && 'col-span-2',
+            )}
+          >
+            <button
+              type="button"
+              disabled={isCapturing || !canCapture}
+              onClick={() => void handleManualCapture()}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-xs font-semibold text-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:bg-primary/90 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:text-sm md:w-auto"
+            >
+              {isCapturing ? (
+                <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+              ) : (
+                <Camera className="h-4 w-4 shrink-0" />
+              )}
+              <span className="whitespace-nowrap">Capture &amp; Report</span>
+            </button>
+            <span className="mt-1 text-center text-[10.5px] font-medium text-primary/75 sm:text-[11px]">
+              Auto-capture active ({violationThresholdSec}s)
+            </span>
+          </div>
         </div>
       </div>
     </div>

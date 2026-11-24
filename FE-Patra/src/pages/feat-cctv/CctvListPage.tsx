@@ -50,63 +50,71 @@ export default function CctvListPage() {
   }, [allCameras, searchQuery, selectedDistrict]);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-5 sm:px-8 sm:py-7">
+    <div className="mx-auto max-w-7xl px-4 pb-6 pt-3 sm:px-8 lg:py-7">
       <SatpolTopHeader />
 
-      {/* Toolbar Region-Locked Per Kota/Kabupaten */}
+      {/* Toolbar Region-Locked Per Kota/Kabupaten (matching CCTV Monitoring (Satpol PP) - Mobile.png & Desktop) */}
       <div
         data-tour="satpol-cctv-toolbar"
-        className="mb-6 flex flex-col gap-3 rounded-2xl lg:flex-row lg:items-center lg:justify-between"
+        className="mb-5 flex flex-col gap-2.5 rounded-2xl lg:mb-6 lg:flex-row lg:items-center lg:justify-between"
       >
-        <div className="flex items-center justify-between gap-2 sm:justify-start sm:gap-2.5">
-          <div className="inline-flex h-9 min-w-0 items-center gap-1.5 rounded-full border border-primary/25 bg-white px-3 text-[11px] font-semibold text-primary shadow-sm sm:gap-2 sm:px-3.5 sm:text-xs">
+        <div className="hidden items-center gap-2.5 lg:flex">
+          <div className="inline-flex h-9 min-w-0 items-center gap-2 rounded-full border border-primary/25 bg-white px-3.5 text-xs font-semibold text-primary shadow-sm">
             <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-emerald-500" />
-            <span className="truncate">
-              <span className="hidden sm:inline">Wilayah Tugas: </span>
-              {user?.region.city}
-            </span>
+            <span className="truncate">Wilayah Tugas: {user?.region.city}</span>
           </div>
 
-          <div className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-primary/40 bg-[#EEF4FD] px-3 text-[11px] font-semibold text-primary sm:gap-2 sm:px-3.5 sm:text-xs">
+          <div className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-primary/40 bg-[#EEF4FD] px-3.5 text-xs font-semibold text-primary">
             <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />
             <span>
-              <span className="hidden sm:inline">Total Cameras: </span>
+              Total Cameras:{' '}
               {selectedDistrict || searchQuery
                 ? `${filteredCameras.length} / ${allCameras.length}`
                 : allCameras.length}
-              <span className="sm:hidden"> CCTV</span>
             </span>
           </div>
         </div>
 
-        <div className="flex w-full flex-col gap-2.5 sm:flex-row sm:items-center lg:w-auto">
-          <div className="relative w-full sm:w-72">
-            <Search
-              className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-primary/60"
-              aria-hidden="true"
-            />
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari nama CCTV atau jalan..."
-              aria-label="Cari kamera CCTV"
-              className="h-10 w-full rounded-full border border-primary/40 bg-[#EEF4FD] pl-10 pr-9 text-sm text-primary placeholder:text-primary/50 transition focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/15"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchQuery('');
-                  searchInputRef.current?.focus();
-                }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-primary/60 hover:bg-primary/10 hover:text-primary"
-                aria-label="Hapus pencarian"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
+        <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center lg:w-auto">
+          <div className="flex w-full items-center gap-2 sm:flex-1 lg:w-auto lg:flex-none">
+            <div className="relative min-w-0 flex-1 lg:w-72 lg:flex-none">
+              <Search
+                className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-primary/60"
+                aria-hidden="true"
+              />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search..."
+                aria-label="Cari kamera CCTV"
+                className="h-10 w-full rounded-full border border-primary/40 bg-[#EEF4FD] pl-10 pr-8 text-sm text-primary placeholder:text-primary/50 transition focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/15"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    searchInputRef.current?.focus();
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-primary/60 hover:bg-primary/10 hover:text-primary"
+                  aria-label="Hapus pencarian"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+
+            <div className="inline-flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-primary/40 bg-[#EEF4FD] px-3 text-[11px] font-semibold text-primary lg:hidden">
+              <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />
+              <span>
+                Total Cameras:{' '}
+                {selectedDistrict || searchQuery
+                  ? `${filteredCameras.length}/${allCameras.length}`
+                  : allCameras.length}
+              </span>
+            </div>
           </div>
 
           {districts.length > 1 && (
@@ -115,7 +123,7 @@ export default function CctvListPage() {
                 value={selectedDistrict}
                 onChange={(e) => setSelectedDistrict(e.target.value)}
                 aria-label="Filter kecamatan"
-                className="h-10 w-full appearance-none rounded-full border border-primary/40 bg-[#EEF4FD] pl-4 pr-10 text-xs font-semibold text-primary transition focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/15 sm:w-auto"
+                className="h-9 w-full appearance-none rounded-full border border-primary/40 bg-[#EEF4FD] pl-4 pr-10 text-xs font-semibold text-primary transition focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/15 sm:h-10 sm:w-auto"
               >
                 <option value="">Semua Kecamatan ({districts.length})</option>
                 {districts.map((dist) => (

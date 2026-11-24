@@ -1,14 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import Hls from 'hls.js';
 import { Radio, Video, WifiOff } from 'lucide-react';
+import {
+  isThumbnailFailureFresh,
+  resolveThumbnailGrabStrategy,
+  setBoundedCacheEntry,
+} from '@/lib/cameraThumbnailHelpers';
 import type { CctvCameraDto } from '@/types';
 
 // Cache snapshot thumbnail per camera.id selama sesi browser agar hemat bandwidth
 const thumbnailCache = new Map<string, string>();
-const failedCache = new Set<string>();
+const failedCache = new Map<string, number>();
 
-// Antrean konkurensi ringan (maks 3 koneksi HLS thumbnail bersamaan saat scroll)
-const MAX_CONCURRENT_GRABS = 3;
+// Antrean konkurensi ringan (maks 2 koneksi HLS thumbnail bersamaan agar tidak membanjiri server Pemda)
+const MAX_CONCURRENT_GRABS = 2;
 let activeGrabs = 0;
 const grabQueue: Array<() => void> = [];
 
@@ -41,7 +46,7 @@ export default function CameraThumbnail({ camera }: { camera: CctvCameraDto }) {
   const [livePausedFallback, setLivePausedFallback] = useState(false);
   const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'offline'>(() => {
     if (camera.thumbnailUrl || thumbnailCache.get(camera.id)) return 'ready';
-    if (failedCache.has(camera.id)) return 'offline';
+    if (isThumbnailFailureFresh(failedCache, camera.id)) return 'offline';
     return 'idle';
   });
 
@@ -69,19 +74,15 @@ export default function CameraThumbnail({ camera }: { camera: CctvCameraDto }) {
 
   // 2. Ambil 1 frame nyata dari live HLS stream -> render ke dataURL -> langsung hls.destroy()
   useEffect(() => {
-    if (!inView || capturedUrl || status === 'offline') return;
+    if (!inView || capturedUrl || isThumbnailFailureFresh(failedCache, camera.id)) return;
 
-    const sourceUrl = camera.playbackUrl || camera.streamUrl;
-    const isMixedContent =
-      typeof window !== 'undefined' &&
-      window.location.protocol === 'https:' &&
-      sourceUrl.startsWith('http://');
-
-    if (!sourceUrl || camera.needsCorsProxy || isMixedContent || camera.streamType !== 'hls') {
-      failedCache.add(camera.id);
+    const strategy = resolveThumbnailGrabStrategy(camera);
+    if (!strategy.canGrab) {
+      failedCache.set(camera.id, Date.now());
       setStatus('offline');
       return;
     }
+    const { sourceUrl, startWithCors } = strategy;
 
     let cancelled = false;
     let slotAcquired = false;
@@ -107,11 +108,11 @@ export default function CameraThumbnail({ camera }: { camera: CctvCameraDto }) {
       }
     };
 
-    const markOffline = () => {
+    const markUnavailable = () => {
       cleanupHlsOnly();
       finishSlot();
       if (!cancelled) {
-        failedCache.add(camera.id);
+        failedCache.set(camera.id, Date.now());
         setStatus('offline');
       }
     };
@@ -124,10 +125,11 @@ export default function CameraThumbnail({ camera }: { camera: CctvCameraDto }) {
 
       const video = videoRef.current;
       if (!video) {
-        markOffline();
+        markUnavailable();
         return;
       }
 
+      let attemptSettled = false;
       setStatus('loading');
       video.muted = true;
       video.playsInline = true;
@@ -137,18 +139,31 @@ export default function CameraThumbnail({ camera }: { camera: CctvCameraDto }) {
         video.removeAttribute('crossorigin');
       }
 
-      timeoutId = window.setTimeout(() => {
+      const clearVideoHandlers = () => {
+        video.onloadeddata = null;
+        video.oncanplay = null;
+        video.onerror = null;
+      };
+
+      const fallbackOrFail = () => {
+        if (attemptSettled || cancelled) return;
+        attemptSettled = true;
+        clearVideoHandlers();
         if (withCors) {
           cleanupHlsOnly();
           startGrab(false);
         } else {
-          markOffline();
+          markUnavailable();
         }
-      }, 4500);
+      };
+
+      timeoutId = window.setTimeout(fallbackOrFail, 8000);
 
       const handleFrameReady = () => {
-        if (cancelled) return;
+        if (attemptSettled || cancelled) return;
         if (!video.videoWidth || !video.videoHeight) return;
+        attemptSettled = true;
+        clearVideoHandlers();
 
         if (withCors) {
           try {
@@ -159,7 +174,7 @@ export default function CameraThumbnail({ camera }: { camera: CctvCameraDto }) {
             if (ctx) {
               ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
               const dataUrl = canvas.toDataURL('image/jpeg', 0.72);
-              thumbnailCache.set(camera.id, dataUrl);
+              setBoundedCacheEntry(thumbnailCache, camera.id, dataUrl);
               cleanupHlsOnly();
               video.pause();
               video.removeAttribute('src');
@@ -191,6 +206,7 @@ export default function CameraThumbnail({ camera }: { camera: CctvCameraDto }) {
       };
 
       video.onloadeddata = handleFrameReady;
+      video.oncanplay = handleFrameReady;
 
       if (Hls.isSupported()) {
         hls = new Hls({
@@ -198,8 +214,8 @@ export default function CameraThumbnail({ camera }: { camera: CctvCameraDto }) {
           lowLatencyMode: false,
           maxBufferLength: 3,
           maxMaxBufferLength: 5,
-          manifestLoadingTimeOut: 4000,
-          fragLoadingTimeOut: 4000,
+          manifestLoadingTimeOut: 7500,
+          fragLoadingTimeOut: 7500,
         });
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           video.play().catch(() => {
@@ -208,28 +224,18 @@ export default function CameraThumbnail({ camera }: { camera: CctvCameraDto }) {
         });
         hls.on(Hls.Events.ERROR, (_event, data) => {
           if (data.fatal) {
-            if (withCors) {
-              cleanupHlsOnly();
-              startGrab(false);
-            } else {
-              markOffline();
-            }
+            fallbackOrFail();
           }
         });
         hls.loadSource(sourceUrl);
         hls.attachMedia(video);
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = sourceUrl;
-        video.onerror = () => {
-          if (withCors) {
-            cleanupHlsOnly();
-            startGrab(false);
-          } else {
-            markOffline();
-          }
-        };
+        video.onerror = fallbackOrFail;
       } else {
-        markOffline();
+        attemptSettled = true;
+        clearVideoHandlers();
+        markUnavailable();
       }
     };
 
@@ -239,7 +245,7 @@ export default function CameraThumbnail({ camera }: { camera: CctvCameraDto }) {
         return;
       }
       slotAcquired = true;
-      startGrab(true);
+      startGrab(startWithCors);
     });
 
     return () => {
@@ -252,7 +258,7 @@ export default function CameraThumbnail({ camera }: { camera: CctvCameraDto }) {
       }
       finishSlot();
     };
-  }, [inView, capturedUrl, status, camera.id, camera.playbackUrl, camera.streamUrl, camera.needsCorsProxy, camera.streamType]);
+  }, [inView, capturedUrl, camera.id, camera.playbackUrl, camera.streamUrl, camera.needsCorsProxy, camera.streamType]);
 
   return (
     <div ref={containerRef} className="relative h-full w-full overflow-hidden bg-[#0B132B]">
@@ -298,9 +304,9 @@ export default function CameraThumbnail({ camera }: { camera: CctvCameraDto }) {
                 <Video className="h-5 w-5" />
               )}
             </span>
-            <span className="text-[10px] font-medium text-blue-100/75">
+            <span className="px-2 text-center text-[10px] font-medium text-blue-100/75">
               {status === 'offline'
-                ? 'Kamera Offline'
+                ? 'Pratinjau belum tersedia — klik Inspect'
                 : status === 'loading'
                   ? 'Memuat pratinjau kamera...'
                   : 'Klik untuk Inspect'}

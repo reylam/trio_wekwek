@@ -12,6 +12,9 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { PatraMark } from '@/components/ui/PatraLogo';
 import { EXTRA_PUBLIC_CITY_ACCOUNTS } from '@/services/offlineMock';
+import loginBgUrl from '@/assets/images/Login BG.png';
+import polisiLoginUrl from '@/assets/images/Polisi Login.png';
+import polisiLoginMobileUrl from '@/assets/images/Polisi Login Mobile.png';
 
 const DEMO_ACCOUNTS = [
   {
@@ -39,89 +42,6 @@ const DEMO_ACCOUNTS = [
     role: 'DINAS_UMKM' as const,
   },
 ];
-
-function SatpolOfficerIllustration() {
-  return (
-    <svg
-      viewBox="0 0 360 400"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="h-full w-full max-w-[330px] select-none"
-      aria-hidden="true"
-    >
-      {/* Stylized street & city skyline background */}
-      <g opacity="0.28">
-        <rect x="26" y="176" width="52" height="145" rx="6" fill="#73A6E9" />
-        <rect x="86" y="132" width="44" height="189" rx="6" fill="#9EC1EB" />
-        <rect x="138" y="156" width="48" height="165" rx="6" fill="#73A6E9" />
-        <circle cx="52" cy="252" r="34" fill="#3B82F6" />
-        <ellipse cx="145" cy="116" rx="34" ry="12" fill="#E0EEFF" />
-      </g>
-
-      {/* Stylized car silhouette in street */}
-      <g opacity="0.45">
-        <rect x="34" y="302" width="102" height="44" rx="12" fill="#DCE8F8" />
-        <path d="M48 302L60 278H110L122 302H48Z" fill="#9EC1EB" />
-        <rect x="44" y="318" width="18" height="8" rx="4" fill="#EF4444" />
-        <rect x="108" y="318" width="18" height="8" rx="4" fill="#EF4444" />
-        <rect x="44" y="346" width="16" height="12" rx="4" fill="#0B132B" />
-        <rect x="110" y="346" width="16" height="12" rx="4" fill="#0B132B" />
-      </g>
-
-      {/* Officer hair & head */}
-      <ellipse cx="212" cy="128" rx="52" ry="48" fill="#0F172A" />
-      <circle cx="218" cy="144" r="37" fill="#FAD2B9" />
-      <path d="M180 132C184 96 226 88 250 112C258 122 256 142 246 144C244 126 226 116 202 124C194 127 186 132 180 132Z" fill="#0F172A" />
-      <circle cx="182" cy="147" r="9" fill="#FAD2B9" />
-      {/* Facial features */}
-      <circle cx="220" cy="140" r="3.5" fill="#0F172A" />
-      <circle cx="240" cy="143" r="3.5" fill="#0F172A" />
-      <path d="M214 156C220 163 230 163 236 157" stroke="#C97B63" strokeWidth="3" strokeLinecap="round" />
-
-      {/* Neck & Collar */}
-      <rect x="196" y="176" width="24" height="24" rx="8" fill="#F2BE9E" />
-      <path d="M174 198L208 220L240 202L224 188H188L174 198Z" fill="#BBD4F6" />
-
-      {/* Officer Uniform Torso */}
-      <path
-        d="M142 232C146 206 172 194 208 194C246 194 268 212 276 244L286 382H132L142 232Z"
-        fill="#27476E"
-      />
-      {/* Tie */}
-      <path d="M206 206L218 206L222 288L212 302L202 288L206 206Z" fill="#173050" />
-      {/* Shoulder strap & body cam */}
-      <rect x="182" y="218" width="22" height="28" rx="6" fill="#3B5C85" />
-      <circle cx="193" cy="232" r="6" fill="#0B132B" />
-      {/* Badge on left sleeve */}
-      <path d="M142 246L156 241L168 248L165 268L154 275L143 266L142 246Z" fill="#73A6E9" stroke="#FFFFFF" strokeWidth="2" />
-      <circle cx="154" cy="257" r="4.5" fill="#043FA5" />
-
-      {/* Belt & Radio */}
-      <rect x="136" y="346" width="144" height="18" fill="#1E293B" />
-      <rect x="192" y="344" width="20" height="22" rx="4" fill="#94A3B8" />
-      <rect x="166" y="328" width="22" height="38" rx="5" fill="#334155" />
-      <circle cx="177" cy="348" r="5" fill="#94A3B8" />
-
-      {/* Notepad & Hand */}
-      <g transform="rotate(14 282 282)">
-        <rect x="240" y="242" width="76" height="96" rx="8" fill="#FFFFFF" />
-        <rect x="252" y="264" width="52" height="5" rx="2.5" fill="#DCE8F8" />
-        <rect x="252" y="278" width="44" height="5" rx="2.5" fill="#DCE8F8" />
-        <rect x="252" y="292" width="48" height="5" rx="2.5" fill="#DCE8F8" />
-        <circle cx="252" cy="242" r="4" fill="#1E293B" />
-        <circle cx="266" cy="242" r="4" fill="#1E293B" />
-        <circle cx="280" cy="242" r="4" fill="#1E293B" />
-        <circle cx="294" cy="242" r="4" fill="#1E293B" />
-        <circle cx="308" cy="242" r="4" fill="#1E293B" />
-      </g>
-
-      {/* Writing hand & arm */}
-      <path d="M138 258L192 292L242 276L250 302L186 332L128 292L138 258Z" fill="#33547C" />
-      <ellipse cx="242" cy="284" rx="22" ry="15" fill="#FAD2B9" />
-      <path d="M236 270L264 288" stroke="#043FA5" strokeWidth="5" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 export default function LoginPage() {
   const { login, demoLogin } = useAuth();
@@ -180,37 +100,95 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#F4F7FC] p-4 sm:p-8">
-      <div className="relative grid w-full max-w-[980px] overflow-hidden rounded-[2rem] bg-white shadow-[0_24px_70px_-20px_rgba(4,63,165,0.22)] md:grid-cols-12">
-        {/* Left Cobalt Blue Illustrated Panel (matching Log In (Satpol PP).png) */}
-        <div className="relative flex flex-col justify-between overflow-hidden bg-gradient-to-br from-[#00266D] via-[#043FA5] to-[#1D5FD4] px-8 pt-8 text-white md:col-span-5">
-          {/* Smooth organic curved cutout edge into white right side */}
+    <div className="min-h-screen bg-white md:flex md:items-center md:justify-center md:bg-[#F4F7FC] md:p-8">
+      <div className="relative grid w-full bg-white md:max-w-[1000px] md:grid-cols-12 md:overflow-hidden md:rounded-[2rem] md:shadow-[0_24px_70px_-20px_rgba(4,63,165,0.22)]">
+        {/* Top Cobalt Hero (Mobile) / Left Panel (Desktop) */}
+        <div className="relative flex flex-col justify-between overflow-hidden rounded-b-[2.25rem] bg-gradient-to-br from-[#001F6B] via-[#043FA5] to-[#1A58C8] px-6 pt-5 text-white sm:px-8 md:col-span-5 md:overflow-visible md:rounded-b-none md:pt-8">
+          {/* Lapisan Latar Jalan Perkotaan (Login BG.png) */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[72%] overflow-hidden opacity-65 md:h-[62%]">
+            <img
+              src={loginBgUrl}
+              alt=""
+              aria-hidden="true"
+              decoding="async"
+              draggable={false}
+              className="h-full w-full select-none object-cover object-bottom"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#043FA5] via-[#043FA5]/35 to-[#001F6B]/60" />
+          </div>
+
+          {/* Potongan Kurva Putih Organik Sisi Kanan (Desktop) */}
           <svg
             viewBox="0 0 80 600"
             preserveAspectRatio="none"
-            className="pointer-events-none absolute -right-1 bottom-0 top-0 hidden h-full w-16 md:block"
+            className="pointer-events-none absolute -right-1 bottom-0 top-0 z-10 hidden h-full w-16 md:block"
             aria-hidden="true"
           >
             <path d="M80 0C16 0 4 46 4 110V600H80V0Z" fill="#FFFFFF" />
           </svg>
 
-          <div className="relative z-10 flex items-center gap-3">
-            <PatraMark inverted className="h-10 w-10" />
-            <div>
-              <p className="text-base font-extrabold tracking-tight text-white">PATRA</p>
-              <p className="text-[11px] text-blue-100/85">Pantauan Transparan Ruang Publik</p>
+          {/* Mobile Hero Header + Centered Logo + Stacked Headline + Officer (Log In (Satpol PP) - Mobile.png) */}
+          <div className="relative z-20 flex flex-col md:hidden">
+            <div className="flex justify-end">
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-[11px] font-medium text-white backdrop-blur-sm">
+                Bahasa Indonesia (WIB)
+                <ChevronDown className="h-3.5 w-3.5" />
+              </span>
+            </div>
+
+            <div className="mt-2 flex flex-col items-center">
+              <PatraMark inverted className="h-12 w-12 drop-shadow-sm" />
+            </div>
+
+            <div className="mt-4">
+              <h1 className="text-[36px] font-bold leading-[1.08] tracking-tight text-white">
+                Welcome
+                <br />
+                Back!
+              </h1>
+              <p className="mt-1.5 max-w-[260px] text-xs text-blue-100/90">
+                Portal instansi PATRA terkunci sesuai kota tugas Anda.
+              </p>
+            </div>
+
+            <div className="-mb-1 mt-2 flex justify-center">
+              <img
+                src={polisiLoginMobileUrl}
+                alt="Ilustrasi Petugas Satpol PP PATRA"
+                decoding="async"
+                draggable={false}
+                className="pointer-events-none h-[210px] w-[220px] select-none object-cover object-top drop-shadow-[0_10px_20px_rgba(0,31,107,0.3)]"
+              />
             </div>
           </div>
 
-          <div className="relative z-10 mt-6 flex items-end justify-center md:-mr-10">
-            <SatpolOfficerIllustration />
+          {/* Desktop Header Brand */}
+          <div className="relative z-20 hidden items-center gap-3 md:flex">
+            <PatraMark inverted className="h-10 w-10" />
+            <div>
+              <p className="text-base font-extrabold tracking-tight text-white">PATRA</p>
+              <p className="text-[11px] text-blue-100/85">
+                Pantauan Transparan Ruang Publik
+              </p>
+            </div>
+          </div>
+
+          {/* Desktop Officer (Polisi Login.png) overlap mulus di atas kurva putih */}
+          <div className="relative z-20 mt-6 hidden items-end justify-center md:-mr-12 md:flex lg:-mr-14">
+            <img
+              src={polisiLoginUrl}
+              alt="Ilustrasi Petugas Satpol PP PATRA"
+              decoding="async"
+              draggable={false}
+              className="pointer-events-none w-[290px] max-w-none select-none object-contain object-bottom drop-shadow-[0_12px_24px_rgba(0,31,107,0.28)] lg:w-[320px]"
+            />
           </div>
         </div>
 
         {/* Right Form Panel */}
-        <div className="flex flex-col justify-between px-7 py-8 sm:px-12 sm:py-10 md:col-span-7">
-          {/* Top utility row */}
-          <div className="flex items-center justify-end gap-3 text-xs font-medium text-secondary">
+        <div className="relative z-20 flex flex-col justify-between bg-white px-5 pb-8 pt-6 sm:px-10 sm:py-10 md:col-span-7 md:pl-14 lg:pl-16">
+          {/* Top utility row (Desktop only; on mobile rendered inside blue hero) */}
+          <div className="hidden items-center justify-end gap-3 text-xs font-medium text-secondary md:flex">
             <span className="inline-flex items-center gap-1 rounded-full bg-canvas px-3 py-1 text-primary/80">
               Bahasa Indonesia (WIB)
               <ChevronDown className="h-3.5 w-3.5" />
@@ -218,27 +196,29 @@ export default function LoginPage() {
           </div>
 
           {/* Main Login Form */}
-          <div className="mx-auto my-6 w-full max-w-md">
-            <h1 className="text-3xl font-bold tracking-tight text-primary sm:text-[34px]">
-              Welcome Back!
-            </h1>
-            <p className="mt-1.5 text-sm text-slate-500">
-              Masuk ke portal instansi PATRA yang terkunci sesuai kota tugas Anda.
-            </p>
+          <div className="mx-auto w-full max-w-md md:my-6">
+            <div className="hidden md:block">
+              <h1 className="text-3xl font-bold tracking-tight text-primary sm:text-[34px]">
+                Welcome Back!
+              </h1>
+              <p className="mt-1.5 text-sm text-slate-500">
+                Masuk ke portal instansi PATRA yang terkunci sesuai kota tugas Anda.
+              </p>
+            </div>
 
             {errorMsg && (
-              <div className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700">
+              <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700 md:mb-0 md:mt-5">
                 {errorMsg}
               </div>
             )}
 
             {infoNote && (
-              <div className="mt-5 rounded-xl border border-accent bg-canvas px-4 py-3 text-xs text-primary">
+              <div className="mb-4 rounded-xl border border-accent bg-canvas px-4 py-3 text-xs text-primary md:mb-0 md:mt-5">
                 {infoNote}
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="mt-7 space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4 md:mt-7 md:space-y-6">
               <div>
                 <label htmlFor="email" className="sr-only">
                   Email
@@ -250,7 +230,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Email"
-                  className="w-full border-b border-accent bg-transparent py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-primary focus:outline-none"
+                  className="w-full rounded-full border border-slate-200/80 bg-white px-5 py-3.5 text-sm text-slate-800 shadow-[0_6px_20px_-6px_rgba(4,63,165,0.16)] placeholder:text-slate-400 focus:border-primary focus:outline-none md:rounded-none md:border-0 md:border-b md:border-accent md:bg-transparent md:px-0 md:py-2.5 md:shadow-none"
                 />
               </div>
 
@@ -265,12 +245,12 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Password"
-                  className="w-full border-b border-accent bg-transparent py-2.5 pr-10 text-sm text-slate-800 placeholder:text-slate-400 focus:border-primary focus:outline-none"
+                  className="w-full rounded-full border border-slate-200/80 bg-white py-3.5 pl-5 pr-12 text-sm text-slate-800 shadow-[0_6px_20px_-6px_rgba(4,63,165,0.16)] placeholder:text-slate-400 focus:border-primary focus:outline-none md:rounded-none md:border-0 md:border-b md:border-accent md:bg-transparent md:py-2.5 md:pl-0 md:pr-10 md:shadow-none"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-0 top-2 p-1 text-primary/75 hover:text-primary"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-primary/75 hover:text-primary md:right-0 md:top-2 md:translate-y-0"
                   aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Lihat kata sandi'}
                 >
                   {showPassword ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
@@ -355,25 +335,31 @@ export default function LoginPage() {
                 >
                   Atau jelajahi Satpol PP kota publik lainnya (594 CCTV, 17 Kota)
                 </label>
-                <select
-                  id="extra-city-select"
-                  defaultValue=""
-                  disabled={isSubmitting || Boolean(activeDemoKey)}
-                  onChange={(e) => {
-                    const key = e.target.value;
-                    if (key) void handleDemoLogin(key);
-                  }}
-                  className="mt-1.5 w-full rounded-xl border border-accent/60 bg-white px-3 py-2 text-xs font-medium text-primary focus:border-primary focus:outline-none disabled:opacity-60"
-                >
-                  <option value="" disabled>
-                    Pilih kota publik lainnya...
-                  </option>
-                  {EXTRA_PUBLIC_CITY_ACCOUNTS.map((item) => (
-                    <option key={item.demoKey} value={item.demoKey}>
-                      Satpol PP {item.city} — {item.province} ({item.cameraCount} CCTV)
+                <div className="relative mt-1.5">
+                  <select
+                    id="extra-city-select"
+                    defaultValue=""
+                    disabled={isSubmitting || Boolean(activeDemoKey)}
+                    onChange={(e) => {
+                      const key = e.target.value;
+                      if (key) void handleDemoLogin(key);
+                    }}
+                    className="w-full appearance-none rounded-xl border border-accent/60 bg-white py-2 pl-3 pr-9 text-xs font-medium text-primary focus:border-primary focus:outline-none disabled:opacity-60"
+                  >
+                    <option value="" disabled>
+                      Pilih kota publik lainnya...
                     </option>
-                  ))}
-                </select>
+                    {EXTRA_PUBLIC_CITY_ACCOUNTS.map((item) => (
+                      <option key={item.demoKey} value={item.demoKey}>
+                        Satpol PP {item.city} — {item.province} ({item.cameraCount} CCTV)
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary/70"
+                    aria-hidden="true"
+                  />
+                </div>
               </div>
             </div>
           </div>

@@ -511,15 +511,15 @@ export default function RegionalMapPage() {
       {/* Interactive Leaflet Map Container */}
       <div ref={mapContainerRef} className="h-full w-full z-0" />
 
-      {/* Top Floating Controls — Matches Regional Map.png & Regional Map - Manage Restricted Zone.png */}
+      {/* Top Floating Controls — Matches Regional Map.png & Regional Map - Mobile.png */}
       {!editMode ? (
-        <div className="pointer-events-none absolute inset-x-0 top-5 z-[400] flex justify-center px-4">
+        <div className="pointer-events-none absolute inset-x-0 top-[74px] z-[400] flex justify-center px-3 lg:top-5 lg:px-4">
           <div
             data-tour="satpol-map-controls"
-            className="pointer-events-auto flex w-full max-w-5xl flex-wrap items-center gap-2 rounded-2xl bg-[#9EC1EB]/45 p-2 shadow-lg backdrop-blur-md"
+            className="pointer-events-auto flex w-full max-w-5xl flex-col gap-2 md:flex-row md:flex-wrap md:items-center md:rounded-2xl md:bg-[#9EC1EB]/45 md:p-2 md:shadow-lg md:backdrop-blur-md"
           >
             {/* Search Box */}
-            <div className="relative min-w-[200px] flex-1">
+            <div className="relative w-full md:min-w-[200px] md:flex-1">
               <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
@@ -528,7 +528,7 @@ export default function RegionalMapPage() {
                 onBlur={() => window.setTimeout(() => setSearchFocused(false), 180)}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search street or location..."
-                className="w-full rounded-xl bg-white py-2.5 pl-10 pr-8 text-xs font-medium text-slate-800 shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="w-full rounded-xl bg-white py-2.5 pl-10 pr-8 text-xs font-medium text-slate-800 shadow-md placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30 md:shadow-sm"
               />
               {searchQuery && (
                 <button
@@ -565,42 +565,44 @@ export default function RegionalMapPage() {
               )}
             </div>
 
-            {/* 3 Layer Toggle Checkbox Pills */}
-            {[
-              { label: 'CCTV Cameras', checked: showCameras, toggle: () => setShowCameras((v) => !v) },
-              { label: 'Restricted Zone', checked: showZones, toggle: () => setShowZones((v) => !v) },
-              {
-                label: 'Active Violations',
-                checked: showViolations,
-                toggle: () => setShowViolations((v) => !v),
-              },
-            ].map((item) => (
-              <button
-                key={item.label}
-                type="button"
-                onClick={item.toggle}
-                className="inline-flex items-center gap-2.5 rounded-xl bg-white px-3.5 py-2.5 text-xs font-semibold text-primary shadow-sm transition hover:bg-canvas"
-              >
-                <span>{item.label}</span>
-                <span
-                  className={cn(
-                    'flex h-4 w-4 items-center justify-center rounded transition-colors',
-                    item.checked ? 'bg-primary text-white' : 'bg-slate-400 text-white',
-                  )}
+            {/* 3 Layer Toggle Checkbox Pills — 1 horizontal row on mobile */}
+            <div className="grid w-full grid-cols-3 gap-1.5 md:flex md:w-auto md:items-center md:gap-2">
+              {[
+                { label: 'CCTV Cameras', checked: showCameras, toggle: () => setShowCameras((v) => !v) },
+                { label: 'Restricted Zone', checked: showZones, toggle: () => setShowZones((v) => !v) },
+                {
+                  label: 'Active Violations',
+                  checked: showViolations,
+                  toggle: () => setShowViolations((v) => !v),
+                },
+              ].map((item) => (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={item.toggle}
+                  className="inline-flex items-center justify-between gap-1 rounded-xl bg-white px-2.5 py-2 text-[10.5px] font-semibold text-primary shadow-md transition hover:bg-canvas md:justify-start md:gap-2.5 md:px-3.5 md:py-2.5 md:text-xs md:shadow-sm"
                 >
-                  <Check className="h-3 w-3 stroke-[3]" />
-                </span>
-              </button>
-            ))}
+                  <span className="truncate">{item.label}</span>
+                  <span
+                    className={cn(
+                      'flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded transition-colors md:h-4 md:w-4',
+                      item.checked ? 'bg-primary text-white' : 'bg-slate-400 text-white',
+                    )}
+                  >
+                    <Check className="h-2.5 w-2.5 stroke-[3] md:h-3 md:w-3" />
+                  </span>
+                </button>
+              ))}
+            </div>
 
-            {/* + Manage Restricted Zone Button */}
+            {/* + Manage Restricted Zone Button (Desktop Top Bar) */}
             <button
               type="button"
               onClick={() => {
                 setEditMode(true);
                 setShowZones(true);
               }}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-primary/90"
+              className="hidden items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-primary/90 md:inline-flex"
             >
               <Plus className="h-4 w-4" />
               <span>Manage Restricted Zone</span>
@@ -610,7 +612,7 @@ export default function RegionalMapPage() {
       ) : (
         /* Manage Restricted Zone Edit Mode — Matches Regional Map - Manage Restricted Zone.png */
         <>
-          <div className="pointer-events-none absolute inset-x-0 top-5 z-[400] flex justify-center px-4">
+          <div className="pointer-events-none absolute inset-x-0 top-[74px] z-[400] flex justify-center px-4 lg:top-5">
             <div className="pointer-events-auto flex items-center gap-3">
               <button
                 type="button"
@@ -632,7 +634,7 @@ export default function RegionalMapPage() {
           </div>
 
           {/* Floating Zone Editor Drawer */}
-          <div className="absolute right-4 top-20 z-[400] w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-accent/60 bg-white/95 p-4 shadow-2xl backdrop-blur-md">
+          <div className="absolute right-4 top-[128px] z-[400] max-h-[calc(100vh-9rem)] w-80 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-2xl border border-accent/60 bg-white/95 p-4 shadow-2xl backdrop-blur-md lg:top-20">
             <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
               <h2 className="text-sm font-bold text-primary">
                 {editingZoneId ? 'Edit Info Zona' : 'Gambar Zona Terlarang Baru'}
@@ -753,7 +755,7 @@ export default function RegionalMapPage() {
       )}
 
       {/* Bottom-Left Map Legend Toggle ('i' Cobalt Blue square matching mockup) */}
-      <div className="absolute bottom-6 left-6 z-[400]">
+      <div className="absolute bottom-5 left-3.5 z-[400] lg:bottom-6 lg:left-6">
         {showLegend && (
           <div className="mb-3 w-64 rounded-2xl border border-accent/60 bg-white/95 p-4 shadow-xl backdrop-blur-md">
             <div className="flex items-center justify-between border-b border-slate-100 pb-2">
@@ -798,8 +800,25 @@ export default function RegionalMapPage() {
         </button>
       </div>
 
-      {/* Bottom-Right Custom Cobalt Blue Zoom Controls (matching Regional Map.png) */}
-      <div className="absolute bottom-6 right-6 z-[400] flex flex-col gap-2">
+      {/* Bottom-Center Mobile '+ Manage Restricted Zone' CTA (matching Regional Map - Mobile.png) */}
+      {!editMode && (
+        <div className="absolute bottom-5 left-1/2 z-[400] -translate-x-1/2 md:hidden">
+          <button
+            type="button"
+            onClick={() => {
+              setEditMode(true);
+              setShowZones(true);
+            }}
+            className="inline-flex h-11 items-center gap-1.5 whitespace-nowrap rounded-xl bg-primary px-4 text-xs font-semibold text-white shadow-lg transition hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Manage Restricted Zone</span>
+          </button>
+        </div>
+      )}
+
+      {/* Bottom-Right Custom Cobalt Blue Zoom Controls (matching Regional Map.png & Mobile) */}
+      <div className="absolute bottom-5 right-3.5 z-[400] flex flex-col gap-2 lg:bottom-6 lg:right-6">
         <button
           type="button"
           onClick={() => mapRef.current?.zoomIn()}

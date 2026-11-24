@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -13,9 +13,13 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { cctvApi, reportApi } from '@/services/api';
 import { SatpolTopHeader } from '@/components/layout/SatpolLayout';
+import WalkthroughTriggerButton from '@/components/walkthrough/WalkthroughTriggerButton';
 import CctvPlayerWithAI from '@/components/cctv/CctvPlayerWithAI';
 import CameraThumbnail from '@/components/cctv/CameraThumbnail';
 import { useToast } from '@/components/ui/Toast';
+import { formatHeaderClock } from '@/lib/formatters';
+import { cn } from '@/lib/utils';
+import loginBgUrl from '@/assets/images/Login BG.png';
 import type { CctvCameraDto, CctvLiveTelemetry, ViolationCapturePayload } from '@/types';
 
 function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -42,11 +46,19 @@ export default function CctvLivePage() {
   const { pushToast } = useToast();
 
   const [telemetry, setTelemetry] = useState<CctvLiveTelemetry | null>(null);
+  const [clockText, setClockText] = useState(() => formatHeaderClock());
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const relatedScrollRef = useRef<HTMLDivElement | null>(null);
   const [savedReportBanner, setSavedReportBanner] = useState<{
     reportId?: string;
     reportCode?: string;
     message: string;
   } | null>(null);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setClockText(formatHeaderClock()), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   // Gulir halus ke atas & reset banner setiap berpindah kamera
   useEffect(() => {
@@ -183,35 +195,69 @@ export default function CctvLivePage() {
 
   const totalCityCameras = cityCamerasQuery.data?.cameras.length ?? 0;
 
+  const handleRelatedScroll = () => {
+    const el = relatedScrollRef.current;
+    if (!el) return;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    setScrollProgress(maxScroll > 0 ? Math.min(1, Math.max(0, el.scrollLeft / maxScroll)) : 0);
+  };
+
   return (
-    <div className="mx-auto max-w-6xl px-5 py-6 sm:px-8">
-      <SatpolTopHeader
-        leftSlot={
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => navigate('/satpol/cctv')}
-              className="inline-flex items-center gap-2 rounded-full bg-[#DCE8F8] px-4 py-2 text-xs font-bold text-primary transition duration-200 hover:-translate-x-0.5 hover:bg-primary hover:text-white"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back to Cameras</span>
-            </button>
-            {camera && (
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="truncate text-lg font-extrabold text-primary sm:text-xl">
-                    {camera.name}
-                  </h1>
-                  <span className="rounded-full bg-[#E9F1FD] px-2.5 py-0.5 text-[11px] font-bold text-primary">
-                    {camera.city}
-                  </span>
-                </div>
-                <p className="truncate text-xs text-slate-500">{camera.regionLabel}</p>
-              </div>
-            )}
+    <div className="mx-auto max-w-6xl px-4 pb-0 pt-4 sm:px-8 sm:py-6">
+      {/* Mobile Dedicated Detail Header (matches CCTV Monitoring (Satpol PP) Inspect - Mobile.png) */}
+      <div className="flex items-center justify-between gap-2.5 pb-4 lg:hidden">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <button
+            type="button"
+            onClick={() => navigate('/satpol/cctv')}
+            aria-label="Back to Cameras"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#DCE8F8] text-primary transition hover:bg-primary hover:text-white"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-lg font-extrabold leading-tight tracking-tight text-primary">
+              {camera?.name ?? 'Live CCTV'}
+            </h1>
+            <p className="truncate font-mono text-[11px] font-medium text-primary/75">
+              {clockText}
+            </p>
           </div>
-        }
-      />
+        </div>
+
+        <WalkthroughTriggerButton tourId="satpol-live" label="Tur Kamera AI" />
+      </div>
+
+      {/* Desktop Top Header */}
+      <div className="hidden lg:block">
+        <SatpolTopHeader
+          leftSlot={
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => navigate('/satpol/cctv')}
+                className="inline-flex items-center gap-2 rounded-full bg-[#DCE8F8] px-4 py-2 text-xs font-bold text-primary transition duration-200 hover:-translate-x-0.5 hover:bg-primary hover:text-white"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span>Back to Cameras</span>
+              </button>
+              {camera && (
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h1 className="truncate text-lg font-extrabold text-primary sm:text-xl">
+                      {camera.name}
+                    </h1>
+                    <span className="rounded-full bg-[#E9F1FD] px-2.5 py-0.5 text-[11px] font-bold text-primary">
+                      {camera.city}
+                    </span>
+                  </div>
+                  <p className="truncate text-xs text-slate-500">{camera.regionLabel}</p>
+                </div>
+              )}
+            </div>
+          }
+        />
+      </div>
 
       {cameraQuery.isLoading && (
         <div className="space-y-4">
@@ -330,17 +376,17 @@ export default function CctvLivePage() {
 
           {/* Rekomendasi CCTV Lainnya di Kota yang Sama (Region-Locked) */}
           {recommendedCameras.length > 0 && (
-            <section data-tour="satpol-live-recommend" className="animate-patra-enter rounded-2xl pt-2">
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <section data-tour="satpol-live-recommend" className="animate-patra-enter rounded-2xl pt-1 sm:pt-2">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2 sm:mb-4 sm:gap-3">
+                <div className="flex items-center gap-2 sm:gap-2.5">
+                  <span className="hidden h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary sm:flex">
                     <Sparkles className="h-4 w-4" />
                   </span>
                   <div>
-                    <h2 className="text-base font-extrabold text-primary">
-                      Rekomendasi CCTV di {camera.city}
+                    <h2 className="text-sm font-extrabold text-primary sm:text-base">
+                      Related Cameras
                     </h2>
-                    <p className="text-xs text-slate-500">
+                    <p className="hidden text-xs text-slate-500 sm:block">
                       Kamera terdekat &amp; prioritas pantauan di wilayah hukum Satpol PP {camera.city}
                     </p>
                   </div>
@@ -348,13 +394,95 @@ export default function CctvLivePage() {
 
                 <Link
                   to="/satpol/cctv"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-primary/35 bg-[#EEF4FD] px-4 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary hover:text-white"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-primary/35 bg-[#EEF4FD] px-3 py-1 text-[11px] font-semibold text-primary transition hover:bg-primary hover:text-white sm:px-4 sm:py-1.5 sm:text-xs"
                 >
                   <span>Lihat Semua ({totalCityCameras})</span>
                 </Link>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {/* Mobile Horizontal Carousel (matching CCTV Monitoring (Satpol PP) Inspect - Mobile.png) */}
+              <div className="md:hidden">
+                <div
+                  ref={relatedScrollRef}
+                  onScroll={handleRelatedScroll}
+                  className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                >
+                  {recommendedCameras.map(({ cam, reason }, idx) => {
+                    const isHighlighted = idx === 0 || cam.hasActiveReport;
+                    const badgeText = cam.hasActiveReport
+                      ? 'Active Violation'
+                      : cam.district
+                        ? `Kec. ${cam.district}`
+                        : cam.city;
+                    return (
+                      <article
+                        key={cam.id}
+                        onClick={() => navigate(`/satpol/cctv/${encodeURIComponent(cam.id)}`)}
+                        className={cn(
+                          'group min-w-[190px] max-w-[205px] shrink-0 cursor-pointer snap-start rounded-2xl border bg-white p-3.5 shadow-sm transition',
+                          isHighlighted
+                            ? 'border-primary/60'
+                            : 'border-slate-200/90 hover:border-primary/40',
+                        )}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span
+                            className={cn(
+                              'truncate rounded-md px-2.5 py-1 text-[11px] font-bold',
+                              cam.hasActiveReport
+                                ? 'bg-red-100 text-red-700'
+                                : isHighlighted
+                                  ? 'bg-[#D8E7FA] text-primary'
+                                  : 'bg-slate-100 text-slate-600',
+                            )}
+                          >
+                            {badgeText}
+                          </span>
+                          <span className="truncate text-[10px] font-medium text-slate-400">
+                            {reason.split('•').pop()?.trim()}
+                          </span>
+                        </div>
+
+                        <h3 className="mt-2.5 truncate text-xs font-extrabold text-primary">
+                          {cam.name}
+                        </h3>
+
+                        <div className="mt-1 flex items-end justify-between gap-2">
+                          <p className="truncate text-[10.5px] text-slate-500">
+                            {cam.facilityCategory ?? 'Koridor Publik'}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/satpol/cctv/${encodeURIComponent(cam.id)}`);
+                            }}
+                            className={cn(
+                              'shrink-0 rounded-md px-3 py-1 text-[10px] font-bold text-white transition',
+                              isHighlighted
+                                ? 'bg-primary hover:bg-primary/90'
+                                : 'bg-slate-400 group-hover:bg-primary',
+                            )}
+                          >
+                            View
+                          </button>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+
+                {/* Synced Scrollbar Progress Indicator */}
+                <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-200/80">
+                  <div
+                    className="h-full w-1/3 rounded-full bg-primary transition-transform duration-150"
+                    style={{ transform: `translateX(${scrollProgress * 200}%)` }}
+                  />
+                </div>
+              </div>
+
+              {/* Desktop 3-Column Grid */}
+              <div className="hidden grid-cols-1 gap-4 md:grid md:grid-cols-2 lg:grid-cols-3">
                 {recommendedCameras.map(({ cam, reason }, idx) => (
                   <article
                     key={cam.id}
@@ -393,6 +521,18 @@ export default function CctvLivePage() {
           )}
         </div>
       )}
+
+      {/* Mobile Decorative Cityscape Footer (matches CCTV Monitoring (Satpol PP) Inspect - Mobile.png) */}
+      <div className="-mx-4 mt-6 overflow-hidden bg-gradient-to-b from-transparent via-[#DCE8F8]/60 to-[#9EC1EB]/60 pt-8 md:hidden">
+        <img
+          src={loginBgUrl}
+          alt=""
+          aria-hidden="true"
+          decoding="async"
+          draggable={false}
+          className="pointer-events-none h-36 w-full select-none object-cover object-bottom opacity-85"
+        />
+      </div>
     </div>
   );
 }
