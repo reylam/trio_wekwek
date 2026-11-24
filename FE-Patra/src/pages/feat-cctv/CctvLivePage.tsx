@@ -203,9 +203,25 @@ export default function CctvLivePage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 pb-0 pt-4 sm:px-8 sm:py-6">
-      {/* Mobile Dedicated Detail Header (matches CCTV Monitoring (Satpol PP) Inspect - Mobile.png) */}
-      <div className="flex items-center justify-between gap-2.5 pb-4 lg:hidden">
+    <div className="relative min-h-screen overflow-x-clip bg-white md:bg-transparent">
+      {/* Seamless Mobile Page Background (Sky Gradient + Skyline & Traffic Lights from Login BG.png) */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-0 bg-[linear-gradient(180deg,#FFFFFF_0%,#FFFFFF_45%,#E4EFFC_68%,#B5D2F4_100%)] md:hidden"
+      >
+        <div
+          className="absolute inset-x-0 bottom-0 h-[210px] bg-no-repeat opacity-90"
+          style={{
+            backgroundImage: `url("${loginBgUrl}")`,
+            backgroundSize: '108% auto',
+            backgroundPosition: 'center top',
+          }}
+        />
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-6xl px-4 pb-44 pt-4 sm:px-8 sm:py-6 md:pb-8">
+        {/* Mobile Dedicated Detail Header (matches CCTV Monitoring (Satpol PP) Inspect - Mobile.png) */}
+        <div className="flex items-center justify-between gap-2.5 pb-4 lg:hidden">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <button
             type="button"
@@ -288,7 +304,7 @@ export default function CctvLivePage() {
       )}
 
       {camera && (
-        <div className="space-y-6">
+        <div className="flex flex-col gap-5 sm:gap-6">
           {savedReportBanner && (
             <div className="animate-patra-enter flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/25 bg-white px-4 py-3 shadow-sm">
               <div className="flex items-center gap-2.5 text-sm font-semibold text-primary">
@@ -315,7 +331,7 @@ export default function CctvLivePage() {
             </div>
           )}
 
-          <div data-tour="satpol-live-player" className="rounded-2xl">
+          <div data-tour="satpol-live-player" className="order-1 rounded-2xl">
             <CctvPlayerWithAI
               camera={camera}
               onViolationCaptured={handleViolationCaptured}
@@ -326,10 +342,10 @@ export default function CctvLivePage() {
             />
           </div>
 
-          {/* Metadata & Sumber Kamera */}
+          {/* Metadata & Sumber Kamera (after Related Cameras on mobile, right below player on desktop) */}
           <div
             data-tour="satpol-live-telemetry"
-            className="animate-patra-enter grid grid-cols-1 gap-3 rounded-2xl border border-accent/45 bg-white p-4 text-xs shadow-sm sm:grid-cols-3"
+            className="animate-patra-enter order-3 grid grid-cols-1 gap-3 rounded-2xl border border-accent/45 bg-white/90 p-3.5 text-xs shadow-sm backdrop-blur-sm sm:grid-cols-3 sm:bg-white sm:p-4 sm:backdrop-blur-none md:order-2"
           >
             <div>
               <p className="font-semibold text-slate-400">Sumber &amp; Atribusi</p>
@@ -376,7 +392,10 @@ export default function CctvLivePage() {
 
           {/* Rekomendasi CCTV Lainnya di Kota yang Sama (Region-Locked) */}
           {recommendedCameras.length > 0 && (
-            <section data-tour="satpol-live-recommend" className="animate-patra-enter rounded-2xl pt-1 sm:pt-2">
+            <section
+              data-tour="satpol-live-recommend"
+              className="animate-patra-enter order-2 rounded-2xl pt-1 sm:pt-2 md:order-3"
+            >
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2 sm:mb-4 sm:gap-3">
                 <div className="flex items-center gap-2 sm:gap-2.5">
                   <span className="hidden h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary sm:flex">
@@ -407,28 +426,26 @@ export default function CctvLivePage() {
                   onScroll={handleRelatedScroll}
                   className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 >
-                  {recommendedCameras.map(({ cam, reason }, idx) => {
+                  {recommendedCameras.map(({ cam }, idx) => {
                     const isHighlighted = idx === 0 || cam.hasActiveReport;
                     const badgeText = cam.hasActiveReport
                       ? 'Active Violation'
-                      : cam.district
-                        ? `Kec. ${cam.district}`
-                        : cam.city;
+                      : cam.district || cam.city;
                     return (
                       <article
                         key={cam.id}
                         onClick={() => navigate(`/satpol/cctv/${encodeURIComponent(cam.id)}`)}
                         className={cn(
-                          'group min-w-[190px] max-w-[205px] shrink-0 cursor-pointer snap-start rounded-2xl border bg-white p-3.5 shadow-sm transition',
+                          'group min-w-[190px] max-w-[205px] shrink-0 cursor-pointer snap-start rounded-2xl border bg-white/95 p-3.5 shadow-sm backdrop-blur-sm transition',
                           isHighlighted
                             ? 'border-primary/60'
                             : 'border-slate-200/90 hover:border-primary/40',
                         )}
                       >
-                        <div className="flex items-center justify-between gap-2">
+                        <div>
                           <span
                             className={cn(
-                              'truncate rounded-md px-2.5 py-1 text-[11px] font-bold',
+                              'inline-block max-w-full truncate rounded-md px-2.5 py-1 text-[11px] font-bold',
                               cam.hasActiveReport
                                 ? 'bg-red-100 text-red-700'
                                 : isHighlighted
@@ -437,9 +454,6 @@ export default function CctvLivePage() {
                             )}
                           >
                             {badgeText}
-                          </span>
-                          <span className="truncate text-[10px] font-medium text-slate-400">
-                            {reason.split('•').pop()?.trim()}
                           </span>
                         </div>
 
@@ -521,17 +535,6 @@ export default function CctvLivePage() {
           )}
         </div>
       )}
-
-      {/* Mobile Decorative Cityscape Footer (matches CCTV Monitoring (Satpol PP) Inspect - Mobile.png) */}
-      <div className="-mx-4 mt-6 overflow-hidden bg-gradient-to-b from-transparent via-[#DCE8F8]/60 to-[#9EC1EB]/60 pt-8 md:hidden">
-        <img
-          src={loginBgUrl}
-          alt=""
-          aria-hidden="true"
-          decoding="async"
-          draggable={false}
-          className="pointer-events-none h-36 w-full select-none object-cover object-bottom opacity-85"
-        />
       </div>
     </div>
   );

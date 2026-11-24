@@ -748,34 +748,36 @@ export default function CctvPlayerWithAI({
 
           {/* Loading Overlay saat menghubungkan stream */}
           {streamStatus === 'INITIALIZING' && (
-            <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-950/55 text-white backdrop-blur-[2px]">
-              <div className="animate-patra-glow flex h-14 w-14 items-center justify-center rounded-full bg-primary/30 ring-1 ring-accent/50">
-                <Loader2 className="h-7 w-7 animate-spin text-accent" />
+            <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-950/55 px-4 text-center text-white backdrop-blur-[2px]">
+              <div className="animate-patra-glow flex h-10 w-10 items-center justify-center rounded-full bg-primary/30 ring-1 ring-accent/50 sm:h-14 sm:w-14">
+                <Loader2 className="h-5 w-5 animate-spin text-accent sm:h-7 sm:w-7" />
               </div>
-              <p className="mt-3 text-sm font-semibold tracking-tight">
+              <p className="mt-2 text-xs font-semibold tracking-tight sm:mt-3 sm:text-sm">
                 Menghubungkan Live CCTV {camera.city}...
               </p>
-              <p className="mt-1 text-xs text-blue-100/75">{camera.name}</p>
+              <p className="mt-0.5 truncate text-[11px] text-blue-100/75 sm:mt-1 sm:text-xs">
+                {camera.name}
+              </p>
             </div>
           )}
 
           {/* Offline / Error Overlay (tanpa mode simulasi palsu) */}
           {streamStatus === 'ERROR' && (
-            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-gradient-to-br from-[#0F1B36] via-[#0B132B] to-[#070C1C] px-6 text-center text-white">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-500/15 text-red-300 ring-1 ring-red-400/30">
-                <WifiOff className="h-7 w-7" />
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-gradient-to-br from-[#0F1B36] via-[#0B132B] to-[#070C1C] px-4 py-3 text-center text-white sm:px-6">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500/15 text-red-300 ring-1 ring-red-400/30 sm:h-14 sm:w-14">
+                <WifiOff className="h-5 w-5 sm:h-7 sm:w-7" />
               </div>
-              <h3 className="mt-4 text-base font-bold text-white">
+              <h3 className="mt-2 text-sm font-bold text-white sm:mt-4 sm:text-base">
                 Kamera CCTV Sedang Offline
               </h3>
-              <p className="mt-1.5 max-w-md text-xs leading-relaxed text-slate-300">
+              <p className="mt-1 line-clamp-2 max-w-md text-[11px] leading-snug text-slate-300 sm:mt-1.5 sm:line-clamp-none sm:text-xs sm:leading-relaxed">
                 {offlineReason ??
                   'Feed langsung dari server Pemda belum merespons. Silakan coba muat ulang atau pilih kamera rekomendasi di bawah.'}
               </p>
               <button
                 type="button"
                 onClick={() => setRetryNonce((n) => n + 1)}
-                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-white shadow transition hover:scale-[1.02] hover:bg-primary/90 active:scale-[0.98]"
+                className="mt-2.5 inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-1.5 text-[11px] font-semibold text-white shadow transition hover:scale-[1.02] hover:bg-primary/90 active:scale-[0.98] sm:mt-4 sm:gap-2 sm:px-4 sm:py-2 sm:text-xs"
               >
                 <RefreshCw className="h-3.5 w-3.5" />
                 <span>Coba Hubungkan Ulang</span>
