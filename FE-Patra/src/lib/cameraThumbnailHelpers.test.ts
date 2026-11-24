@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   isThumbnailFailureFresh,
+  paginateList,
   resolveThumbnailGrabStrategy,
   setBoundedCacheEntry,
 } from './cameraThumbnailHelpers.ts';
@@ -91,4 +92,44 @@ test('setBoundedCacheEntry membatasi ukuran cache dan mengeluarkan entri terlama
     ['a', '1-new'],
     ['c', '3'],
   ]);
+});
+
+test('paginateList membagi 34 item menjadi 3 halaman @12 item serta menangani array kosong dan input di luar batas', () => {
+  const cameras = Array.from({ length: 34 }, (_, idx) => `cam-${idx + 1}`);
+
+  const p1 = paginateList(cameras, 1, 12);
+  assert.equal(p1.currentPage, 1);
+  assert.equal(p1.totalPages, 3);
+  assert.equal(p1.totalItems, 34);
+  assert.equal(p1.items.length, 12);
+  assert.equal(p1.startIndex, 1);
+  assert.equal(p1.endIndex, 12);
+
+  const p3 = paginateList(cameras, 3, 12);
+  assert.equal(p3.currentPage, 3);
+  assert.equal(p3.items.length, 10);
+  assert.equal(p3.startIndex, 25);
+  assert.equal(p3.endIndex, 34);
+
+  // Edge / failure cases: array kosong, halaman negatif/NaN/kelebihan, pageSize <= 0
+  const empty = paginateList([], 2, 12);
+  assert.deepEqual(empty, {
+    items: [],
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    startIndex: 0,
+    endIndex: 0,
+  });
+
+  const clampedHigh = paginateList(cameras, 99, 12);
+  assert.equal(clampedHigh.currentPage, 3);
+
+  const clampedLow = paginateList(cameras, -5, 12);
+  assert.equal(clampedLow.currentPage, 1);
+
+  const nanInputs = paginateList(cameras, Number.NaN, 0);
+  assert.equal(nanInputs.currentPage, 1);
+  assert.equal(nanInputs.totalPages, 34);
+  assert.equal(nanInputs.items.length, 1);
 });

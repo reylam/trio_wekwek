@@ -17,13 +17,20 @@ const MAX_CONCURRENT_GRABS = 2;
 let activeGrabs = 0;
 const grabQueue: Array<() => void> = [];
 
-function acquireGrabSlot(run: () => void) {
+function acquireGrabSlot(run: () => void): () => void {
   if (activeGrabs < MAX_CONCURRENT_GRABS) {
     activeGrabs += 1;
     run();
-  } else {
-    grabQueue.push(run);
+    return () => {};
   }
+
+  grabQueue.push(run);
+  return () => {
+    const idx = grabQueue.indexOf(run);
+    if (idx !== -1) {
+      grabQueue.splice(idx, 1);
+    }
+  };
 }
 
 function releaseGrabSlot() {
@@ -50,9 +57,9 @@ export default function CameraThumbnail({ camera }: { camera: CctvCameraDto }) {
     return 'idle';
   });
 
-  // 1. Lazy-load hanya ketika kartu masuk viewport
+  // 1. Lazy-load adaptif: lepas antrean jika kartu keluar viewport sebelum sempat diproses
   useEffect(() => {
-    if (capturedUrl || status === 'offline') return;
+    if (capturedUrl || livePausedFallback || status === 'offline') return;
     const el = containerRef.current;
     if (!el || typeof IntersectionObserver === 'undefined') {
       setInView(true);
@@ -61,16 +68,13 @@ export default function CameraThumbnail({ camera }: { camera: CctvCameraDto }) {
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries.some((e) => e.isIntersecting)) {
-          setInView(true);
-          observer.disconnect();
-        }
+        setInView(entries.some((e) => e.isIntersecting));
       },
       { rootMargin: '120px' },
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [capturedUrl, status]);
+  }, [capturedUrl, livePausedFallback, status]);
 
   // 2. Ambil 1 frame nyata dari live HLS stream -> render ke dataURL -> langsung hls.destroy()
   useEffect(() => {
@@ -210,7 +214,7 @@ export default function CameraThumbnail({ camera }: { camera: CctvCameraDto }) {
 
       if (Hls.isSupported()) {
         hls = new Hls({
-          enableWorker: true,
+          enableWorker: false,
           lowLatencyMode: false,
           maxBufferLength: 3,
           maxMaxBufferLength: 5,
@@ -239,7 +243,7 @@ export default function CameraThumbnail({ camera }: { camera: CctvCameraDto }) {
       }
     };
 
-    acquireGrabSlot(() => {
+    const cancelQueued = acquireGrabSlot(() => {
       if (cancelled) {
         releaseGrabSlot();
         return;
@@ -250,11 +254,21 @@ export default function CameraThumbnail({ camera }: { camera: CctvCameraDto }) {
 
     return () => {
       cancelled = true;
+      cancelQueued();
       if (!keepPausedVideo) {
         cleanupHlsOnly();
       } else if (hls) {
         hls.destroy();
         hls = null;
+      }
+      const videoEl = videoRef.current;
+      if (videoEl) {
+        videoEl.onloadeddata = null;
+        videoEl.oncanplay = null;
+        videoEl.onerror = null;
+        videoEl.pause();
+        videoEl.removeAttribute('src');
+        videoEl.load();
       }
       finishSlot();
     };

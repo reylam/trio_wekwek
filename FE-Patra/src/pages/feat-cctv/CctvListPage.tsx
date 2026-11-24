@@ -1,11 +1,25 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { AlertCircle, Camera, ChevronDown, RefreshCw, Search, X } from 'lucide-react';
+import {
+  AlertCircle,
+  Camera,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
+  Search,
+  X,
+} from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { cctvApi } from '@/services/api';
 import { SatpolTopHeader } from '@/components/layout/SatpolLayout';
 import CameraThumbnail from '@/components/cctv/CameraThumbnail';
+import { paginateList } from '@/lib/cameraThumbnailHelpers';
+import { buildPaginationItems } from '@/lib/reportHelpers';
+import { cn } from '@/lib/utils';
+
+const CAMERAS_PER_PAGE = 12;
 
 export default function CctvListPage() {
   const { user } = useAuth();
@@ -14,6 +28,11 @@ export default function CctvListPage() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedDistrict, user?.region.id]);
 
   const camerasQuery = useQuery({
     queryKey: ['cctv', 'list', user?.region.id],
@@ -48,6 +67,16 @@ export default function CctvListPage() {
       );
     });
   }, [allCameras, searchQuery, selectedDistrict]);
+
+  const pageData = useMemo(
+    () => paginateList(filteredCameras, currentPage, CAMERAS_PER_PAGE),
+    [filteredCameras, currentPage],
+  );
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <div className="mx-auto max-w-7xl px-4 pb-6 pt-3 sm:px-8 lg:py-7">
@@ -207,13 +236,14 @@ export default function CctvListPage() {
         </div>
       )}
 
-      {/* 3-Column Camera Card Grid with smooth staggered entrance animation */}
+      {/* 3-Column Camera Card Grid (12 kamera per halaman agar decoder browser tetap ringan) */}
       {!camerasQuery.isLoading && !camerasQuery.isError && filteredCameras.length > 0 && (
-        <div
-          data-tour="satpol-cctv-grid"
-          className="grid grid-cols-1 gap-5 rounded-2xl md:grid-cols-2 xl:grid-cols-3"
-        >
-          {filteredCameras.map((camera, idx) => (
+        <>
+          <div
+            data-tour="satpol-cctv-grid"
+            className="grid grid-cols-1 gap-5 rounded-2xl md:grid-cols-2 xl:grid-cols-3"
+          >
+            {pageData.items.map((camera, idx) => (
             <article
               key={camera.id}
               onClick={() => navigate(`/satpol/cctv/${encodeURIComponent(camera.id)}`)}
@@ -256,8 +286,68 @@ export default function CctvListPage() {
                 </button>
               </div>
             </article>
-          ))}
-        </div>
+            ))}
+          </div>
+
+          {pageData.totalPages > 1 && (
+            <div className="mt-6 flex flex-col items-center justify-between gap-3 rounded-2xl border border-accent/40 bg-white px-4 py-3 shadow-sm sm:flex-row">
+              <p className="text-xs font-medium text-primary/80">
+                Menampilkan{' '}
+                <span className="font-bold text-primary">
+                  {pageData.startIndex}–{pageData.endIndex}
+                </span>{' '}
+                dari <span className="font-bold text-primary">{pageData.totalItems}</span> kamera
+              </p>
+
+              <div className="flex flex-wrap items-center justify-center gap-1.5">
+                <button
+                  type="button"
+                  disabled={pageData.currentPage <= 1}
+                  onClick={() => handlePageChange(pageData.currentPage - 1)}
+                  aria-label="Halaman sebelumnya"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-primary/25 bg-[#EEF4FD] text-primary transition hover:bg-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+
+                {buildPaginationItems(pageData.currentPage, pageData.totalPages).map((item, idx) =>
+                  item === 'ellipsis' ? (
+                    <span
+                      key={`ellipsis-${idx}`}
+                      className="px-1.5 text-xs font-semibold text-primary/60"
+                    >
+                      ...
+                    </span>
+                  ) : (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => handlePageChange(item)}
+                      className={cn(
+                        'flex h-8 min-w-[2rem] items-center justify-center rounded-full px-2.5 text-xs font-bold transition',
+                        pageData.currentPage === item
+                          ? 'bg-primary text-white shadow-sm'
+                          : 'border border-primary/20 bg-white text-primary hover:bg-[#EEF4FD]',
+                      )}
+                    >
+                      {item}
+                    </button>
+                  ),
+                )}
+
+                <button
+                  type="button"
+                  disabled={pageData.currentPage >= pageData.totalPages}
+                  onClick={() => handlePageChange(pageData.currentPage + 1)}
+                  aria-label="Halaman berikutnya"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-primary/25 bg-[#EEF4FD] text-primary transition hover:bg-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

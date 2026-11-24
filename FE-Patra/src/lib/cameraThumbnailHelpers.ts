@@ -87,3 +87,38 @@ export function resolveThumbnailGrabStrategy(
     sourceUrl,
   };
 }
+
+export interface PaginatedSlice<T> {
+  items: T[];
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  startIndex: number;
+  endIndex: number;
+}
+
+/**
+ * Slices a list deterministically for client-side pagination with safe bounds.
+ */
+export function paginateList<T>(
+  items: readonly T[],
+  page: number,
+  pageSize: number,
+): PaginatedSlice<T> {
+  const safePageSize = Number.isFinite(pageSize) && pageSize >= 1 ? Math.floor(pageSize) : 1;
+  const totalItems = items.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / safePageSize));
+  const rawPage = Number.isFinite(page) ? Math.floor(page) : 1;
+  const currentPage = Math.min(totalPages, Math.max(1, rawPage));
+  const offset = (currentPage - 1) * safePageSize;
+  const slice = items.slice(offset, offset + safePageSize);
+
+  return {
+    items: slice,
+    currentPage,
+    totalPages,
+    totalItems,
+    startIndex: totalItems === 0 ? 0 : offset + 1,
+    endIndex: offset + slice.length,
+  };
+}
