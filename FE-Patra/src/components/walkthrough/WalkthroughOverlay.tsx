@@ -152,9 +152,16 @@ export default function WalkthroughOverlay() {
 
     let cancelled = false;
     let retryTimer: number | null = null;
+    const settleTimers: number[] = [];
     let attempts = 0;
     let trackedEl: HTMLElement | null = null;
     let resizeObs: ResizeObserver | null = null;
+
+    // Tunggu sampai rute langkah benar-benar aktif agar tidak menyorot elemen halaman lama
+    if (currentStep.route && location.pathname !== currentStep.route) {
+      setSpot(null);
+      return;
+    }
 
     const padding = currentStep.padding ?? 8;
 
@@ -173,14 +180,28 @@ export default function WalkthroughOverlay() {
       if (el) {
         trackedEl = el;
         const rect = el.getBoundingClientRect();
-        const outOfView = rect.top < 72 || rect.bottom > window.innerHeight - 40;
+        const isInHeader = Boolean(el.closest('header'));
+        const topSafe = isInHeader ? 8 : 84;
+        const outOfView =
+          rect.top < topSafe || rect.bottom > window.innerHeight - 36;
         const stepKey = `${activeTour?.id}:${currentStep.id}`;
 
-        if (outOfView && scrolledStepRef.current !== stepKey) {
+        if (!isInHeader && outOfView && scrolledStepRef.current !== stepKey) {
           scrolledStepRef.current = stepKey;
-          el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-          window.setTimeout(updateRect, 260);
-          window.setTimeout(updateRect, 520);
+          const isTall = rect.height > window.innerHeight - 200;
+          if (isTall) {
+            const targetY = Math.max(0, window.scrollY + rect.top - topSafe);
+            window.scrollTo({ top: targetY, behavior: 'smooth' });
+          } else {
+            el.scrollIntoView({
+              behavior: 'smooth',
+              block: 'center',
+              inline: 'nearest',
+            });
+          }
+          settleTimers.push(window.setTimeout(updateRect, 180));
+          settleTimers.push(window.setTimeout(updateRect, 420));
+          settleTimers.push(window.setTimeout(updateRect, 700));
         }
 
         updateRect();
@@ -189,11 +210,10 @@ export default function WalkthroughOverlay() {
         return;
       }
 
+      setSpot(null);
       attempts += 1;
-      if (attempts <= 24) {
+      if (attempts <= 30) {
         retryTimer = window.setTimeout(locate, 120);
-      } else {
-        setSpot(null);
       }
     };
 
@@ -204,6 +224,7 @@ export default function WalkthroughOverlay() {
     return () => {
       cancelled = true;
       if (retryTimer !== null) window.clearTimeout(retryTimer);
+      for (const tid of settleTimers) window.clearTimeout(tid);
       resizeObs?.disconnect();
       window.removeEventListener('resize', updateRect);
       window.removeEventListener('scroll', updateRect, true);
@@ -231,7 +252,7 @@ export default function WalkthroughOverlay() {
       className="fixed inset-0 z-[1200] select-none"
       role="dialog"
       aria-modal="true"
-      aria-label={`${activeTour.label} — ${currentStep.title}`}
+      aria-label={`${activeTour.label}: ${currentStep.title}`}
     >
       {/* Backdrop gelap presisi dengan lubang SVG cutout */}
       <svg

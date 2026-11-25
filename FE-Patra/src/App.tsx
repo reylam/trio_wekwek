@@ -14,7 +14,17 @@ import { WalkthroughProvider } from '@/components/walkthrough/WalkthroughContext
 import WalkthroughOverlay from '@/components/walkthrough/WalkthroughOverlay';
 import type { UserRole } from '@/types';
 
+const PublicLayout = lazy(() => import('@/components/layout/PublicLayout'));
 const PublicHomePage = lazy(() => import('@/pages/feat-public/PublicHomePage'));
+const PublicGreenZonesPage = lazy(
+  () => import('@/pages/feat-public/PublicGreenZonesPage'),
+);
+const PublicPklGuidePage = lazy(
+  () => import('@/pages/feat-public/PublicPklGuidePage'),
+);
+const PublicAboutPage = lazy(
+  () => import('@/pages/feat-public/PublicAboutPage'),
+);
 const LoginPage = lazy(() => import('@/pages/feat-login/LoginPage'));
 
 const SatpolLayout = lazy(() => import('@/components/layout/SatpolLayout'));
@@ -104,7 +114,12 @@ export default function App() {
                 <Suspense fallback={<FullPageLoader />}>
                   <Routes>
                     {/* Portal Publik Transparansi SDG 16 (Tanpa Login) */}
-                    <Route path="/" element={<PublicHomePage />} />
+                    <Route element={<PublicLayout />}>
+                      <Route path="/" element={<PublicHomePage />} />
+                      <Route path="/zona-hijau" element={<PublicGreenZonesPage />} />
+                      <Route path="/panduan-pkl" element={<PublicPklGuidePage />} />
+                      <Route path="/tentang" element={<PublicAboutPage />} />
+                    </Route>
 
                     <Route
                       path="/login"

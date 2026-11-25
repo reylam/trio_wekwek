@@ -5,6 +5,7 @@ import path from 'node:path';
 import bcrypt from 'bcryptjs';
 import { getPrisma } from '../src/config/prisma.js';
 import {
+  EXTRA_PUBLIC_RELOCATION_SITES,
   parseCctvSnapshotItems,
   SEED_CAMERAS,
   SEED_REGIONS,
@@ -366,9 +367,10 @@ async function main() {
     zoneByKey.set(`${z.regionCode}::${z.name}`, row.id);
   }
 
-  // 5. Upsert RelocationSite (idempoten berdasarkan regionId + name, TANPA KUOTA)
+  // 5. Upsert RelocationSite (idempoten berdasarkan regionId + name, TANPA KUOTA, mencakup seluruh 17 kota)
+  const allRelocationSites = [...SEED_RELOCATION_SITES, ...EXTRA_PUBLIC_RELOCATION_SITES];
   const siteByKey = new Map<string, string>();
-  for (const s of SEED_RELOCATION_SITES) {
+  for (const s of allRelocationSites) {
     const region = regionByCode.get(s.regionCode);
     if (!region) continue;
     const existing = await prisma.relocationSite.findFirst({
@@ -480,7 +482,7 @@ async function main() {
   }
 
   console.log(
-    `[seed] Selesai! Regions=${allRegions.length}, DemoUsers=${allDemoUsers.length}, CamerasSynced=${syncedCameras}, Zones=${SEED_ZONES.length}, RelocationSites=${SEED_RELOCATION_SITES.length}, NewReports=${createdReports}.`,
+    `[seed] Selesai! Regions=${allRegions.length}, DemoUsers=${allDemoUsers.length}, CamerasSynced=${syncedCameras}, Zones=${SEED_ZONES.length}, RelocationSites=${allRelocationSites.length}, NewReports=${createdReports}.`,
   );
 }
 

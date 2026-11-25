@@ -6,6 +6,7 @@ import {
   createZoneSchema,
 } from '../interface/index.js';
 import {
+  EXTRA_PUBLIC_RELOCATION_SITES,
   parseCctvSnapshotItems,
   SEED_CAMERAS,
   SEED_REGIONS,
@@ -34,8 +35,9 @@ test('seed pilot data satisfies contract counts, schemas, and strict out-of-scop
     assert.equal(createZoneSchema.safeParse(zone).success, true);
   }
 
-  // Every relocation site passes schema and contains NO quota/capacity field
-  for (const site of SEED_RELOCATION_SITES) {
+  // Every relocation site (pilot + 15 extra public cities) passes schema and contains NO quota/capacity field
+  assert.equal(EXTRA_PUBLIC_RELOCATION_SITES.length, 30);
+  for (const site of [...SEED_RELOCATION_SITES, ...EXTRA_PUBLIC_RELOCATION_SITES]) {
     assert.equal(createRelocationSiteSchema.safeParse(site).success, true);
     assert.equal('quota' in site, false);
     assert.equal('capacity' in site, false);
