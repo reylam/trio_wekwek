@@ -18,6 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import { compressCanvasToJpegBlob } from '@/lib/imageCompress';
+import { isFatalHttpStatus, markCameraUnavailable } from '@/lib/cameraThumbnailHelpers';
 import { cctvApi } from '@/services/api';
 import {
   getCameraTracker,
@@ -234,6 +235,7 @@ export default function CctvPlayerWithAI({
           enableWorker: true,
           lowLatencyMode: true,
           manifestLoadingTimeOut: hlsTimeoutMs,
+          manifestLoadingMaxRetry: 0,
           fragLoadingTimeOut: hlsTimeoutMs,
         });
 
@@ -252,11 +254,18 @@ export default function CctvPlayerWithAI({
         });
 
         hls.on(Hls.Events.ERROR, (_event, data) => {
-          if (!data.fatal || cancelled) return;
+          if (cancelled) return;
+          if (isFatalHttpStatus(data.response?.code)) {
+            markCameraUnavailable(camera.id);
+            markOffline('Stream CCTV tidak tersedia (HTTP 404/offline).');
+            return;
+          }
+          if (!data.fatal) return;
           if (withCors) {
             settled = true;
             connectStream(false);
           } else {
+            markCameraUnavailable(camera.id);
             markOffline('Gagal memuat stream HLS dari server CCTV Pemda.');
           }
         });

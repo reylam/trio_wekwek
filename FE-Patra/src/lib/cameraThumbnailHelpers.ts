@@ -1,6 +1,46 @@
 export const FAILED_CACHE_TTL_MS = 60_000;
 export const MAX_THUMBNAIL_CACHE_ENTRIES = 60;
 
+// Reactive session-level set of camera IDs confirmed offline / 404 so UI grids hide them automatically.
+let unavailableCameraIds = new Set<string>();
+const unavailableListeners = new Set<() => void>();
+
+function notifyUnavailableListeners(): void {
+  for (const listener of unavailableListeners) {
+    listener();
+  }
+}
+
+export function isFatalHttpStatus(code?: number): boolean {
+  return typeof code === 'number' && Number.isFinite(code) && code >= 400;
+}
+
+export function markCameraUnavailable(cameraId: string): void {
+  const id = cameraId.trim();
+  if (!id || unavailableCameraIds.has(id)) return;
+  const next = new Set(unavailableCameraIds);
+  next.add(id);
+  unavailableCameraIds = next;
+  notifyUnavailableListeners();
+}
+
+export function clearUnavailableCameras(): void {
+  if (unavailableCameraIds.size === 0) return;
+  unavailableCameraIds = new Set<string>();
+  notifyUnavailableListeners();
+}
+
+export function getUnavailableCameraIdsSnapshot(): ReadonlySet<string> {
+  return unavailableCameraIds;
+}
+
+export function subscribeUnavailableCameras(listener: () => void): () => void {
+  unavailableListeners.add(listener);
+  return () => {
+    unavailableListeners.delete(listener);
+  };
+}
+
 export type ThumbnailGrabStrategy =
   | {
       canGrab: true;

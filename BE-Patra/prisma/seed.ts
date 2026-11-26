@@ -184,6 +184,50 @@ const EXTRA_PUBLIC_REGIONS = [
     centerLng: 106.90083,
     defaultZoom: 13,
   },
+  {
+    code: 'nganjuk',
+    city: 'Kabupaten Nganjuk',
+    province: 'Jawa Timur',
+    island: 'Jawa',
+    satpolAgencyName: 'Satpol PP Kabupaten Nganjuk',
+    umkmAgencyName: 'Dinas Koperasi dan UM Kabupaten Nganjuk',
+    centerLat: -7.6051,
+    centerLng: 111.9035,
+    defaultZoom: 12,
+  },
+  {
+    code: 'bogor',
+    city: 'Kota Bogor',
+    province: 'Jawa Barat',
+    island: 'Jawa',
+    satpolAgencyName: 'Satpol PP Kota Bogor',
+    umkmAgencyName: 'Dinas Koperasi UKM Perdagangan dan Perindustrian Kota Bogor',
+    centerLat: -6.5971,
+    centerLng: 106.806,
+    defaultZoom: 13,
+  },
+  {
+    code: 'indramayu',
+    city: 'Kabupaten Indramayu',
+    province: 'Jawa Barat',
+    island: 'Jawa',
+    satpolAgencyName: 'Satpol PP Kabupaten Indramayu',
+    umkmAgencyName: 'Diskopdagin Kabupaten Indramayu',
+    centerLat: -6.3276,
+    centerLng: 108.3249,
+    defaultZoom: 12,
+  },
+  {
+    code: 'bali',
+    city: 'Kota Denpasar & Bali',
+    province: 'Bali',
+    island: 'Bali & Nusa Tenggara',
+    satpolAgencyName: 'Satpol PP Provinsi Bali',
+    umkmAgencyName: 'Dinas Koperasi dan UKM Provinsi Bali',
+    centerLat: -8.65,
+    centerLng: 115.2167,
+    defaultZoom: 11,
+  },
 ] as const;
 
 function loadExternalCctvSnapshot() {
@@ -340,6 +384,21 @@ async function main() {
       },
     });
     syncedCameras++;
+  }
+
+  // Nonaktifkan kamera lama yang sudah dihapus dari snapshot (mis. stream 404 mati) agar tidak muncul di API
+  if (externalCameras.length > 0) {
+    const activeIds = Array.from(mergedCameraMap.keys());
+    const deactivated = await prisma.cctvCamera.updateMany({
+      where: {
+        id: { notIn: activeIds },
+        isActive: true,
+      },
+      data: { isActive: false },
+    });
+    if (deactivated.count > 0) {
+      console.log(`[seed] Menonaktifkan ${deactivated.count} kamera CCTV 404/tidak aktif.`);
+    }
   }
 
   // 4. Upsert RestrictedZone (idempoten berdasarkan regionId + name)

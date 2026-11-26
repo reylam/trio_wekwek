@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Building2,
@@ -20,13 +20,13 @@ const DEMO_ACCOUNTS = [
   {
     demoKey: 'satpol-semarang',
     label: 'Satpol PP',
-    city: 'Kota Semarang (62 CCTV)',
+    city: 'Kota Semarang (54 CCTV)',
     role: 'SATPOL_PP' as const,
   },
   {
     demoKey: 'satpol-jkt-pusat',
     label: 'Satpol PP',
-    city: 'Jakarta Pusat (32 CCTV)',
+    city: 'Jakarta Pusat (30 CCTV)',
     role: 'SATPOL_PP' as const,
   },
   {
@@ -54,6 +54,26 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeDemoKey, setActiveDemoKey] = useState<string | null>(null);
   const [infoNote, setInfoNote] = useState<string | null>(null);
+  const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
+  const cityDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!cityDropdownOpen) return;
+    const handleOutside = (e: MouseEvent) => {
+      if (cityDropdownRef.current && !cityDropdownRef.current.contains(e.target as Node)) {
+        setCityDropdownOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setCityDropdownOpen(false);
+    };
+    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [cityDropdownOpen]);
 
   const redirectByRole = (role: 'SATPOL_PP' | 'DINAS_UMKM') => {
     navigate(role === 'SATPOL_PP' ? '/satpol/cctv' : '/dinas/dashboard', { replace: true });
@@ -328,37 +348,73 @@ export default function LoginPage() {
                 })}
               </div>
 
-              <div className="mt-2.5 border-t border-accent/40 pt-2.5">
+              <div ref={cityDropdownRef} className="mt-2.5 border-t border-accent/40 pt-2.5">
                 <label
                   htmlFor="extra-city-select"
                   className="block text-[9.5px] font-semibold uppercase tracking-wide text-slate-500"
                 >
-                  Atau jelajahi Satpol PP kota publik lainnya (594 CCTV, 17 Kota)
+                  Atau jelajahi Satpol PP kota publik lainnya (874 CCTV, 20 Kota)
                 </label>
                 <div className="relative mt-1">
-                  <select
+                  <button
                     id="extra-city-select"
-                    defaultValue=""
+                    type="button"
                     disabled={isSubmitting || Boolean(activeDemoKey)}
-                    onChange={(e) => {
-                      const key = e.target.value;
-                      if (key) void handleDemoLogin(key);
-                    }}
-                    className="w-full appearance-none rounded-lg border border-accent/60 bg-white py-1.5 pl-2.5 pr-8 text-[11px] font-medium text-primary focus:border-primary focus:outline-none disabled:opacity-60"
+                    aria-expanded={cityDropdownOpen}
+                    aria-haspopup="listbox"
+                    onClick={() => setCityDropdownOpen((prev) => !prev)}
+                    className="flex w-full items-center justify-between rounded-lg border border-accent/60 bg-white py-1.5 pl-2.5 pr-2.5 text-left text-[11px] font-medium text-primary transition hover:border-primary/70 focus:border-primary focus:outline-none disabled:opacity-60"
                   >
-                    <option value="" disabled>
-                      Pilih kota publik lainnya...
-                    </option>
-                    {EXTRA_PUBLIC_CITY_ACCOUNTS.map((item) => (
-                      <option key={item.demoKey} value={item.demoKey}>
-                        Satpol PP {item.city} — {item.province} ({item.cameraCount} CCTV)
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown
-                    className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-primary/70"
-                    aria-hidden="true"
-                  />
+                    <span className="truncate">
+                      {activeDemoKey && EXTRA_PUBLIC_CITY_ACCOUNTS.some((i) => i.demoKey === activeDemoKey)
+                        ? `Masuk ke ${EXTRA_PUBLIC_CITY_ACCOUNTS.find((i) => i.demoKey === activeDemoKey)?.city}...`
+                        : 'Pilih kota publik lainnya...'}
+                    </span>
+                    <ChevronDown
+                      className={`h-3.5 w-3.5 shrink-0 text-primary/70 transition-transform duration-200 ${
+                        cityDropdownOpen ? 'rotate-180' : ''
+                      }`}
+                      aria-hidden="true"
+                    />
+                  </button>
+
+                  {cityDropdownOpen && (
+                    <div
+                      role="listbox"
+                      aria-label="Daftar kota publik PATRA"
+                      className="mt-1 max-h-36 w-full overflow-y-auto overscroll-contain rounded-lg border border-accent/60 bg-white py-1 shadow-md"
+                    >
+                      {EXTRA_PUBLIC_CITY_ACCOUNTS.map((item) => {
+                        const isItemLoading = activeDemoKey === item.demoKey;
+                        return (
+                          <button
+                            key={item.demoKey}
+                            type="button"
+                            role="option"
+                            aria-selected={false}
+                            disabled={isSubmitting || Boolean(activeDemoKey)}
+                            onClick={() => {
+                              setCityDropdownOpen(false);
+                              void handleDemoLogin(item.demoKey);
+                            }}
+                            className="flex w-full items-center justify-between gap-2 px-2.5 py-1.5 text-left text-[11px] text-primary transition hover:bg-[#E9F1FD] disabled:opacity-60"
+                          >
+                            <span className="min-w-0 truncate">
+                              <span className="font-semibold">{item.city}</span>
+                              <span className="text-slate-500">, {item.province}</span>
+                            </span>
+                            <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9.5px] font-bold text-primary">
+                              {isItemLoading ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                `${item.cameraCount} CCTV`
+                              )}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

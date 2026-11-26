@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import Hls from 'hls.js';
 import { Radio, Video, WifiOff } from 'lucide-react';
 import {
+  isFatalHttpStatus,
   isThumbnailFailureFresh,
+  markCameraUnavailable,
   resolveThumbnailGrabStrategy,
   setBoundedCacheEntry,
 } from '@/lib/cameraThumbnailHelpers';
@@ -12,8 +14,8 @@ import type { CctvCameraDto } from '@/types';
 const thumbnailCache = new Map<string, string>();
 const failedCache = new Map<string, number>();
 
-// Antrean konkurensi ringan (maks 2 koneksi HLS thumbnail bersamaan agar tidak membanjiri server Pemda)
-const MAX_CONCURRENT_GRABS = 2;
+// Antrean konkurensi ringan (maks 4 koneksi HLS thumbnail bersamaan agar grid cepat dimuat)
+const MAX_CONCURRENT_GRABS = 4;
 let activeGrabs = 0;
 const grabQueue: Array<() => void> = [];
 
@@ -83,6 +85,7 @@ export default function CameraThumbnail({ camera }: { camera: CctvCameraDto }) {
     const strategy = resolveThumbnailGrabStrategy(camera);
     if (!strategy.canGrab) {
       failedCache.set(camera.id, Date.now());
+      markCameraUnavailable(camera.id);
       setStatus('offline');
       return;
     }
@@ -117,6 +120,7 @@ export default function CameraThumbnail({ camera }: { camera: CctvCameraDto }) {
       finishSlot();
       if (!cancelled) {
         failedCache.set(camera.id, Date.now());
+        markCameraUnavailable(camera.id);
         setStatus('offline');
       }
     };
@@ -161,7 +165,7 @@ export default function CameraThumbnail({ camera }: { camera: CctvCameraDto }) {
         }
       };
 
-      timeoutId = window.setTimeout(fallbackOrFail, 8000);
+      timeoutId = window.setTimeout(fallbackOrFail, 5000);
 
       const handleFrameReady = () => {
         if (attemptSettled || cancelled) return;
@@ -218,8 +222,11 @@ export default function CameraThumbnail({ camera }: { camera: CctvCameraDto }) {
           lowLatencyMode: false,
           maxBufferLength: 3,
           maxMaxBufferLength: 5,
-          manifestLoadingTimeOut: 7500,
-          fragLoadingTimeOut: 7500,
+          manifestLoadingTimeOut: 4500,
+          manifestLoadingMaxRetry: 0,
+          levelLoadingMaxRetry: 0,
+          fragLoadingTimeOut: 4500,
+          fragLoadingMaxRetry: 0,
         });
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           video.play().catch(() => {
@@ -227,6 +234,15 @@ export default function CameraThumbnail({ camera }: { camera: CctvCameraDto }) {
           });
         });
         hls.on(Hls.Events.ERROR, (_event, data) => {
+          // HTTP 4xx/5xx (mis. 404 Not Found): jangan retry non-CORS, langsung sembunyikan kamera offline
+          if (isFatalHttpStatus(data.response?.code)) {
+            if (!attemptSettled && !cancelled) {
+              attemptSettled = true;
+              clearVideoHandlers();
+              markUnavailable();
+            }
+            return;
+          }
           if (data.fatal) {
             fallbackOrFail();
           }

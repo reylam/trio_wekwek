@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -17,6 +17,10 @@ import WalkthroughTriggerButton from '@/components/walkthrough/WalkthroughTrigge
 import CctvPlayerWithAI from '@/components/cctv/CctvPlayerWithAI';
 import CameraThumbnail from '@/components/cctv/CameraThumbnail';
 import { useToast } from '@/components/ui/Toast';
+import {
+  getUnavailableCameraIdsSnapshot,
+  subscribeUnavailableCameras,
+} from '@/lib/cameraThumbnailHelpers';
 import { formatHeaderClock } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import loginBgUrl from '@/assets/images/Login BG.png';
@@ -77,7 +81,7 @@ export default function CctvLivePage() {
     queryKey: ['cctv', 'list', user?.region.id],
     queryFn: () => cctvApi.list(),
     enabled: Boolean(user),
-    staleTime: 60_000,
+    staleTime: 5 * 60_000,
   });
 
   const handleViolationCaptured = useCallback(
@@ -155,13 +159,21 @@ export default function CctvLivePage() {
 
   const camera = cameraQuery.data;
 
+  const unavailableCameraIds = useSyncExternalStore(
+    subscribeUnavailableCameras,
+    getUnavailableCameraIdsSnapshot,
+  );
+
   // Rekomendasi CCTV sekota (prioritas: pelanggaran aktif -> kecamatan sama & jarak terdekat -> kategori sama)
   const recommendedCameras = useMemo<
     Array<{ cam: CctvCameraDto; distanceKm: number; reason: string }>
   >(() => {
     if (!camera) return [];
     const peers = (cityCamerasQuery.data?.cameras ?? []).filter(
-      (c) => c.id !== camera.id && c.city.trim().toLowerCase() === camera.city.trim().toLowerCase(),
+      (c) =>
+        c.id !== camera.id &&
+        !unavailableCameraIds.has(c.id) &&
+        c.city.trim().toLowerCase() === camera.city.trim().toLowerCase(),
     );
 
     return peers
@@ -191,9 +203,13 @@ export default function CctvLivePage() {
       .sort((a, b) => a.score - b.score)
       .slice(0, 6)
       .map(({ cam, distanceKm, reason }) => ({ cam, distanceKm, reason }));
-  }, [camera, cityCamerasQuery.data?.cameras]);
+  }, [camera, cityCamerasQuery.data?.cameras, unavailableCameraIds]);
 
-  const totalCityCameras = cityCamerasQuery.data?.cameras.length ?? 0;
+  const totalCityCameras = useMemo(
+    () =>
+      (cityCamerasQuery.data?.cameras ?? []).filter((c) => !unavailableCameraIds.has(c.id)).length,
+    [cityCamerasQuery.data?.cameras, unavailableCameraIds],
+  );
 
   const handleRelatedScroll = () => {
     const el = relatedScrollRef.current;

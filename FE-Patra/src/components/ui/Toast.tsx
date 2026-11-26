@@ -6,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useInRouterContext } from 'react-router-dom';
 import { AlertCircle, CheckCircle2, Info, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -34,6 +34,7 @@ interface ToastContextValue {
 const ToastContext = createContext<ToastContextValue | null>(null);
 
 export function ToastProvider({ children }: { children: ReactNode }) {
+  const inRouter = useInRouterContext();
   const [toasts, setToasts] = useState<ToastRecord[]>([]);
 
   const dismissToast = useCallback((id: string) => {
@@ -101,15 +102,24 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   {toast.description}
                 </p>
               )}
-              {toast.actionLabel && toast.actionTo && (
-                <Link
-                  to={toast.actionTo}
-                  onClick={() => dismissToast(toast.id)}
-                  className="mt-1.5 inline-block text-xs font-semibold text-secondary underline underline-offset-2 hover:text-primary"
-                >
-                  {toast.actionLabel}
-                </Link>
-              )}
+              {toast.actionLabel && toast.actionTo &&
+                (inRouter ? (
+                  <Link
+                    to={toast.actionTo}
+                    onClick={() => dismissToast(toast.id)}
+                    className="mt-1.5 inline-block text-xs font-semibold text-secondary underline underline-offset-2 hover:text-primary"
+                  >
+                    {toast.actionLabel}
+                  </Link>
+                ) : (
+                  <a
+                    href={toast.actionTo}
+                    onClick={() => dismissToast(toast.id)}
+                    className="mt-1.5 inline-block text-xs font-semibold text-secondary underline underline-offset-2 hover:text-primary"
+                  >
+                    {toast.actionLabel}
+                  </a>
+                ))}
             </div>
 
             <button

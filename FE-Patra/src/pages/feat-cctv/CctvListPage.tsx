@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -15,7 +15,12 @@ import { useAuth } from '@/context/AuthContext';
 import { cctvApi } from '@/services/api';
 import { SatpolTopHeader } from '@/components/layout/SatpolLayout';
 import CameraThumbnail from '@/components/cctv/CameraThumbnail';
-import { paginateList } from '@/lib/cameraThumbnailHelpers';
+import {
+  clearUnavailableCameras,
+  getUnavailableCameraIdsSnapshot,
+  paginateList,
+  subscribeUnavailableCameras,
+} from '@/lib/cameraThumbnailHelpers';
 import { buildPaginationItems } from '@/lib/reportHelpers';
 import { cn } from '@/lib/utils';
 
@@ -38,10 +43,18 @@ export default function CctvListPage() {
     queryKey: ['cctv', 'list', user?.region.id],
     queryFn: () => cctvApi.list(),
     enabled: Boolean(user),
-    staleTime: 60_000,
+    staleTime: 5 * 60_000,
   });
 
-  const allCameras = camerasQuery.data?.cameras ?? [];
+  const unavailableCameraIds = useSyncExternalStore(
+    subscribeUnavailableCameras,
+    getUnavailableCameraIdsSnapshot,
+  );
+
+  const allCameras = useMemo(
+    () => (camerasQuery.data?.cameras ?? []).filter((cam) => !unavailableCameraIds.has(cam.id)),
+    [camerasQuery.data?.cameras, unavailableCameraIds],
+  );
 
   const districts = useMemo(() => {
     const set = new Set<string>();
@@ -202,7 +215,10 @@ export default function CctvListPage() {
           </p>
           <button
             type="button"
-            onClick={() => void camerasQuery.refetch()}
+            onClick={() => {
+              clearUnavailableCameras();
+              void camerasQuery.refetch();
+            }}
             className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary/90"
           >
             <RefreshCw className="h-3.5 w-3.5" />

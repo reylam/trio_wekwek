@@ -1,10 +1,15 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  clearUnavailableCameras,
+  getUnavailableCameraIdsSnapshot,
+  isFatalHttpStatus,
   isThumbnailFailureFresh,
+  markCameraUnavailable,
   paginateList,
   resolveThumbnailGrabStrategy,
   setBoundedCacheEntry,
+  subscribeUnavailableCameras,
 } from './cameraThumbnailHelpers.ts';
 
 test('resolveThumbnailGrabStrategy memilih mode CORS dan non-CORS fallback sesuai karakter kamera', () => {
@@ -132,4 +137,27 @@ test('paginateList membagi 34 item menjadi 3 halaman @12 item serta menangani ar
   assert.equal(nanInputs.currentPage, 1);
   assert.equal(nanInputs.totalPages, 34);
   assert.equal(nanInputs.items.length, 1);
+});
+
+test('isFatalHttpStatus dan store unavailableCameraIds menandai & membersihkan kamera 404/offline', () => {
+  assert.equal(isFatalHttpStatus(404), true);
+  assert.equal(isFatalHttpStatus(503), true);
+  assert.equal(isFatalHttpStatus(200), false);
+  assert.equal(isFatalHttpStatus(undefined), false);
+
+  clearUnavailableCameras();
+  let notifications = 0;
+  const unsub = subscribeUnavailableCameras(() => {
+    notifications += 1;
+  });
+
+  markCameraUnavailable('smg-dead-1');
+  markCameraUnavailable('smg-dead-1'); // duplikat tidak memicu notifikasi ulang
+  assert.equal(notifications, 1);
+  assert.equal(getUnavailableCameraIdsSnapshot().has('smg-dead-1'), true);
+
+  clearUnavailableCameras();
+  assert.equal(notifications, 2);
+  assert.equal(getUnavailableCameraIdsSnapshot().size, 0);
+  unsub();
 });

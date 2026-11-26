@@ -30,7 +30,7 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 import requests
 
@@ -55,6 +55,8 @@ CORS_RELAY_ALLOWED_HOSTS: set[str] = {
     "atcs-dishub.bandung.go.id",
     "dev.cctv.magelangkota.go.id",
     "api.bandaacehkota.go.id",
+    "restreamer2.kotabogor.go.id",
+    "cctv.garutkab.go.id",
 }
 
 # Curated open-source GeoJSON source families verified as publicly accessible HTTP 200 HLS streams
@@ -1213,6 +1215,389 @@ def fetch_mataram_cameras(timeout: int = 15) -> tuple[list[PublicCamera], int]:
     return cameras, excluded_tol
 
 
+def fetch_nganjuk_cameras(timeout: int = 15) -> tuple[list[PublicCamera], int]:
+    """Fetch public Kabupaten Nganjuk (Jawa Timur) CCTV cameras from cctv.nganjukkab.go.id/api/get-list."""
+    resp = requests.get(
+        "https://cctv.nganjukkab.go.id/api/get-list",
+        timeout=timeout,
+        headers={"User-Agent": USER_AGENT},
+    )
+    resp.raise_for_status()
+    payload = resp.json()
+    items = payload if isinstance(payload, list) else (payload.get("data") or [])
+
+    cameras: list[PublicCamera] = []
+    excluded_tol = 0
+    seen_urls: set[str] = set()
+
+    for idx, item in enumerate(items):
+        if not isinstance(item, dict) or item.get("active") is False:
+            continue
+        raw_url = str(item.get("url") or "").strip()
+        if not raw_url:
+            continue
+        pu = urlparse(raw_url)
+        qs = parse_qs(pu.query)
+        stream_name = (qs.get("name") or qs.get("id") or [""])[0].strip()
+        app_seg = pu.path.strip("/").split("/")[0] if pu.path.strip("/") else ""
+        if not (pu.scheme and pu.netloc and app_seg and stream_name):
+            continue
+        stream_url = f"{pu.scheme}://{pu.netloc}/{app_seg}/streams/{stream_name}.m3u8"
+        if stream_url in seen_urls:
+            continue
+
+        name = str(item.get("name") or f"Nganjuk Cam {idx+1}").strip()
+        if is_toll_camera(name, stream_url):
+            excluded_tol += 1
+            continue
+        seen_urls.add(stream_url)
+
+        lat_raw = item.get("latitude")
+        lng_raw = item.get("longtitude") or item.get("longitude")
+        try:
+            lat = float(lat_raw)
+            lng = float(lng_raw)
+            coords_exact = -9.5 <= lat <= -5.5 and 110.5 <= lng <= 114.5
+        except (TypeError, ValueError):
+            coords_exact = False
+            lat, lng = _deterministic_jitter(-7.6051, 111.9035, idx, radius=0.04)
+
+        cameras.append(
+            PublicCamera(
+                id=sanitize_id(f"ngjk_{item.get('id', idx+1)}_{name[:24]}"),
+                name=name,
+                city="Kabupaten Nganjuk",
+                province="Jawa Timur",
+                island="Jawa",
+                region="Kabupaten Nganjuk, Jawa Timur",
+                stream_url=stream_url,
+                stream_type="hls",
+                lat=lat,
+                lng=lng,
+                coords_exact=coords_exact,
+                needs_cors_proxy=False,
+                attribution="Diskominfo Kabupaten Nganjuk",
+                source_portal="https://cctv.nganjukkab.go.id",
+            )
+        )
+
+    logger.info("Nganjuk: loaded %d non-toll cameras (excluded_tol=%d)", len(cameras), excluded_tol)
+    return cameras, excluded_tol
+
+
+def fetch_bali_cameras(timeout: int = 15) -> tuple[list[PublicCamera], int]:
+    """Fetch public Provinsi Bali CCTV cameras from balisatudata.baliprov.go.id/api/cctv."""
+    resp = requests.get(
+        "https://balisatudata.baliprov.go.id/api/cctv",
+        timeout=timeout,
+        headers={"User-Agent": USER_AGENT},
+    )
+    resp.raise_for_status()
+    items = resp.json().get("data") or []
+
+    cameras: list[PublicCamera] = []
+    excluded_tol = 0
+    seen_urls: set[str] = set()
+
+    for idx, item in enumerate(items):
+        if not isinstance(item, dict) or not item.get("is_active"):
+            continue
+        channel_id = str(item.get("channel_id") or "").strip()
+        if not channel_id:
+            continue
+        stream_url = f"https://transcode.baliprov.go.id/cctv/{channel_id}/index.m3u8"
+        if stream_url in seen_urls:
+            continue
+
+        name = str(item.get("place_name") or channel_id).strip()
+        if is_toll_camera(name, channel_id, stream_url):
+            excluded_tol += 1
+            continue
+        seen_urls.add(stream_url)
+
+        try:
+            lat = float(item.get("lat"))
+            lng = float(item.get("lng"))
+            coords_exact = -9.0 <= lat <= -7.8 and 114.3 <= lng <= 115.8
+        except (TypeError, ValueError):
+            coords_exact = False
+            lat, lng = _deterministic_jitter(-8.65, 115.2167, idx, radius=0.05)
+
+        cameras.append(
+            PublicCamera(
+                id=sanitize_id(f"bali_{item.get('id', idx+1)}_{channel_id[:24]}"),
+                name=name,
+                city="Kota Denpasar & Bali",
+                province="Bali",
+                island="Bali & Nusa Tenggara",
+                region="Bali, Bali",
+                stream_url=stream_url,
+                stream_type="hls",
+                lat=lat,
+                lng=lng,
+                coords_exact=coords_exact,
+                needs_cors_proxy=False,
+                attribution="Diskominfos Provinsi Bali (Bali Satu Data)",
+                source_portal="https://balisatudata.baliprov.go.id",
+            )
+        )
+
+    logger.info("Bali: loaded %d non-toll cameras (excluded_tol=%d)", len(cameras), excluded_tol)
+    return cameras, excluded_tol
+
+
+def fetch_indramayu_cameras(timeout: int = 15) -> tuple[list[PublicCamera], int]:
+    """Fetch public Kabupaten Indramayu (Jawa Barat) CCTV cameras from cctv.indramayukab.go.id."""
+    resp = requests.get(
+        "https://cctv.indramayukab.go.id",
+        timeout=timeout,
+        headers={"User-Agent": USER_AGENT},
+    )
+    resp.raise_for_status()
+    m = re.search(r"const\s+allStreams\s*=\s*(\[.*?\]);", resp.text, re.DOTALL)
+    if not m:
+        return [], 0
+    items = json.loads(m.group(1))
+
+    cameras: list[PublicCamera] = []
+    excluded_tol = 0
+    seen_urls: set[str] = set()
+
+    for idx, item in enumerate(items):
+        if not isinstance(item, dict):
+            continue
+        stream_url = str(item.get("hls_url") or "").strip()
+        if not stream_url.startswith(("http://", "https://")) or stream_url in seen_urls:
+            continue
+        name = str(item.get("name") or item.get("code") or f"Indramayu {idx+1}").strip()
+        if is_toll_camera(name, stream_url):
+            excluded_tol += 1
+            continue
+        seen_urls.add(stream_url)
+
+        try:
+            lat = float(item.get("latitude") or item.get("lat"))
+            lng = float(item.get("longitude") or item.get("lng"))
+            coords_exact = -7.0 <= lat <= -6.0 and 107.6 <= lng <= 108.8
+        except (TypeError, ValueError):
+            coords_exact = False
+            lat, lng = _deterministic_jitter(-6.3276, 108.3249, idx, radius=0.03)
+
+        cameras.append(
+            PublicCamera(
+                id=sanitize_id(f"idmy_{item.get('id', idx+1)}_{name[:24]}"),
+                name=name,
+                city="Kabupaten Indramayu",
+                province="Jawa Barat",
+                island="Jawa",
+                region="Kabupaten Indramayu, Jawa Barat",
+                stream_url=stream_url,
+                stream_type="hls",
+                lat=lat,
+                lng=lng,
+                coords_exact=coords_exact,
+                needs_cors_proxy=False,
+                attribution="Diskominfo Kabupaten Indramayu",
+                source_portal="https://cctv.indramayukab.go.id",
+            )
+        )
+
+    logger.info("Indramayu: loaded %d non-toll cameras (excluded_tol=%d)", len(cameras), excluded_tol)
+    return cameras, excluded_tol
+
+
+def fetch_bogor_cameras(timeout: int = 15) -> tuple[list[PublicCamera], int]:
+    """Fetch public Kota Bogor (Jawa Barat) CCTV cameras from bsw.kotabogor.go.id/cctv."""
+    resp = requests.get(
+        "https://bsw.kotabogor.go.id/cctv",
+        timeout=timeout,
+        headers={"User-Agent": USER_AGENT},
+    )
+    resp.raise_for_status()
+    entries = re.findall(
+        r'href="(https://bsw\.kotabogor\.go\.id/cctv/(\d+)/detail)"[^>]*>([^<]+)</a>',
+        resp.text,
+    )
+    dedup_entries: dict[str, tuple[str, str]] = {}
+    for detail_url, cid, raw_name in entries:
+        dedup_entries[cid] = (detail_url, html_lib.unescape(raw_name).strip())
+
+    def _fetch_detail(item: tuple[str, tuple[str, str]]) -> tuple[str, str, str] | None:
+        cid, (detail_url, name) = item
+        try:
+            r = requests.get(detail_url, timeout=8, headers={"User-Agent": USER_AGENT})
+            if r.status_code != 200:
+                return None
+            m = re.search(r'(https?://[^\s"\'<>]+?\.m3u8[^\s"\'<>]*)', r.text)
+            if not m:
+                return None
+            return (cid, name, m.group(1))
+        except Exception:
+            return None
+
+    cameras: list[PublicCamera] = []
+    excluded_tol = 0
+    seen_urls: set[str] = set()
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=16) as pool:
+        results = list(pool.map(_fetch_detail, dedup_entries.items()))
+
+    for idx, res in enumerate(results):
+        if not res:
+            continue
+        cid, name, stream_url = res
+        if stream_url in seen_urls:
+            continue
+        if is_toll_camera(name, stream_url):
+            excluded_tol += 1
+            continue
+        seen_urls.add(stream_url)
+        lat, lng = _deterministic_jitter(-6.5971, 106.8060, idx, radius=0.025)
+        cameras.append(
+            PublicCamera(
+                id=sanitize_id(f"bgr_{cid}_{name[:24]}"),
+                name=name,
+                city="Kota Bogor",
+                province="Jawa Barat",
+                island="Jawa",
+                region="Kota Bogor, Jawa Barat",
+                stream_url=stream_url,
+                stream_type="hls",
+                lat=lat,
+                lng=lng,
+                coords_exact=False,
+                needs_cors_proxy=_needs_cors_proxy(stream_url),
+                attribution="Diskominfo Kota Bogor (BSW)",
+                source_portal="https://bsw.kotabogor.go.id/cctv",
+            )
+        )
+
+    logger.info("Bogor: loaded %d non-toll cameras (excluded_tol=%d)", len(cameras), excluded_tol)
+    return cameras, excluded_tol
+
+
+def fetch_garut_cameras(timeout: int = 15) -> tuple[list[PublicCamera], int]:
+    """Fetch public Kabupaten Garut (Jawa Barat) CCTV cameras from cctv.garutkab.go.id/api/public/cameras."""
+    resp = requests.get(
+        "https://cctv.garutkab.go.id/api/public/cameras",
+        timeout=timeout,
+        headers={"User-Agent": USER_AGENT},
+    )
+    resp.raise_for_status()
+    payload = resp.json()
+    items = payload if isinstance(payload, list) else (payload.get("data") or [])
+
+    cameras: list[PublicCamera] = []
+    excluded_tol = 0
+    seen_urls: set[str] = set()
+
+    for idx, item in enumerate(items):
+        if not isinstance(item, dict):
+            continue
+        stream_url = str(item.get("stream_url_hls") or "").strip()
+        if not stream_url.startswith(("http://", "https://")) or stream_url in seen_urls:
+            continue
+        name = str(item.get("name") or f"Garut {idx+1}").strip()
+        if is_toll_camera(name, stream_url):
+            excluded_tol += 1
+            continue
+        seen_urls.add(stream_url)
+        try:
+            lat = float(item.get("latitude"))
+            lng = float(item.get("longitude"))
+            coords_exact = -7.8 <= lat <= -6.8 and 107.3 <= lng <= 108.3
+        except (TypeError, ValueError):
+            coords_exact = False
+            lat, lng = _deterministic_jitter(-7.2279, 107.9087, idx, radius=0.025)
+
+        cameras.append(
+            PublicCamera(
+                id=sanitize_id(f"grt_{item.get('id', idx+1)}_{name[:24]}"),
+                name=name,
+                city="Kabupaten Garut",
+                province="Jawa Barat",
+                island="Jawa",
+                region="Kabupaten Garut, Jawa Barat",
+                stream_url=stream_url,
+                stream_type="hls",
+                lat=lat,
+                lng=lng,
+                coords_exact=coords_exact,
+                needs_cors_proxy=_needs_cors_proxy(stream_url),
+                attribution="Diskominfo Kabupaten Garut",
+                source_portal="https://cctv.garutkab.go.id",
+            )
+        )
+
+    logger.info("Garut: loaded %d non-toll cameras (excluded_tol=%d)", len(cameras), excluded_tol)
+    return cameras, excluded_tol
+
+
+def fetch_serang_cameras(timeout: int = 15) -> tuple[list[PublicCamera], int]:
+    """Fetch public Kota Serang (Banten) CCTV cameras from cctv.serangkota.go.id/api/cctv."""
+    resp = requests.get(
+        "https://cctv.serangkota.go.id/api/cctv",
+        timeout=timeout,
+        headers={"User-Agent": USER_AGENT},
+    )
+    resp.raise_for_status()
+    feats = resp.json().get("features") or []
+
+    cameras: list[PublicCamera] = []
+    excluded_tol = 0
+    seen_urls: set[str] = set()
+
+    for idx, feat in enumerate(feats):
+        props = feat.get("properties") or {}
+        raw_url = str(props.get("rtsp_ip") or "").strip()
+        if not raw_url:
+            continue
+        norm_url = re.sub(r"(https?://[^/:]+):/", r"\1:5443/", raw_url)
+        pu = urlparse(norm_url)
+        qs = parse_qs(pu.query)
+        stream_name = (qs.get("name") or [""])[0].strip()
+        app_seg = pu.path.strip("/").split("/")[0] if pu.path.strip("/") else ""
+        if not (pu.scheme and pu.netloc and app_seg and stream_name):
+            continue
+        stream_url = f"{pu.scheme}://{pu.netloc}/{app_seg}/streams/{stream_name}.m3u8"
+        if stream_url in seen_urls:
+            continue
+        name = str(props.get("place_name") or stream_name).strip()
+        if is_toll_camera(name, stream_url):
+            excluded_tol += 1
+            continue
+        seen_urls.add(stream_url)
+        try:
+            lat = float(props.get("latitude"))
+            lng = float(props.get("longitude"))
+            coords_exact = -6.4 <= lat <= -5.9 and 105.9 <= lng <= 106.4
+        except (TypeError, ValueError):
+            coords_exact = False
+            lat, lng = _deterministic_jitter(-6.1104, 106.1640, idx, radius=0.02)
+
+        cameras.append(
+            PublicCamera(
+                id=sanitize_id(f"srg_{props.get('id', idx+1)}_{name[:24]}"),
+                name=name,
+                city="Kota Serang",
+                province="Banten",
+                island="Jawa",
+                region="Kota Serang, Banten",
+                stream_url=stream_url,
+                stream_type="hls",
+                lat=lat,
+                lng=lng,
+                coords_exact=coords_exact,
+                needs_cors_proxy=False,
+                attribution="Diskominfo Kota Serang",
+                source_portal="https://cctv.serangkota.go.id",
+            )
+        )
+
+    logger.info("Serang: loaded %d non-toll cameras (excluded_tol=%d)", len(cameras), excluded_tol)
+    return cameras, excluded_tol
+
+
 def fetch_live_env_indonesia_cameras(timeout: int = 25) -> tuple[list[PublicCamera], int]:
     """Fetch curated open Indonesian municipal HLS streams from Live-Environment-Streams GeoJSON."""
     resp = requests.get(LIVE_ENV_GEOJSON_URL, timeout=timeout, headers={"User-Agent": USER_AGENT})
@@ -1317,6 +1702,12 @@ def aggregate_indonesia_cameras(
         ("Kota Pekalongan (Diskominfo)", fetch_pekalongan_cameras),
         ("Kota Surakarta / Solo (Dishub)", fetch_surakarta_cameras),
         ("Kota Mataram (Dishub NTB)", fetch_mataram_cameras),
+        ("Kabupaten Nganjuk (Diskominfo Jatim)", fetch_nganjuk_cameras),
+        ("Provinsi Bali (Bali Satu Data)", fetch_bali_cameras),
+        ("Kabupaten Indramayu (Diskominfo Jabar)", fetch_indramayu_cameras),
+        ("Kota Bogor (BSW Diskominfo)", fetch_bogor_cameras),
+        ("Kabupaten Garut (Diskominfo Jabar)", fetch_garut_cameras),
+        ("Kota Serang (Diskominfo Banten)", fetch_serang_cameras),
         ("Indonesia Multi-Kota (ATCS Publik)", fetch_live_env_indonesia_cameras),
     ]
 
@@ -1427,11 +1818,32 @@ def _pick_fallback_video(city: str) -> str:
     return "/videos/demo-semarang.mp4" if "semarang" in city.lower() else "/videos/demo-jakarta.mp4"
 
 
+def _probe_hls_live(url: str, timeout: float = 4.5) -> bool:
+    """Return True if an HLS manifest responds with HTTP 200 and valid #EXTM3U header."""
+    try:
+        resp = requests.get(
+            url,
+            timeout=timeout,
+            headers={"User-Agent": USER_AGENT},
+            verify=False,
+            stream=True,
+        )
+        if resp.status_code != 200:
+            resp.close()
+            return False
+        chunk = next(resp.iter_content(chunk_size=256), b"")
+        resp.close()
+        return b"#EXTM3U" in chunk
+    except Exception:
+        return False
+
+
 def export_patra_catalogs(
     snapshot_path: Path,
     fe_catalog_path: Path | None = None,
     public_facilities_only: bool = False,
     enable_remote_geocode: bool = False,
+    verify_live: bool = True,
 ) -> dict[str, Any]:
     """Fetch all public Indonesian non-toll cameras and export contract-compliant snapshot + FE DTO catalog."""
     raw_cache = snapshot_path.parent / "indonesia_public_cameras_raw.json"
@@ -1443,12 +1855,25 @@ def export_patra_catalogs(
         public_facilities_only=public_facilities_only,
     )
 
+    raw_cams = raw_payload.get("cameras", [])
+    live_urls: set[str] | None = None
+    if verify_live and raw_cams:
+        import urllib3
+
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        urls = list({str(c.get("stream_url") or "").strip() for c in raw_cams if str(c.get("stream_type") or "hls").lower() == "hls"})
+        logger.info("Verifying %d unique HLS streams for live HTTP 200 #EXTM3U...", len(urls))
+        with concurrent.futures.ThreadPoolExecutor(max_workers=40) as pool:
+            flags = list(pool.map(_probe_hls_live, urls))
+        live_urls = {u for u, ok in zip(urls, flags) if ok}
+        logger.info("Live HLS verification complete: %d / %d active.", len(live_urls), len(urls))
+
     snapshot_items: list[dict[str, Any]] = []
     fe_items: list[dict[str, Any]] = []
     skipped_unsupported = 0
     seen_ids: set[str] = set()
 
-    for cam in raw_payload.get("cameras", []):
+    for cam in raw_cams:
         stype = str(cam.get("stream_type") or "hls").lower()
         if stype not in ALLOWED_STREAM_TYPES:
             skipped_unsupported += 1
@@ -1456,6 +1881,9 @@ def export_patra_catalogs(
 
         stream_url = str(cam.get("stream_url") or "").strip()
         if not stream_url.startswith(("http://", "https://")):
+            skipped_unsupported += 1
+            continue
+        if live_urls is not None and stype == "hls" and stream_url not in live_urls:
             skipped_unsupported += 1
             continue
 

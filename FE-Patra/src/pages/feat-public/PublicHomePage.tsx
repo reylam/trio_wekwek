@@ -110,7 +110,26 @@ export default function PublicHomePage() {
   });
 
   const cities = citiesQuery.data ?? [];
-  const quickCities = useMemo(() => cities.slice(0, 4), [cities]);
+  const quickCities = useMemo(() => {
+    const priorityCodes = ['semarang', 'jkt-pusat', 'yogyakarta', 'bandung', 'bogor', 'bali'];
+    const picked = priorityCodes
+      .map((code) => cities.find((c) => c.code === code))
+      .filter((c): c is NonNullable<typeof c> => Boolean(c));
+    const pickedIds = new Set(picked.map((c) => c.id));
+    for (const c of cities) {
+      if (picked.length >= 4) break;
+      if (!pickedIds.has(c.id)) {
+        picked.push(c);
+        pickedIds.add(c.id);
+      }
+    }
+    return picked.slice(0, 4);
+  }, [cities]);
+
+  const formatQuickCityLabel = (city: string) => {
+    if (/denpasar\s*&\s*bali/i.test(city)) return 'Bali';
+    return city.replace(/^(Kota|Kabupaten)\s+/i, '').trim();
+  };
   const relocationSites = mapQuery.data?.relocationSites ?? [];
 
   const filteredSites = useMemo(() => {
@@ -255,7 +274,7 @@ export default function PublicHomePage() {
     0,
     Math.min(100, kpi?.resolutionRatePercent ?? 0),
   );
-  const activeRegionLabel = overviewQuery.data?.city ?? 'Semua Kota';
+  const activeRegionLabel = overviewQuery.data?.city ?? 'Semua Wilayah';
   const greenZonesHref =
     selectedCity === 'all'
       ? '/zona-hijau'
@@ -303,75 +322,81 @@ export default function PublicHomePage() {
               {/* Dynamic Kabupaten/Kota Filter Bar */}
               <div
                 data-tour="public-city-filter"
-                className="mt-6 rounded-xl border border-slate-200 bg-[#F8FAFC] p-3.5"
+                className="mt-6 rounded-xl border border-slate-200 bg-[#F8FAFC] p-4"
               >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0 flex-1 sm:max-w-[270px]">
-                    <label
-                      htmlFor="public-city-select"
-                      className="mb-1.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500"
-                    >
-                      Cakupan Wilayah (Kabupaten / Kota)
-                    </label>
-                    <div className="relative">
-                      <select
-                        id="public-city-select"
-                        value={selectedCity}
-                        onChange={(e) => {
-                          setSelectedCity(e.target.value);
-                          setFocusedSiteId(null);
-                        }}
-                        className="w-full appearance-none rounded-lg border border-slate-300 bg-white py-2 pl-3 pr-9 text-xs font-semibold text-slate-900 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
-                      >
-                        <option value="all">Semua Kota Pilot & Publik</option>
-                        {cities.map((c) => (
-                          <option key={c.id} value={c.city}>
-                            {c.city} ({c.province})
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown
-                        className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
-                        aria-hidden="true"
-                      />
-                    </div>
-                  </div>
+                <div className="flex items-center justify-between gap-2">
+                  <label
+                    htmlFor="public-city-select"
+                    className="font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500"
+                  >
+                    Cakupan Wilayah (Kabupaten / Kota)
+                  </label>
+                  {cities.length > 0 && (
+                    <span className="rounded-full bg-white px-2 py-0.5 font-mono text-[10px] font-semibold text-primary ring-1 ring-slate-200">
+                      {cities.length} Wilayah
+                    </span>
+                  )}
+                </div>
 
-                  <div className="flex flex-wrap items-center gap-1.5 sm:pt-5">
+                <div className="relative mt-2">
+                  <select
+                    id="public-city-select"
+                    value={selectedCity}
+                    onChange={(e) => {
+                      setSelectedCity(e.target.value);
+                      setFocusedSiteId(null);
+                    }}
+                    className="w-full appearance-none rounded-lg border border-slate-300 bg-white py-2.5 pl-3.5 pr-10 text-xs font-semibold text-slate-900 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
+                  >
+                    <option value="all">
+                      Semua Wilayah{cities.length > 0 ? ` (${cities.length} Kabupaten / Kota)` : ''}
+                    </option>
+                    {cities.map((c) => (
+                      <option key={c.id} value={c.city}>
+                        {c.city}, {c.province}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
+                    aria-hidden="true"
+                  />
+                </div>
+
+                <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedCity('all');
+                      setFocusedSiteId(null);
+                    }}
+                    className={cn(
+                      'rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors',
+                      selectedCity === 'all'
+                        ? 'border-primary bg-primary text-white shadow-xs'
+                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900',
+                    )}
+                  >
+                    Semua Wilayah
+                  </button>
+                  {quickCities.map((c) => (
                     <button
+                      key={c.id}
                       type="button"
                       onClick={() => {
-                        setSelectedCity('all');
+                        setSelectedCity(c.city);
                         setFocusedSiteId(null);
                       }}
                       className={cn(
-                        'rounded-md border px-2.5 py-1.5 text-xs font-semibold transition-colors',
-                        selectedCity === 'all'
-                          ? 'border-primary bg-primary text-white'
+                        'rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors',
+                        selectedCity === c.city
+                          ? 'border-primary bg-primary text-white shadow-xs'
                           : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900',
                       )}
                     >
-                      Semua Kota
+                      {formatQuickCityLabel(c.city)}
                     </button>
-                    {quickCities.map((c) => (
-                      <button
-                        key={c.id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedCity(c.city);
-                          setFocusedSiteId(null);
-                        }}
-                        className={cn(
-                          'rounded-md border px-2.5 py-1.5 text-xs font-semibold transition-colors',
-                          selectedCity === c.city
-                            ? 'border-primary bg-primary text-white'
-                            : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900',
-                        )}
-                      >
-                        {c.city.replace(/^Kota\s+/i, '')}
-                      </button>
-                    ))}
-                  </div>
+                  ))}
                 </div>
               </div>
             </div>

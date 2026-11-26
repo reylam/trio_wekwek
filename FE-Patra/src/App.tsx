@@ -11,8 +11,11 @@ import { AuthProvider, useAuth } from '@/context/AuthContext';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
 import { ToastProvider } from '@/components/ui/Toast';
 import { WalkthroughProvider } from '@/components/walkthrough/WalkthroughContext';
-import WalkthroughOverlay from '@/components/walkthrough/WalkthroughOverlay';
 import type { UserRole } from '@/types';
+
+const WalkthroughOverlay = lazy(
+  () => import('@/components/walkthrough/WalkthroughOverlay'),
+);
 
 const PublicLayout = lazy(() => import('@/components/layout/PublicLayout'));
 const PublicHomePage = lazy(() => import('@/pages/feat-public/PublicHomePage'));
@@ -53,6 +56,8 @@ const queryClient = new QueryClient({
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
+      staleTime: 60_000,
+      gcTime: 10 * 60_000,
     },
   },
 });
@@ -108,8 +113,8 @@ export default function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <ToastProvider>
-            <BrowserRouter>
+          <BrowserRouter>
+            <ToastProvider>
               <WalkthroughProvider>
                 <Suspense fallback={<FullPageLoader />}>
                   <Routes>
@@ -166,10 +171,12 @@ export default function App() {
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
                 </Suspense>
-                <WalkthroughOverlay />
+                <Suspense fallback={null}>
+                  <WalkthroughOverlay />
+                </Suspense>
               </WalkthroughProvider>
-            </BrowserRouter>
-          </ToastProvider>
+            </ToastProvider>
+          </BrowserRouter>
         </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>

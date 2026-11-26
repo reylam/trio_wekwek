@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import L from 'leaflet';
@@ -17,6 +17,10 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { cctvApi, reportApi, zoneApi } from '@/services/api';
 import { useToast } from '@/components/ui/Toast';
+import {
+  getUnavailableCameraIdsSnapshot,
+  subscribeUnavailableCameras,
+} from '@/lib/cameraThumbnailHelpers';
 import { formatWibDateTime, REPORT_STATUS_META } from '@/lib/formatters';
 import type { GeoLngLat, RestrictedZoneDto } from '@/types';
 import { cn } from '@/lib/utils';
@@ -102,10 +106,10 @@ export default function RegionalMapPage() {
   }, [editMode]);
 
   const camerasQuery = useQuery({
-    queryKey: ['cctv', 'map', user?.region.id],
+    queryKey: ['cctv', 'list', user?.region.id],
     queryFn: () => cctvApi.list(),
     enabled: Boolean(user),
-    staleTime: 60_000,
+    staleTime: 5 * 60_000,
   });
 
   const zonesQuery = useQuery({
@@ -126,7 +130,15 @@ export default function RegionalMapPage() {
     staleTime: 30_000,
   });
 
-  const cameras = camerasQuery.data?.cameras ?? [];
+  const unavailableCameraIds = useSyncExternalStore(
+    subscribeUnavailableCameras,
+    getUnavailableCameraIdsSnapshot,
+  );
+
+  const cameras = useMemo(
+    () => (camerasQuery.data?.cameras ?? []).filter((cam) => !unavailableCameraIds.has(cam.id)),
+    [camerasQuery.data?.cameras, unavailableCameraIds],
+  );
   const zones = zonesQuery.data ?? [];
   const activeReports = activeReportsQuery.data?.reports ?? [];
 
