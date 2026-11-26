@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+import tempfile
 import unittest
+from pathlib import Path
 
+import cv2
 import numpy as np
 
-from capture_roi_loop import apply_roi_to_frame, parse_manual_roi
+from capture_roi_loop import apply_roi_to_frame, parse_manual_roi, select_round_cameras
 from gemini_labeler import box2d_to_yolo, parse_gemini_response
-from label_with_gemini import build_roboflow_coco
+from label_with_gemini import build_roboflow_coco, export_labeled_record
 from quality_filter import assess_frame_quality
 
 
@@ -92,6 +95,128 @@ class TestCctvHarvester(unittest.TestCase):
         self.assertEqual(len(coco["categories"]), 6)
         self.assertEqual(len(coco["images"]), 1)
         self.assertEqual(coco["annotations"][0]["bbox"], [400.0, 150.0, 200.0, 200.0])
+
+    def test_select_round_cameras_rotates_and_skips_bad(self) -> None:
+        cams = [{"id": f"cam-{i}"} for i in range(1, 6)]
+
+        b1, cur1 = select_round_cameras(cams, max_cameras=2, start_cursor=0)
+        self.assertEqual([c["id"] for c in b1], ["cam-1", "cam-2"])
+        self.assertEqual(cur1, 2)
+
+        b2, cur2 = select_round_cameras(cams, max_cameras=2, start_cursor=cur1)
+        self.assertEqual([c["id"] for c in b2], ["cam-3", "cam-4"])
+        self.assertEqual(cur2, 4)
+
+        b3, cur3 = select_round_cameras(cams, max_cameras=2, start_cursor=cur2)
+        self.assertEqual([c["id"] for c in b3], ["cam-5", "cam-1"])
+        self.assertEqual(cur3, 1)
+
+        # Skip known bad cameras
+        b_skip, cur_skip = select_round_cameras(
+            cams, max_cameras=2, start_cursor=0, skip_ids={"cam-2"}
+        )
+        self.assertEqual([c["id"] for c in b_skip], ["cam-1", "cam-3"])
+        self.assertEqual(cur_skip, 2)
+
+        # Edge cases: empty list, max_cameras <= 0, all skipped, rotate=False
+        self.assertEqual(select_round_cameras([], max_cameras=5), ([], 0))
+        self.assertEqual(select_round_cameras(cams, max_cameras=0), ([], 0))
+        self.assertEqual(
+            select_round_cameras(cams, max_cameras=2, skip_ids={f"cam-{i}" for i in range(1, 6)}),
+            ([], 0),
+        )
+        no_rot, cur_no_rot = select_round_cameras(cams, max_cameras=2, start_cursor=3, rotate=False)
+        self.assertEqual([c["id"] for c in no_rot], ["cam-1", "cam-2"])
+        self.assertEqual(cur_no_rot, 0)
+
+    def test_export_labeled_record_pkl_only_and_edge_cases(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            out_dir = root / "dataset_pkl"
+            neg_dir = root / "dataset_negatif_bersih"
+            frame = np.full((120, 200, 3), 128, dtype=np.uint8)
+            img_path = root / "cam_pkl.jpg"
+            cv2.imwrite(str(img_path), frame)
+
+            pkl_record = {
+                "camera_quality": "good",
+                "detections": [
+                    {
+                        "class_id": 1,
+                        "class_name": "Gerobak",
+                        "confidence": 0.92,
+                        "cx": 0.5,
+                        "cy": 0.5,
+                        "w": 0.3,
+                        "h": 0.4,
+                    }
+                ],
+            }
+
+            # Normal case: PKL detected -> image, label, preview saved to dataset_pkl
+            res1 = export_labeled_record(
+                img_path,
+                frame,
+                pkl_record,
+                out_dir,
+                neg_dir=neg_dir,
+                include_empty=True,
+                overwrite_preview=True,
+            )
+            self.assertEqual(res1, "pkl")
+            self.assertTrue((out_dir / "images" / "cam_pkl.jpg").exists())
+            self.assertTrue((out_dir / "labels" / "cam_pkl.txt").exists())
+            prev_path = out_dir / "previews" / "cam_pkl.jpg"
+            self.assertTrue(prev_path.exists())
+            vis = cv2.imread(str(prev_path))
+            self.assertIsNotNone(vis)
+            self.assertEqual(vis.shape[0], 150)  # 120px frame + 30px status banner
+
+            # Idempotent re-run & missing preview recovery on resume
+            prev_path.unlink()
+            res2 = export_labeled_record(
+                img_path,
+                frame,
+                pkl_record,
+                out_dir,
+                neg_dir=neg_dir,
+                overwrite_preview=False,
+            )
+            self.assertEqual(res2, "pkl")
+            self.assertTrue(prev_path.exists())
+            self.assertEqual(len(list((out_dir / "images").iterdir())), 1)
+
+            # Edge case 1: 0-PKL good frame must NEVER enter dataset_pkl/previews
+            empty_path = root / "cam_empty.jpg"
+            cv2.imwrite(str(empty_path), frame)
+            empty_record = {"camera_quality": "good", "detections": []}
+            self.assertEqual(
+                export_labeled_record(empty_path, frame, empty_record, out_dir, neg_dir=neg_dir, include_empty=False),
+                "empty",
+            )
+            self.assertFalse((out_dir / "previews" / "cam_empty.jpg").exists())
+            self.assertFalse((neg_dir / "images" / "cam_empty.jpg").exists())
+
+            self.assertEqual(
+                export_labeled_record(empty_path, frame, empty_record, out_dir, neg_dir=neg_dir, include_empty=True),
+                "empty",
+            )
+            self.assertFalse((out_dir / "images" / "cam_empty.jpg").exists())
+            self.assertFalse((out_dir / "previews" / "cam_empty.jpg").exists())
+            self.assertTrue((neg_dir / "images" / "cam_empty.jpg").exists())
+            self.assertTrue((neg_dir / "labels" / "cam_empty.txt").exists())
+
+            # Edge case 2: bad quality frame writes nothing anywhere
+            bad_path = root / "cam_bad.jpg"
+            cv2.imwrite(str(bad_path), frame)
+            bad_record = {"camera_quality": "bad", "detections": pkl_record["detections"]}
+            self.assertEqual(
+                export_labeled_record(bad_path, frame, bad_record, out_dir, neg_dir=neg_dir, include_empty=True),
+                "bad",
+            )
+            self.assertFalse((out_dir / "images" / "cam_bad.jpg").exists())
+            self.assertFalse((out_dir / "previews" / "cam_bad.jpg").exists())
+            self.assertFalse((neg_dir / "images" / "cam_bad.jpg").exists())
 
 
 if __name__ == "__main__":

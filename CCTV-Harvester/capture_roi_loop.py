@@ -1,4 +1,4 @@
-"""
+r"""
 Tahap 1 — Automation Screenshot CCTV + Crop ROI Setiap 5 Menit.
 
 Mengambil screenshot dari kamera CCTV di katalog secara berkala (default 300 detik / 5 menit),
@@ -19,6 +19,7 @@ Contoh penggunaan:
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 import json
 import os
 import re
@@ -79,13 +80,24 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--timeout-ms",
         type=int,
-        default=5500,
-        help="Timeout buka/baca HLS per kamera (ms, default: 5500)",
+        default=3500,
+        help="Timeout buka/baca HLS per kamera (ms, default: 3500)",
+    )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=6,
+        help="Jumlah thread paralel saat mengambil stream HLS (default: 6)",
     )
     parser.add_argument(
         "--skip-known-bad",
         action="store_true",
         help="Lewati kamera yang sudah pernah masuk daftar cctv_jelek",
+    )
+    parser.add_argument(
+        "--no-rotate",
+        action="store_true",
+        help="Selalu mulai dari kamera urutan pertama (matikan rotasi round-robin)",
     )
     return parser.parse_args()
 
@@ -228,6 +240,33 @@ def load_cameras(catalog_path: Path, city_filter: str) -> list[dict[str, Any]]:
     return filtered
 
 
+def select_round_cameras(
+    cameras: list[dict[str, Any]],
+    max_cameras: int,
+    start_cursor: int = 0,
+    skip_ids: set[str] | None = None,
+    rotate: bool = True,
+) -> tuple[list[dict[str, Any]], int]:
+    """Pilih batch kamera untuk putaran saat ini dengan rotasi round-robin agar seluruh katalog terjangkau."""
+    if max_cameras <= 0 or not cameras:
+        return [], 0
+
+    skip = skip_ids or set()
+    eligible = [c for c in cameras if str(c.get("id", "")) not in skip]
+    if not eligible:
+        return [], 0
+
+    total = len(eligible)
+    limit = min(max_cameras, total)
+    if not rotate:
+        return eligible[:limit], 0
+
+    start = start_cursor % total
+    selected = [eligible[(start + i) % total] for i in range(limit)]
+    next_cursor = (start + limit) % total
+    return selected, next_cursor
+
+
 def main() -> int:
     args = parse_args()
     manual_roi = parse_manual_roi(args.roi) if args.roi else None
@@ -248,35 +287,43 @@ def main() -> int:
         while True:
             report = load_json_safe(
                 quality_report_path,
-                {"updated_at": None, "summary": {}, "cctv_bagus": {}, "cctv_jelek": {}},
+                {"updated_at": None, "round_cursor": 0, "summary": {}, "cctv_bagus": {}, "cctv_jelek": {}},
             )
             known_bad = set(report.get("cctv_jelek", {}).keys())
+            cursor = int(report.get("round_cursor", 0) or 0)
+            batch, next_cursor = select_round_cameras(
+                cameras=cameras,
+                max_cameras=args.max_cameras,
+                start_cursor=cursor,
+                skip_ids=known_bad if args.skip_known_bad else None,
+                rotate=not args.no_rotate,
+            )
+            report["round_cursor"] = next_cursor
 
-            checked = 0
+            checked = len(batch)
             saved_good = 0
             bad_count = 0
             offline_count = 0
+            worker_count = max(1, min(16, int(args.workers)))
 
             print(
-                f"\n[Capture ROI Putaran #{round_num}] Target={args.max_cameras} kamera | "
-                f"roi_mode={args.roi_mode} | interval={args.interval_sec}s"
+                f"\n[Capture ROI Putaran #{round_num}] Batch={checked} kamera (cursor={cursor}->{next_cursor}, "
+                f"workers={worker_count}) | roi_mode={args.roi_mode} | interval={args.interval_sec}s"
             )
 
-            for cam in cameras:
-                if checked >= args.max_cameras:
-                    break
+            with ThreadPoolExecutor(max_workers=worker_count) as pool:
+                frames = list(
+                    pool.map(lambda c: grab_hls_frame(str(c["stream_url"]), args.timeout_ms), batch)
+                )
+
+            for idx, (cam, frame) in enumerate(zip(batch, frames), start=1):
                 cam_id = str(cam.get("id", "cam"))
                 cam_name = str(cam.get("name", cam_id))
                 cam_city = str(cam.get("city", "-"))
-                if args.skip_known_bad and cam_id in known_bad:
-                    continue
-
-                checked += 1
                 now_iso = datetime.now(timezone.utc).isoformat()
                 ts_tag = datetime.now().strftime("%Y%m%d_%H%M%S")
                 stem = f"{slugify(cam_city, 14)}_{slugify(cam_id, 34)}_{ts_tag}"
 
-                frame = grab_hls_frame(str(cam["stream_url"]), args.timeout_ms)
                 if frame is None:
                     offline_count += 1
                     report["cctv_jelek"][cam_id] = {
@@ -287,7 +334,7 @@ def main() -> int:
                         "reason": "Stream HLS offline atau timeout",
                         "checked_at": now_iso,
                     }
-                    print(f"  [{checked:02d}] OFFLINE | {cam_city} | {cam_name}")
+                    print(f"  [{idx:02d}] OFFLINE | {cam_city} | {cam_name}")
                     continue
 
                 # Cek kualitas frame asli sebelum crop
@@ -308,7 +355,7 @@ def main() -> int:
                         "sample_image": str(bad_path.relative_to(args.out_dir)),
                         "checked_at": now_iso,
                     }
-                    print(f"  [{checked:02d}] JELEK   | {cam_city} | {cam_name} ({qres.category})")
+                    print(f"  [{idx:02d}] JELEK   | {cam_city} | {cam_name} ({qres.category})")
                     continue
 
                 # Tentukan poligon ROI: override manual -> roi_polygon katalog -> opsional default area bawah
@@ -347,7 +394,7 @@ def main() -> int:
                 saved_good += 1
                 roi_tag = f"ROI:{roi_info['mode']}"
                 print(
-                    f"  [{checked:02d}] SIMPAN  | {cam_city} | {cam_name} "
+                    f"  [{idx:02d}] SIMPAN  | {cam_city} | {cam_name} "
                     f"[{roi_tag}, {processed.shape[1]}x{processed.shape[0]}]"
                 )
 

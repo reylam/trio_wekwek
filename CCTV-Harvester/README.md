@@ -18,23 +18,24 @@ Mengambil frame dari CCTV katalog, memisahkan kamera **bagus vs jelek** (`qualit
 .\AI-Patra\.venv\Scripts\python.exe CCTV-Harvester/capture_roi_loop.py --once --max-cameras 10
 ```
 
-### Tahap 2: Auto-Label Gemini (Delay 5 Detik) + Visualisasi + Export Roboflow (`label_with_gemini.py`)
+### Tahap 2: Auto-Label Gemini (Delay 5 Detik) + Export Terpadu (`label_with_gemini.py`)
 Melabeli gambar yang sudah terkumpul dengan jeda **5 detik** antar request Gemini agar aman dari rate limit (otomatis resume bila dihentikan & dijalankan lagi):
 
 ```powershell
 # Label semua screenshot di raw_roi_captures/ dengan jeda 5 detik
 .\AI-Patra\.venv\Scripts\python.exe CCTV-Harvester/label_with_gemini.py --delay-sec 5
 
-# Ikut sertakan gambar bersih 0-PKL (background negative) ke paket Roboflow
+# Ikut sertakan gambar bersih 0-PKL (background negative) ke output/dataset_negatif_bersih/
 .\AI-Patra\.venv\Scripts\python.exe CCTV-Harvester/label_with_gemini.py --delay-sec 5 --include-empty
 ```
 
-Hasil Tahap 2 (`CCTV-Harvester/output/gemini_labeled/`):
-- `annotations_json/*.json` -> JSON mentah & terstruktur dari Gemini per gambar
-- `visualizations/*.jpg` + `visualization_gallery.jpg` -> gambar dengan bounding box & contact sheet untuk inspeksi visual cepat
-- `roboflow_export/` -> siap langsung di-upload ke Roboflow:
-  - Format **YOLO** (`images/` + `labels/` + `data.yaml`, 6 kelas: `Emperan`, `Gerobak`, `Panggul`, `Payung`, `Sepeda-motor`, `Terpal`)
-  - Format **COCO JSON** (`_annotations.coco.json`)
+Hasil Tahap 2 disimpan langsung ke **`CCTV-Harvester/output/dataset_pkl/`** (khusus gambar yang terdeteksi PKL, agar tidak dobel):
+- `images/*.jpg` -> gambar asli/ROI yang terdeteksi PKL
+- `labels/*.txt` -> anotasi format **YOLO** (`Emperan`, `Gerobak`, `Panggul`, `Payung`, `Sepeda-motor`, `Terpal`)
+- `previews/*.jpg` -> gambar preview dengan bounding box & label kelas (khusus gambar PKL)
+- `data.yaml` -> konfigurasi kelas siap upload ke Roboflow / YOLO
+- *(Opsional `--export-coco`)* `_annotations.coco.json` di dalam `dataset_pkl/`
+- Cache JSON auto-resume disimpan terpisah di `CCTV-Harvester/output/.gemini_cache/` (dan gambar bersih 0-PKL masuk ke `output/dataset_negatif_bersih/` bila `--include-empty` dipakai).
 
 ## Mode Cepat 1 Langkah (`monitor_cctv.py`)
 Jika ingin langsung capture + filter bagus/jelek + auto-label dalam 1 skrip:

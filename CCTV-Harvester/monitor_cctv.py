@@ -16,6 +16,7 @@ Contoh penggunaan:
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 import json
 import os
 import re
@@ -28,6 +29,7 @@ from typing import Any
 import cv2
 import numpy as np
 
+from capture_roi_loop import select_round_cameras
 from config import (
     CLASS_COLORS_BGR,
     DEFAULT_CATALOG_PATH,
@@ -77,8 +79,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--timeout-ms",
         type=int,
-        default=5500,
-        help="Timeout baca stream HLS per kamera dalam milidetik (default: 5500)",
+        default=3500,
+        help="Timeout baca stream HLS per kamera dalam milidetik (default: 3500)",
+    )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=6,
+        help="Jumlah thread paralel saat mengambil frame HLS CCTV (default: 6)",
+    )
+    parser.add_argument(
+        "--no-rotate",
+        action="store_true",
+        help="Matikan rotasi round-robin antar putaran",
     )
     parser.add_argument(
         "--model",
@@ -262,11 +275,22 @@ def run_scan_round(
 
     quality_report: dict[str, Any] = load_json_safe(
         quality_report_path,
-        {"updated_at": None, "summary": {}, "cctv_bagus": {}, "cctv_jelek": {}},
+        {"updated_at": None, "round_cursor": 0, "summary": {}, "cctv_bagus": {}, "cctv_jelek": {}},
     )
     manifest: list[dict[str, Any]] = load_json_safe(manifest_path, [])
 
     known_bad: set[str] = set(quality_report.get("cctv_jelek", {}).keys())
+    cursor = int(quality_report.get("round_cursor", 0) or 0)
+    batch, next_cursor = select_round_cameras(
+        cameras=cameras,
+        max_cameras=args.max_cameras,
+        start_cursor=cursor,
+        skip_ids=known_bad if args.skip_known_bad else None,
+        rotate=not args.no_rotate,
+    )
+    quality_report["round_cursor"] = next_cursor
+    worker_count = max(1, min(16, int(args.workers)))
+
     stats = {
         "checked": 0,
         "offline": 0,
@@ -278,28 +302,26 @@ def run_scan_round(
     }
 
     print(
-        f"\n[Putaran #{round_num}] Memantau hingga {args.max_cameras} kamera "
-        f"(kandidat={len(cameras)}, model={model_chain[0]})..."
+        f"\n[Putaran #{round_num}] Prefetch paralel {len(batch)} kamera "
+        f"(cursor={cursor}->{next_cursor}, workers={worker_count}, model={model_chain[0]})..."
     )
 
-    for cam in cameras:
-        if stats["checked"] >= args.max_cameras:
-            break
+    with ThreadPoolExecutor(max_workers=worker_count) as pool:
+        frames = list(
+            pool.map(lambda c: grab_hls_frame(str(c["stream_url"]), args.timeout_ms), batch)
+        )
 
+    for cam, frame in zip(batch, frames):
         cam_id = str(cam.get("id", "unknown"))
         cam_name = str(cam.get("name", cam_id))
         cam_city = str(cam.get("city", "-"))
         stream_url = str(cam["stream_url"])
-
-        if args.skip_known_bad and cam_id in known_bad:
-            continue
 
         stats["checked"] += 1
         now_iso = datetime.now(timezone.utc).isoformat()
         ts_tag = datetime.now().strftime("%Y%m%d_%H%M%S")
         base_stem = f"{slugify(cam_city, 14)}_{slugify(cam_id, 34)}_{ts_tag}"
 
-        frame = grab_hls_frame(stream_url, args.timeout_ms)
         if frame is None:
             stats["offline"] += 1
             quality_report["cctv_jelek"][cam_id] = {
