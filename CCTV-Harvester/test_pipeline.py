@@ -12,6 +12,7 @@ import numpy as np
 from capture_roi_loop import apply_roi_to_frame, parse_manual_roi, select_round_cameras
 from gemini_labeler import box2d_to_yolo, parse_gemini_response
 from label_with_gemini import build_roboflow_coco, export_labeled_record
+from monitor_cctv import ensure_output_dirs
 from quality_filter import assess_frame_quality
 
 
@@ -217,6 +218,20 @@ class TestCctvHarvester(unittest.TestCase):
             self.assertFalse((out_dir / "images" / "cam_bad.jpg").exists())
             self.assertFalse((out_dir / "previews" / "cam_bad.jpg").exists())
             self.assertFalse((neg_dir / "images" / "cam_bad.jpg").exists())
+
+    def test_monitor_output_dir_only_creates_dataset_pkl(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            out_dir = root / "output"
+            state_dir = root / ".state"
+            dirs = ensure_output_dirs(out_dir, single_class=False, state_dir=state_dir)
+
+            self.assertEqual([p.name for p in out_dir.iterdir()], ["dataset_pkl"])
+            self.assertTrue((dirs["dataset_pkl"] / "images").is_dir())
+            self.assertTrue((dirs["dataset_pkl"] / "labels").is_dir())
+            self.assertTrue((dirs["dataset_pkl"] / "previews").is_dir())
+            self.assertTrue((dirs["dataset_pkl"] / "data.yaml").is_file())
+            self.assertTrue(state_dir.is_dir())
 
 
 if __name__ == "__main__":

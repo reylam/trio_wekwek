@@ -35,6 +35,7 @@ import numpy as np
 from config import (
     CLASS_COLORS_BGR,
     DEFAULT_OUTPUT_DIR,
+    DEFAULT_STATE_DIR,
     YOLO_CLASS_NAMES,
     get_gemini_api_key,
     get_gemini_model_chain,
@@ -51,8 +52,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--input-dir",
         type=Path,
-        default=DEFAULT_OUTPUT_DIR / "raw_roi_captures",
-        help="Folder berisi gambar screenshot CCTV (default: CCTV-Harvester/output/raw_roi_captures)",
+        default=DEFAULT_STATE_DIR / "raw_roi_captures",
+        help="Folder berisi gambar screenshot CCTV (default: CCTV-Harvester/.state/raw_roi_captures)",
     )
     parser.add_argument(
         "--out-dir",
@@ -63,13 +64,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--cache-dir",
         type=Path,
-        default=DEFAULT_OUTPUT_DIR / ".gemini_cache",
-        help="Folder cache JSON hasil Gemini untuk fitur auto-resume",
+        default=DEFAULT_STATE_DIR / "gemini_cache",
+        help="Folder cache JSON hasil Gemini untuk fitur auto-resume (default: CCTV-Harvester/.state/gemini_cache)",
     )
     parser.add_argument(
         "--neg-dir",
         type=Path,
-        default=DEFAULT_OUTPUT_DIR / "dataset_negatif_bersih",
+        default=DEFAULT_STATE_DIR / "dataset_negatif_bersih",
         help="Folder opsional untuk gambar bagus 0-PKL bila --include-empty aktif",
     )
     parser.add_argument(

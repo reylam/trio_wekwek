@@ -9,6 +9,7 @@ HARVESTER_ROOT = Path(__file__).resolve().parent
 REPO_ROOT = HARVESTER_ROOT.parent
 DEFAULT_CATALOG_PATH = REPO_ROOT / "AI-Patra" / "cctv_catalog" / "cctv_snapshot.json"
 DEFAULT_OUTPUT_DIR = HARVESTER_ROOT / "output"
+DEFAULT_STATE_DIR = HARVESTER_ROOT / ".state"
 
 # Pemetaan 6 kelas YOLO identik dengan AI-Patra/dataset/data.yaml
 YOLO_CLASS_NAMES: list[str] = [

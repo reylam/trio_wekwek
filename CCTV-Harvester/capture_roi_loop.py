@@ -32,16 +32,21 @@ from typing import Any
 import cv2
 import numpy as np
 
-from config import DEFAULT_CATALOG_PATH, DEFAULT_OUTPUT_DIR
+from config import DEFAULT_CATALOG_PATH, DEFAULT_STATE_DIR
 from quality_filter import assess_frame_quality
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Automation screenshot CCTV + crop ROI setiap 5 menit (pisahkan bagus vs jelek)."
+        description="Automation screenshot CCTV + crop ROI setiap 5 menit (simpan staging ke .state/)."
     )
     parser.add_argument("--catalog", type=Path, default=DEFAULT_CATALOG_PATH)
-    parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+    parser.add_argument(
+        "--out-dir",
+        type=Path,
+        default=DEFAULT_STATE_DIR,
+        help="Folder staging screenshot & state internal (default: CCTV-Harvester/.state)",
+    )
     parser.add_argument("--city", type=str, default="", help="Filter nama kota/kamera (substring)")
     parser.add_argument(
         "--max-cameras",
@@ -276,9 +281,7 @@ def main() -> int:
         return 1
 
     raw_roi_dir = args.out_dir / "raw_roi_captures"
-    bad_root = args.out_dir / "cctv_jelek"
-    for sub in (raw_roi_dir, bad_root / "low_res", bad_root / "dark_or_blank", bad_root / "overexposed", bad_root / "blurry"):
-        sub.mkdir(parents=True, exist_ok=True)
+    raw_roi_dir.mkdir(parents=True, exist_ok=True)
 
     quality_report_path = args.out_dir / "camera_quality_report.json"
 
@@ -337,14 +340,10 @@ def main() -> int:
                     print(f"  [{idx:02d}] OFFLINE | {cam_city} | {cam_name}")
                     continue
 
-                # Cek kualitas frame asli sebelum crop
+                # Cek kualitas frame asli sebelum crop (tanpa simpan sampel gambar jelek ke disk)
                 qres = assess_frame_quality(frame)
                 if not qres.is_good:
                     bad_count += 1
-                    bad_dir = bad_root / qres.category
-                    bad_dir.mkdir(parents=True, exist_ok=True)
-                    bad_path = bad_dir / f"{stem}.jpg"
-                    cv2.imwrite(str(bad_path), frame, [cv2.IMWRITE_JPEG_QUALITY, 82])
                     report["cctv_jelek"][cam_id] = {
                         "id": cam_id,
                         "name": cam_name,
@@ -352,7 +351,6 @@ def main() -> int:
                         "category": qres.category,
                         "reason": qres.reason,
                         "metrics": qres.to_dict(),
-                        "sample_image": str(bad_path.relative_to(args.out_dir)),
                         "checked_at": now_iso,
                     }
                     print(f"  [{idx:02d}] JELEK   | {cam_city} | {cam_name} ({qres.category})")

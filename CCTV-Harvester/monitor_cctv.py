@@ -34,6 +34,7 @@ from config import (
     CLASS_COLORS_BGR,
     DEFAULT_CATALOG_PATH,
     DEFAULT_OUTPUT_DIR,
+    DEFAULT_STATE_DIR,
     YOLO_CLASS_NAMES,
     get_gemini_api_key,
     get_gemini_model_chain,
@@ -56,7 +57,13 @@ def parse_args() -> argparse.Namespace:
         "--out-dir",
         type=Path,
         default=DEFAULT_OUTPUT_DIR,
-        help="Folder output dataset & laporan (default: CCTV-Harvester/output)",
+        help="Folder output utama (hanya berisi dataset_pkl/, default: CCTV-Harvester/output)",
+    )
+    parser.add_argument(
+        "--state-dir",
+        type=Path,
+        default=DEFAULT_STATE_DIR,
+        help="Folder state internal untuk cursor rotasi & cache kamera jelek (default: CCTV-Harvester/.state)",
     )
     parser.add_argument(
         "--city",
@@ -185,26 +192,26 @@ def draw_yolo_preview(frame: np.ndarray, analysis: GeminiAnalysisResult) -> np.n
     return vis
 
 
-def ensure_output_dirs(out_dir: Path, single_class: bool) -> dict[str, Path]:
+def ensure_output_dirs(
+    out_dir: Path,
+    single_class: bool,
+    state_dir: Path | None = None,
+) -> dict[str, Path]:
+    """Hanya buat folder `dataset_pkl/` di dalam `out_dir`; simpan state internal di `state_dir`."""
+    resolved_state = state_dir or DEFAULT_STATE_DIR
     paths = {
         "root": out_dir,
-        "good_samples": out_dir / "cctv_bagus",
-        "bad_low_res": out_dir / "cctv_jelek" / "low_res",
-        "bad_dark": out_dir / "cctv_jelek" / "dark_or_blank",
-        "bad_overexposed": out_dir / "cctv_jelek" / "overexposed",
-        "bad_blurry": out_dir / "cctv_jelek" / "blurry",
-        "bad_gemini": out_dir / "cctv_jelek" / "gemini_rejected",
+        "state": resolved_state,
+        "dataset_pkl": out_dir / "dataset_pkl",
         "pkl_images": out_dir / "dataset_pkl" / "images",
         "pkl_labels": out_dir / "dataset_pkl" / "labels",
         "pkl_previews": out_dir / "dataset_pkl" / "previews",
-        "neg_images": out_dir / "dataset_negatif_bersih" / "images",
-        "neg_labels": out_dir / "dataset_negatif_bersih" / "labels",
     }
     for p in paths.values():
         p.mkdir(parents=True, exist_ok=True)
 
     # Tulis data.yaml siap pakai untuk Ultralytics / Roboflow di folder dataset_pkl
-    yaml_path = out_dir / "dataset_pkl" / "data.yaml"
+    yaml_path = paths["dataset_pkl"] / "data.yaml"
     if single_class:
         names_block = "nc: 1\nnames:\n  0: PKL\n"
     else:
@@ -270,8 +277,8 @@ def run_scan_round(
     cameras: list[dict[str, Any]],
     round_num: int,
 ) -> dict[str, int]:
-    quality_report_path = dirs["root"] / "camera_quality_report.json"
-    manifest_path = dirs["root"] / "manifest.json"
+    quality_report_path = dirs["state"] / "camera_quality_report.json"
+    manifest_path = dirs["state"] / "manifest.json"
 
     quality_report: dict[str, Any] = load_json_safe(
         quality_report_path,
@@ -342,16 +349,6 @@ def run_scan_round(
         qres = assess_frame_quality(frame)
         if not qres.is_good:
             stats["bad_opencv"] += 1
-            bad_folder_map = {
-                "low_res": dirs["bad_low_res"],
-                "dark_or_blank": dirs["bad_dark"],
-                "overexposed": dirs["bad_overexposed"],
-                "blurry": dirs["bad_blurry"],
-            }
-            target_dir = bad_folder_map.get(qres.category, dirs["bad_dark"])
-            bad_img_path = target_dir / f"{base_stem}.jpg"
-            cv2.imwrite(str(bad_img_path), frame, [cv2.IMWRITE_JPEG_QUALITY, 82])
-
             quality_report["cctv_jelek"][cam_id] = {
                 "id": cam_id,
                 "name": cam_name,
@@ -361,7 +358,6 @@ def run_scan_round(
                 "category": qres.category,
                 "reason": qres.reason,
                 "metrics": qres.to_dict(),
-                "sample_image": str(bad_img_path.relative_to(dirs["root"])),
                 "checked_at": now_iso,
             }
             quality_report["cctv_bagus"].pop(cam_id, None)
@@ -386,9 +382,6 @@ def run_scan_round(
 
         if analysis.camera_quality == "bad":
             stats["bad_gemini"] += 1
-            bad_img_path = dirs["bad_gemini"] / f"{base_stem}.jpg"
-            cv2.imwrite(str(bad_img_path), frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
-
             quality_report["cctv_jelek"][cam_id] = {
                 "id": cam_id,
                 "name": cam_name,
@@ -400,7 +393,6 @@ def run_scan_round(
                 "scene_summary": analysis.scene_summary,
                 "model_used": analysis.model_used,
                 "metrics": qres.to_dict(),
-                "sample_image": str(bad_img_path.relative_to(dirs["root"])),
                 "checked_at": now_iso,
             }
             quality_report["cctv_bagus"].pop(cam_id, None)
@@ -408,10 +400,7 @@ def run_scan_round(
             time.sleep(args.delay_sec)
             continue
 
-        # Kamera dinyatakan BAGUS untuk dataset!
-        good_sample_path = dirs["good_samples"] / f"{slugify(cam_city, 14)}_{slugify(cam_id, 36)}.jpg"
-        cv2.imwrite(str(good_sample_path), frame, [cv2.IMWRITE_JPEG_QUALITY, 90])
-
+        # Kamera dinyatakan BAGUS — catat status di state internal (tanpa simpan sampel non-PKL)
         quality_report["cctv_bagus"][cam_id] = {
             "id": cam_id,
             "name": cam_name,
@@ -421,7 +410,6 @@ def run_scan_round(
             "quality_reason": analysis.quality_reason,
             "scene_summary": analysis.scene_summary,
             "metrics": qres.to_dict(),
-            "sample_image": str(good_sample_path.relative_to(dirs["root"])),
             "last_has_pkl": analysis.has_pkl,
             "last_pkl_count": len(analysis.detections),
             "model_used": analysis.model_used,
@@ -450,38 +438,25 @@ def run_scan_round(
                 f"  [{stats['checked']:02d}] PKL TERDETEKSI   | {cam_city} | {cam_name} "
                 f"-> {len(analysis.detections)} objek [{classes_found}]"
             )
-            saved_bucket = "dataset_pkl"
-            saved_image_rel = str(img_path.relative_to(dirs["root"]))
-            saved_label_rel = str(lbl_path.relative_to(dirs["root"]))
+            manifest.append(
+                {
+                    "timestamp": now_iso,
+                    "bucket": "dataset_pkl",
+                    "camera_id": cam_id,
+                    "camera_name": cam_name,
+                    "city": cam_city,
+                    "resolution": f"{qres.width}x{qres.height}",
+                    "image": str(img_path.relative_to(dirs["root"])),
+                    "label": str(lbl_path.relative_to(dirs["root"])),
+                    "analysis": analysis.to_dict(),
+                }
+            )
         else:
             stats["good_clean"] += 1
-            img_path = dirs["neg_images"] / f"{base_stem}.jpg"
-            lbl_path = dirs["neg_labels"] / f"{base_stem}.txt"
-
-            cv2.imwrite(str(img_path), frame, [cv2.IMWRITE_JPEG_QUALITY, 92])
-            lbl_path.write_text("", encoding="utf-8")
-
             print(
                 f"  [{stats['checked']:02d}] BAGUS (0 PKL)    | {cam_city} | {cam_name} "
-                f"-> {analysis.scene_summary[:65]}"
+                f"-> dilewati (hanya simpan PKL)"
             )
-            saved_bucket = "dataset_negatif_bersih"
-            saved_image_rel = str(img_path.relative_to(dirs["root"]))
-            saved_label_rel = str(lbl_path.relative_to(dirs["root"]))
-
-        manifest.append(
-            {
-                "timestamp": now_iso,
-                "bucket": saved_bucket,
-                "camera_id": cam_id,
-                "camera_name": cam_name,
-                "city": cam_city,
-                "resolution": f"{qres.width}x{qres.height}",
-                "image": saved_image_rel,
-                "label": saved_label_rel,
-                "analysis": analysis.to_dict(),
-            }
-        )
 
         # Simpan progres bertahap setiap kamera bagus supaya aman jika dihentikan Ctrl+C
         quality_report["updated_at"] = now_iso
@@ -511,7 +486,7 @@ def run_scan_round(
         f"Jelek(offline={stats['offline']}, opencv={stats['bad_opencv']}, gemini={stats['bad_gemini']}) | "
         f"ErrGemini={stats['gemini_errors']}"
     )
-    print(f"  Output tersimpan di: {dirs['root']}")
+    print(f"  Output dataset PKL tersimpan di: {dirs['dataset_pkl']}")
     return stats
 
 
@@ -519,7 +494,7 @@ def main() -> int:
     args = parse_args()
     api_key = get_gemini_api_key()
     model_chain = get_gemini_model_chain(args.model or None)
-    dirs = ensure_output_dirs(args.out_dir, single_class=args.single_class)
+    dirs = ensure_output_dirs(args.out_dir, single_class=args.single_class, state_dir=args.state_dir)
     cameras = load_cameras(args.catalog, args.city)
 
     if not cameras:

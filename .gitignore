@@ -27,6 +27,7 @@ _legacy_ref/
 
 # Standalone CCTV Harvester & Hugging Face Worker secrets/outputs
 CCTV-Harvester/.env
+CCTV-Harvester/.state/
 CCTV-Harvester/output/
 HF-Worker/.env
 HF-Worker/model/
