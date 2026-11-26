@@ -100,10 +100,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white md:flex md:items-center md:justify-center md:bg-[#F4F7FC] md:p-8">
-      <div className="relative grid w-full bg-white md:max-w-[1000px] md:grid-cols-12 md:overflow-hidden md:rounded-[2rem] md:shadow-[0_24px_70px_-20px_rgba(4,63,165,0.22)]">
+    <div className="min-h-screen bg-white md:flex md:items-center md:justify-center md:bg-[#F4F7FC] md:p-5">
+      <div className="relative grid w-full bg-white md:max-w-[880px] md:grid-cols-12 md:overflow-hidden md:rounded-[1.75rem] md:shadow-[0_24px_70px_-20px_rgba(4,63,165,0.22)]">
         {/* Top Cobalt Hero (Mobile) / Left Panel (Desktop) */}
-        <div className="relative flex flex-col justify-between overflow-hidden rounded-b-[2.25rem] bg-gradient-to-br from-[#001F6B] via-[#043FA5] to-[#1A58C8] px-6 pt-5 text-white sm:px-8 md:col-span-5 md:overflow-visible md:rounded-b-none md:pt-8">
+        <div className="relative flex flex-col justify-between overflow-hidden rounded-b-[2rem] bg-gradient-to-br from-[#001F6B] via-[#043FA5] to-[#1A58C8] px-5 pt-4 text-white sm:px-7 md:col-span-5 md:overflow-visible md:rounded-b-none md:pt-6">
           {/* Lapisan Latar Jalan Perkotaan (Login BG.png) */}
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[72%] overflow-hidden opacity-65 md:h-[62%]">
             <img
@@ -121,7 +121,7 @@ export default function LoginPage() {
           <svg
             viewBox="0 0 80 600"
             preserveAspectRatio="none"
-            className="pointer-events-none absolute -right-1 bottom-0 top-0 z-10 hidden h-full w-16 md:block"
+            className="pointer-events-none absolute -right-1 bottom-0 top-0 z-10 hidden h-full w-14 md:block"
             aria-hidden="true"
           >
             <path d="M80 0C16 0 4 46 4 110V600H80V0Z" fill="#FFFFFF" />
@@ -136,89 +136,89 @@ export default function LoginPage() {
               </span>
             </div>
 
-            <div className="mt-2 flex flex-col items-center">
-              <PatraMark inverted className="h-12 w-12 drop-shadow-sm" />
+            <div className="mt-1.5 flex flex-col items-center">
+              <PatraMark inverted className="h-10 w-10 drop-shadow-sm" />
             </div>
 
-            <div className="mt-4">
-              <h1 className="text-[36px] font-bold leading-[1.08] tracking-tight text-white">
+            <div className="mt-3">
+              <h1 className="text-[30px] font-bold leading-[1.08] tracking-tight text-white">
                 Welcome
                 <br />
                 Back!
               </h1>
-              <p className="mt-1.5 max-w-[260px] text-xs text-blue-100/90">
+              <p className="mt-1 max-w-[260px] text-xs text-blue-100/90">
                 Portal instansi PATRA terkunci sesuai kota tugas Anda.
               </p>
             </div>
 
-            <div className="-mb-1 mt-2 flex justify-center">
+            <div className="-mb-1 mt-1.5 flex justify-center">
               <img
                 src={polisiLoginMobileUrl}
                 alt="Ilustrasi Petugas Satpol PP PATRA"
                 decoding="async"
                 draggable={false}
-                className="pointer-events-none h-[210px] w-[220px] select-none object-cover object-top drop-shadow-[0_10px_20px_rgba(0,31,107,0.3)]"
+                className="pointer-events-none h-[180px] w-[190px] select-none object-cover object-top drop-shadow-[0_10px_20px_rgba(0,31,107,0.3)]"
               />
             </div>
           </div>
 
           {/* Desktop Header Brand */}
-          <div className="relative z-20 hidden items-center gap-3 md:flex">
-            <PatraMark inverted className="h-10 w-10" />
+          <div className="relative z-20 hidden items-center gap-2.5 md:flex">
+            <PatraMark inverted className="h-9 w-9" />
             <div>
-              <p className="text-base font-extrabold tracking-tight text-white">PATRA</p>
-              <p className="text-[11px] text-blue-100/85">
+              <p className="text-sm font-extrabold tracking-tight text-white">PATRA</p>
+              <p className="text-[10.5px] text-blue-100/85">
                 Pantauan Transparan Ruang Publik
               </p>
             </div>
           </div>
 
           {/* Desktop Officer (Polisi Login.png) overlap mulus di atas kurva putih */}
-          <div className="relative z-20 mt-6 hidden items-end justify-center md:-mr-12 md:flex lg:-mr-14">
+          <div className="relative z-20 mt-3 hidden items-end justify-center md:-mr-10 md:flex lg:-mr-12">
             <img
               src={polisiLoginUrl}
               alt="Ilustrasi Petugas Satpol PP PATRA"
               decoding="async"
               draggable={false}
-              className="pointer-events-none w-[290px] max-w-none select-none object-contain object-bottom drop-shadow-[0_12px_24px_rgba(0,31,107,0.28)] lg:w-[320px]"
+              className="pointer-events-none w-[245px] max-w-none select-none object-contain object-bottom drop-shadow-[0_12px_24px_rgba(0,31,107,0.28)] lg:w-[270px]"
             />
           </div>
         </div>
 
         {/* Right Form Panel */}
-        <div className="relative z-20 flex flex-col justify-between bg-white px-5 pb-8 pt-6 sm:px-10 sm:py-10 md:col-span-7 md:pl-14 lg:pl-16">
+        <div className="relative z-20 flex flex-col justify-between bg-white px-5 pb-6 pt-5 sm:px-8 sm:py-6 md:col-span-7 md:pl-10 lg:pl-12">
           {/* Top utility row (Desktop only; on mobile rendered inside blue hero) */}
           <div className="hidden items-center justify-end gap-3 text-xs font-medium text-secondary md:flex">
-            <span className="inline-flex items-center gap-1 rounded-full bg-canvas px-3 py-1 text-primary/80">
+            <span className="inline-flex items-center gap-1 rounded-full bg-canvas px-3 py-1 text-[11px] text-primary/80">
               Bahasa Indonesia (WIB)
               <ChevronDown className="h-3.5 w-3.5" />
             </span>
           </div>
 
           {/* Main Login Form */}
-          <div className="mx-auto w-full max-w-md md:my-6">
+          <div className="mx-auto w-full max-w-sm md:my-3">
             <div className="hidden md:block">
-              <h1 className="text-3xl font-bold tracking-tight text-primary sm:text-[34px]">
+              <h1 className="text-2xl font-bold tracking-tight text-primary sm:text-[28px]">
                 Welcome Back!
               </h1>
-              <p className="mt-1.5 text-sm text-slate-500">
+              <p className="mt-1 text-xs text-slate-500">
                 Masuk ke portal instansi PATRA yang terkunci sesuai kota tugas Anda.
               </p>
             </div>
 
             {errorMsg && (
-              <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700 md:mb-0 md:mt-5">
+              <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs font-semibold text-red-700 md:mb-0 md:mt-4">
                 {errorMsg}
               </div>
             )}
 
             {infoNote && (
-              <div className="mb-4 rounded-xl border border-accent bg-canvas px-4 py-3 text-xs text-primary md:mb-0 md:mt-5">
+              <div className="mb-3 rounded-xl border border-accent bg-canvas px-3.5 py-2.5 text-xs text-primary md:mb-0 md:mt-4">
                 {infoNote}
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4 md:mt-7 md:space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-3 md:mt-4 md:space-y-4">
               <div>
                 <label htmlFor="email" className="sr-only">
                   Email
@@ -230,7 +230,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Email"
-                  className="w-full rounded-full border border-slate-200/80 bg-white px-5 py-3.5 text-sm text-slate-800 shadow-[0_6px_20px_-6px_rgba(4,63,165,0.16)] placeholder:text-slate-400 focus:border-primary focus:outline-none md:rounded-none md:border-0 md:border-b md:border-accent md:bg-transparent md:px-0 md:py-2.5 md:shadow-none"
+                  className="w-full rounded-full border border-slate-200/80 bg-white px-5 py-3 text-sm text-slate-800 shadow-[0_6px_20px_-6px_rgba(4,63,165,0.16)] placeholder:text-slate-400 focus:border-primary focus:outline-none md:rounded-none md:border-0 md:border-b md:border-accent md:bg-transparent md:px-0 md:py-2 md:shadow-none"
                 />
               </div>
 
@@ -245,19 +245,19 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Password"
-                  className="w-full rounded-full border border-slate-200/80 bg-white py-3.5 pl-5 pr-12 text-sm text-slate-800 shadow-[0_6px_20px_-6px_rgba(4,63,165,0.16)] placeholder:text-slate-400 focus:border-primary focus:outline-none md:rounded-none md:border-0 md:border-b md:border-accent md:bg-transparent md:py-2.5 md:pl-0 md:pr-10 md:shadow-none"
+                  className="w-full rounded-full border border-slate-200/80 bg-white py-3 pl-5 pr-12 text-sm text-slate-800 shadow-[0_6px_20px_-6px_rgba(4,63,165,0.16)] placeholder:text-slate-400 focus:border-primary focus:outline-none md:rounded-none md:border-0 md:border-b md:border-accent md:bg-transparent md:py-2 md:pl-0 md:pr-10 md:shadow-none"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-primary/75 hover:text-primary md:right-0 md:top-2 md:translate-y-0"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-primary/75 hover:text-primary md:right-0 md:top-1.5 md:translate-y-0"
                   aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Lihat kata sandi'}
                 >
                   {showPassword ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                 </button>
               </div>
 
-              <div className="flex items-center justify-between pt-1">
+              <div className="flex items-center justify-between pt-0.5">
                 <button
                   type="button"
                   onClick={() =>
@@ -273,7 +273,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting || Boolean(activeDemoKey)}
-                  className="inline-flex min-w-[116px] items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#2D6EEB] to-[#043FA5] px-7 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_-8px_rgba(4,63,165,0.6)] transition hover:brightness-105 disabled:opacity-60"
+                  className="inline-flex min-w-[104px] items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#2D6EEB] to-[#043FA5] px-6 py-2 text-xs font-semibold text-white shadow-[0_10px_24px_-8px_rgba(4,63,165,0.6)] transition hover:brightness-105 disabled:opacity-60 sm:text-sm"
                 >
                   {isSubmitting ? (
                     <>
@@ -288,15 +288,15 @@ export default function LoginPage() {
             </form>
 
             {/* LOCKED DECISION FEAT-PUB-02: Panel Akses Demo 1-Klik */}
-            <div className="mt-8 rounded-2xl border border-accent/55 bg-canvas/80 p-4">
+            <div className="mt-5 rounded-xl border border-accent/55 bg-canvas/80 p-3">
               <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-primary">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-primary">
                   <Sparkles className="h-3.5 w-3.5" />
                   <span>Akses Demo 1-Klik (Pengujian Juri)</span>
                 </div>
                 <span className="text-[10px] font-medium text-slate-500">Region-Locked</span>
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-2">
+              <div className="mt-2 grid grid-cols-2 gap-1.5">
                 {DEMO_ACCOUNTS.map((demo) => {
                   const loading = activeDemoKey === demo.demoKey;
                   const Icon = demo.role === 'SATPOL_PP' ? Shield : Building2;
@@ -306,20 +306,20 @@ export default function LoginPage() {
                       type="button"
                       disabled={isSubmitting || Boolean(activeDemoKey)}
                       onClick={() => void handleDemoLogin(demo.demoKey)}
-                      className="flex items-center gap-2 rounded-xl border border-accent/50 bg-white px-3 py-2 text-left transition hover:border-primary hover:bg-[#E9F1FD] disabled:opacity-60"
+                      className="flex items-center gap-2 rounded-lg border border-accent/50 bg-white px-2.5 py-1.5 text-left transition hover:border-primary hover:bg-[#E9F1FD] disabled:opacity-60"
                     >
-                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
                         {loading ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <Loader2 className="h-3 w-3 animate-spin" />
                         ) : (
-                          <Icon className="h-3.5 w-3.5" />
+                          <Icon className="h-3 w-3" />
                         )}
                       </span>
                       <span className="min-w-0 leading-tight">
-                        <span className="block truncate text-xs font-bold text-primary">
+                        <span className="block truncate text-[11px] font-bold text-primary">
                           {demo.label}
                         </span>
-                        <span className="block truncate text-[10px] text-slate-500">
+                        <span className="block truncate text-[9.5px] text-slate-500">
                           {demo.city}
                         </span>
                       </span>
@@ -328,14 +328,14 @@ export default function LoginPage() {
                 })}
               </div>
 
-              <div className="mt-3 border-t border-accent/40 pt-3">
+              <div className="mt-2.5 border-t border-accent/40 pt-2.5">
                 <label
                   htmlFor="extra-city-select"
-                  className="block text-[10px] font-semibold uppercase tracking-wide text-slate-500"
+                  className="block text-[9.5px] font-semibold uppercase tracking-wide text-slate-500"
                 >
                   Atau jelajahi Satpol PP kota publik lainnya (594 CCTV, 17 Kota)
                 </label>
-                <div className="relative mt-1.5">
+                <div className="relative mt-1">
                   <select
                     id="extra-city-select"
                     defaultValue=""
@@ -344,7 +344,7 @@ export default function LoginPage() {
                       const key = e.target.value;
                       if (key) void handleDemoLogin(key);
                     }}
-                    className="w-full appearance-none rounded-xl border border-accent/60 bg-white py-2 pl-3 pr-9 text-xs font-medium text-primary focus:border-primary focus:outline-none disabled:opacity-60"
+                    className="w-full appearance-none rounded-lg border border-accent/60 bg-white py-1.5 pl-2.5 pr-8 text-[11px] font-medium text-primary focus:border-primary focus:outline-none disabled:opacity-60"
                   >
                     <option value="" disabled>
                       Pilih kota publik lainnya...
@@ -356,7 +356,7 @@ export default function LoginPage() {
                     ))}
                   </select>
                   <ChevronDown
-                    className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary/70"
+                    className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-primary/70"
                     aria-hidden="true"
                   />
                 </div>
@@ -365,7 +365,7 @@ export default function LoginPage() {
           </div>
 
           {/* Footer support link */}
-          <p className="text-center text-xs text-slate-400">
+          <p className="mt-4 text-center text-[11px] text-slate-400 md:mt-2">
             Having trouble signing in?{' '}
             <button
               type="button"

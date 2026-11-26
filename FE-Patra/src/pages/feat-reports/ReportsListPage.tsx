@@ -177,8 +177,8 @@ export default function ReportsListPage() {
       <SatpolTopHeader title="Reports & Actions" />
 
       {/* Summary KPI Card + Ilustrasi Petugas (Mobile 2x2 + Petugas, Desktop 4x1 + Petugas) */}
-      <section className="relative mb-6 mt-2 sm:mt-3">
-        <div className="flex flex-col justify-between gap-4 rounded-3xl border border-slate-200/70 bg-white px-4 py-4 pr-[118px] shadow-[0_12px_32px_-12px_rgba(4,63,165,0.14)] sm:px-7 sm:py-5 sm:pr-[148px] lg:mr-24 lg:pr-20">
+      <section className="relative mb-6 mt-5 sm:mt-6">
+        <div className="flex flex-col justify-between gap-4 rounded-3xl border border-slate-200/70 bg-white px-4 py-4 pr-[126px] shadow-[0_12px_32px_-12px_rgba(4,63,165,0.14)] sm:px-7 sm:py-5 sm:pr-[148px] lg:mr-24 lg:pr-20">
           <div className="grid grid-cols-2 gap-x-3 gap-y-3 lg:grid-cols-4 lg:gap-6">
             {KPI_CARDS.map((card) => {
               const count = counts[card.status];
@@ -221,8 +221,8 @@ export default function ReportsListPage() {
           </div>
         </div>
 
-        {/* Ilustrasi Petugas HT Tampil Baik di Mobile maupun Desktop */}
-        <SatpolRadioOfficerSvg className="pointer-events-none absolute -top-6 right-1 h-[152px] w-[116px] sm:-top-8 sm:right-2 sm:h-[168px] sm:w-[134px] lg:-top-9 lg:h-[154px] lg:w-[132px]" />
+        {/* Ilustrasi Petugas HT menempel rapi di dasar kartu (tidak mengambang) */}
+        <SatpolRadioOfficerSvg className="pointer-events-none absolute bottom-0 right-0 h-[176px] w-[128px] rounded-br-3xl sm:h-[188px] sm:w-[144px] lg:bottom-0 lg:right-2 lg:h-[150px] lg:w-[132px] lg:rounded-br-none" />
       </section>
 
       {/* Toolbar Filter Status + Search (Mempertahankan data-tour untuk Walkthrough) */}
