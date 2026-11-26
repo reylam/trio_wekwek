@@ -1,7 +1,7 @@
 import dns from 'node:dns';
 import express from 'express';
 import cors from 'cors';
-import config from './config/config.js';
+import config, { isOriginAllowed } from './config/config.js';
 import logger from './middlewares/logger.js';
 import errorHandler from './middlewares/errorHandler.js';
 import {
@@ -31,7 +31,7 @@ app.use(logger);
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || config.allowedOrigins.includes(origin)) {
+      if (!origin || isOriginAllowed(origin, config.allowedOrigins)) {
         return callback(null, true);
       }
       const corsErr = new Error('Origin tidak diizinkan oleh CORS.') as Error & {
@@ -42,6 +42,7 @@ app.use(
       corsErr.code = 'CORS_FORBIDDEN';
       return callback(corsErr);
     },
+    exposedHeaders: ['Content-Disposition'],
   }),
 );
 app.use(express.json({ limit: '100kb' }));

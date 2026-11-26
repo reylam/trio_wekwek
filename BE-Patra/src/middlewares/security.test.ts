@@ -3,6 +3,7 @@ import type { AddressInfo } from 'node:net';
 import test from 'node:test';
 import express from 'express';
 import errorHandler from './errorHandler.js';
+import { isOriginAllowed, normalizeOrigin } from '../config/config.js';
 import { createRateLimiter, extractClientIp, securityHeaders } from './security.js';
 import photoUpload, {
   detectImageMimeFromMagicBytes,
@@ -172,4 +173,15 @@ test('createRateLimiter membatasi burst request, mengatur header, pulih setelah 
       assert.equal(((await bigJsonRes.json()) as any).error.code, 'PAYLOAD_TOO_LARGE');
     },
   );
+});
+
+test('isOriginAllowed menormalkan trailing slash dan mendukung wildcard subdomain Vercel secara aman', () => {
+  assert.equal(normalizeOrigin(' https://patra-fe.vercel.app/// '), 'https://patra-fe.vercel.app');
+
+  const allowed = ['https://patra-fe.vercel.app', 'https://*.vercel.app'];
+  assert.equal(isOriginAllowed('https://patra-fe.vercel.app', allowed), true);
+  assert.equal(isOriginAllowed('https://patra-fe-git-main.vercel.app', allowed), true);
+  assert.equal(isOriginAllowed('http://patra-fe.vercel.app', allowed), false);
+  assert.equal(isOriginAllowed('https://evil-vercel.app', allowed), false);
+  assert.equal(isOriginAllowed('https://vercel.app', allowed), false);
 });

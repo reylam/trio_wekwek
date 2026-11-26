@@ -4,11 +4,14 @@
   "description": "Backend PATRA — Pantauan Transparan Ruang Publik",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
   "main": "src/index.ts",
   "scripts": {
     "dev": "nodemon --exec tsx src/index.ts",
     "start": "node dist/src/index.js",
-    "build": "tsc -p tsconfig.json",
+    "build": "npm run prisma:generate && tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "tsx --test src/**/*.test.ts",
     "prisma:generate": "prisma generate",

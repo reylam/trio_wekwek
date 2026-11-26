@@ -24,3 +24,9 @@ AI-Patra/runs/
 
 # Local legacy reference only (DO NOT commit to competition submission repo)
 _legacy_ref/
+
+# Standalone CCTV Harvester & Hugging Face Worker secrets/outputs
+CCTV-Harvester/.env
+CCTV-Harvester/output/
+HF-Worker/.env
+HF-Worker/model/
