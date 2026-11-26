@@ -12,6 +12,7 @@ import mjsJsepUrl from 'onnxruntime-web/ort-wasm-simd-threaded.jsep.mjs?url';
 import wasmAsyncUrl from 'onnxruntime-web/ort-wasm-simd-threaded.asyncify.wasm?url';
 import mjsAsyncUrl from 'onnxruntime-web/ort-wasm-simd-threaded.asyncify.mjs?url';
 import type { RawDetection } from './roiAndTracker';
+import { parseYoloOutput } from './yoloPostprocess';
 
 // Map seluruh varian asset WASM/MJS lewat Vite ?url (pola teruji dari Civision)
 // agar dev server & production build tidak pernah mengembalikan index.html untuk .wasm
@@ -158,123 +159,6 @@ export function getYoloSessionState(): {
     backend: sessionInstance?.backend ?? null,
     error: sessionError,
   };
-}
-
-function boxIoU(
-  a: { x1: number; y1: number; x2: number; y2: number },
-  b: { x1: number; y1: number; x2: number; y2: number },
-): number {
-  const ix1 = Math.max(a.x1, b.x1);
-  const iy1 = Math.max(a.y1, b.y1);
-  const ix2 = Math.min(a.x2, b.x2);
-  const iy2 = Math.min(a.y2, b.y2);
-  const inter = Math.max(0, ix2 - ix1) * Math.max(0, iy2 - iy1);
-  if (inter <= 0) return 0;
-  const areaA = Math.max(0, a.x2 - a.x1) * Math.max(0, a.y2 - a.y1);
-  const areaB = Math.max(0, b.x2 - b.x1) * Math.max(0, b.y2 - b.y1);
-  return inter / Math.max(1e-6, areaA + areaB - inter);
-}
-
-function applyNms(detections: RawDetection[], iouThresh: number): RawDetection[] {
-  if (detections.length <= 1) return detections;
-  const sorted = [...detections].sort((a, b) => b.confidence - a.confidence);
-  const kept: RawDetection[] = [];
-
-  for (const cand of sorted) {
-    let suppressed = false;
-    for (const prev of kept) {
-      if (boxIoU(cand.bboxNorm, prev.bboxNorm) >= iouThresh) {
-        suppressed = true;
-        break;
-      }
-    }
-    if (!suppressed) {
-      kept.push(cand);
-    }
-  }
-  return kept;
-}
-
-function clamp01(v: number): number {
-  return Math.max(0, Math.min(1, v));
-}
-
-function parseYoloOutput(
-  data: Float32Array,
-  dims: readonly number[],
-  srcW: number,
-  srcH: number,
-  scale: number,
-  padX: number,
-  padY: number,
-  confThresh: number,
-  iouNms: number,
-): RawDetection[] {
-  const rawDets: RawDetection[] = [];
-  const d1 = dims[1] ?? 0;
-  const d2 = dims[2] ?? 0;
-
-  // Format A: End-to-End NMS built-in [1, N, 6] -> (x1, y1, x2, y2, score, cls)
-  if (dims.length === 3 && d2 === 6) {
-    for (let i = 0; i < d1; i++) {
-      const off = i * 6;
-      const score = data[off + 4] ?? 0;
-      if (score < confThresh) continue;
-
-      const x1 = clamp01(((data[off] ?? 0) - padX) / scale / srcW);
-      const y1 = clamp01(((data[off + 1] ?? 0) - padY) / scale / srcH);
-      const x2 = clamp01(((data[off + 2] ?? 0) - padX) / scale / srcW);
-      const y2 = clamp01(((data[off + 3] ?? 0) - padY) / scale / srcH);
-      if (x2 - x1 < 0.005 || y2 - y1 < 0.005) continue;
-
-      rawDets.push({
-        className: 'PKL',
-        confidence: Number(score.toFixed(3)),
-        bboxNorm: { x1, y1, x2, y2 },
-      });
-    }
-    return rawDets;
-  }
-
-  // Format B: Raw YOLO head [1, 4+nc, 8400] (atau [1, 8400, 4+nc])
-  if (dims.length === 3 && d1 > 0 && d2 > 0) {
-    const channelsFirst = d1 < d2;
-    const numAnchors = channelsFirst ? d2 : d1;
-    const numAttrs = channelsFirst ? d1 : d2;
-    const numClasses = Math.max(1, numAttrs - 4);
-
-    for (let i = 0; i < numAnchors; i++) {
-      let maxScore = 0;
-      for (let c = 0; c < numClasses; c++) {
-        const s = channelsFirst
-          ? (data[(4 + c) * numAnchors + i] ?? 0)
-          : (data[i * numAttrs + 4 + c] ?? 0);
-        if (s > maxScore) maxScore = s;
-      }
-      if (maxScore < confThresh) continue;
-
-      const cx = channelsFirst ? (data[i] ?? 0) : (data[i * numAttrs] ?? 0);
-      const cy = channelsFirst ? (data[numAnchors + i] ?? 0) : (data[i * numAttrs + 1] ?? 0);
-      const bw = channelsFirst ? (data[2 * numAnchors + i] ?? 0) : (data[i * numAttrs + 2] ?? 0);
-      const bh = channelsFirst ? (data[3 * numAnchors + i] ?? 0) : (data[i * numAttrs + 3] ?? 0);
-
-      const x1 = clamp01((cx - bw / 2 - padX) / scale / srcW);
-      const y1 = clamp01((cy - bh / 2 - padY) / scale / srcH);
-      const x2 = clamp01((cx + bw / 2 - padX) / scale / srcW);
-      const y2 = clamp01((cy + bh / 2 - padY) / scale / srcH);
-      if (x2 - x1 < 0.005 || y2 - y1 < 0.005) continue;
-
-      rawDets.push({
-        className: 'PKL',
-        confidence: Number(maxScore.toFixed(3)),
-        bboxNorm: { x1, y1, x2, y2 },
-      });
-    }
-
-    return applyNms(rawDets, iouNms);
-  }
-
-  return rawDets;
 }
 
 /**
