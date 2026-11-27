@@ -188,10 +188,7 @@ export default function ReportsListPage() {
                   key={card.status}
                   type="button"
                   onClick={() => handleToggleStatusFilter(card.status)}
-                  className={cn(
-                    'group relative rounded-2xl px-2 py-1 text-left transition hover:bg-canvas/80',
-                    isSelected && 'bg-canvas ring-1 ring-primary/25',
-                  )}
+                  className="group relative px-2 py-1 text-left transition hover:opacity-80"
                 >
                   <p
                     className={cn(
