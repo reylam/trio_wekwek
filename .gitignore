@@ -18,6 +18,10 @@ venv/
 __pycache__/
 *.pyc
 AI-Patra/runs/
+AI-Patra/folds/
+AI-Patra/evaluation_results/
+AI-Patra/dataset/**/*.cache
+AI-Patra/.audit_cache/
 
 # Logs
 *.log

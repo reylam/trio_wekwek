@@ -1,0 +1,17 @@
+{
+  "input": {
+    "height": 640,
+    "width": 640
+  },
+  "format": "raw",
+  "output_shape": [
+    1,
+    5,
+    8400
+  ],
+  "classes": [
+    "PKL"
+  ],
+  "letterbox_pad_value": 114,
+  "source_weights": "best.pt"
+}

@@ -19,19 +19,22 @@ GEMINI_ENDPOINT_TEMPLATE = (
     "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 )
 
+from gemini_rate import gemini_post, retry_after_sec  # noqa: E402
+
 SYSTEM_PROMPT = """Kamu adalah annotator dataset computer vision khusus CCTV jalanan Indonesia untuk deteksi Pedagang Kaki Lima (PKL).
 Tugasmu pada setiap gambar CCTV:
 1. Nilai apakah gambar CCTV ini BAGUS ("good") atau JELEK ("bad") untuk dijadikan dataset training YOLO deteksi PKL di trotoar/pinggir jalan.
    - "bad" jika: buram/pecah parah, terlalu gelap/silau, lensa berembun/kotor, kamera indoor/ruangan, layar error/no-signal, atau sudut pandang sama sekali tidak memperlihatkan jalan/trotoar (misal langit/tembok/pohon penuh).
    - "good" jika: gambar jalan/persimpangan/trotoar/pasar terlihat cukup jelas untuk mengenali objek PKL maupun kondisi jalan bersih.
-2. Deteksi semua objek PKL yang tampak jelas di trotoar/bahu jalan/area publik menggunakan TEPAT salah satu dari 6 kelas berikut:
+2. Deteksi semua objek PKL yang tampak jelas di trotoar/bahu jalan/area publik menggunakan TEPAT salah satu dari 2 kelas berikut:
    - "Emperan": lapak/meja/hamparan dagangan di trotoar atau emperan toko
    - "Gerobak": gerobak dorong / gerobak jualan PKL (bakso, mie ayam, gorengan, kopi, dll)
-   - "Panggul": pedagang keliling yang memikul/memanggul dagangan
-   - "Payung": payung besar dagangan PKL (bukan payung pejalan kaki hujan)
-   - "Sepeda-motor": sepeda motor yang jelas dipakai berjualan PKL (ada keranjang/kotak/box dagangan mangkal di pinggir jalan, BUKAN motor lalu lintas biasa yang lewat atau parkir biasa)
-   - "Terpal": tenda/warung terpal PKL di trotoar atau pinggir jalan
-3. JANGAN memberi label pada mobil, truk, angkot, motor lalu lintas biasa, pohon, tong sampah, tiang rambu, atau bangunan toko permanen.
+   ATURAN TERTUTUP: gerobak/lapak yang ditinggal di trotoar atau bahu jalan TETAP dilabeli walaupun sedang TUTUP,
+   tidak ada pedagang, atau ditutup/dibungkus terpal — selama bentuk fisiknya (rangka, roda, etalase, meja) jelas
+   merupakan gerobak/lapak. Bounding box mencakup seluruh badan gerobak/lapak beserta atap/kanopinya.
+3. JANGAN memberi label pada: payung atau terpal yang berdiri sendiri tanpa gerobak/lapak di bawahnya, tumpukan
+   barang tertutup terpal yang bentuknya tidak jelas, Panggul, segala jenis sepeda motor, mobil, truk, angkot, bajaj,
+   pohon, tong sampah, tiang rambu, spanduk/baliho/mural, barrier jalan, atau bangunan toko/kios permanen.
 4. Untuk setiap objek PKL yang ditemukan, berikan koordinat bounding box `box_2d` dalam format standar Gemini: [ymin, xmin, ymax, xmax] bilangan bulat rentang 0 sampai 1000 (relatif terhadap tinggi & lebar gambar).
 
 Balas HANYA dalam JSON valid tanpa markdown fence, persis mengikuti struktur berikut:
@@ -261,12 +264,8 @@ def analyze_frame_with_gemini(
         url = GEMINI_ENDPOINT_TEMPLATE.format(model=model)
         for attempt in range(2):
             try:
-                resp = requests.post(
-                    url,
-                    params={"key": api_key},
-                    json=payload,
-                    timeout=timeout_sec,
-                )
+                # Lewat pembatas laju bersama (< 15 RPM, termasuk retry & fallback model)
+                resp = gemini_post(url, api_key, payload, timeout=timeout_sec)
             except requests.RequestException as exc:
                 last_error = f"{model} network/timeout error: {exc}"
                 break
@@ -292,7 +291,7 @@ def analyze_frame_with_gemini(
             if resp.status_code in (429, 500, 503):
                 last_error = f"{model} HTTP {resp.status_code}: {resp.text[:180]}"
                 if attempt == 0:
-                    time.sleep(1.5)
+                    time.sleep(retry_after_sec(resp, 5.0))
                     continue
                 break
 

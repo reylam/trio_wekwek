@@ -1,19 +1,28 @@
 """
-PATRA — High-Angle CCTV PKL Detection Training Script (T1-08).
+PATRA — High-Angle CCTV PKL Detection Training Script (v5).
 
-Melatih / fine-tuning model YOLO26n pada dataset `AI-Patra/dataset/data.yaml`
-yang sudah di-split secara camera-grouped (0% leakage) dan menyalin bobot terbaik
-ke `AI-Patra/model/best.pt`.
+Melatih / fine-tuning YOLO (default `yolo26n`) pada dataset camera-grouped (0% leakage)
+dan menyalin bobot terbaik ke `AI-Patra/model/best.pt`.
 
-Default mode: `single_cls=True` (menggabungkan 6 sub-kelas Emperan/Gerobak/Panggul/
-Payung/Sepeda-motor/Terpal menjadi 1 kelas `PKL` sesuai kebutuhan UI PATRA, tanpa
-mengubah file label asli). Gunakan `--multi-cls` bila ingin melatih 6 kelas terpisah.
+Perubahan v5 (berdasarkan diagnosis run `v4_16x9`):
+- `warmup_bias_lr=0.0` — default Ultralytics 0.1 membuat lr bias head = 0.08 di epoch 1
+  (cls_loss 54 -> merusak head pretrained) saat lr0 kecil.
+- Default SGD (lr0=0.005, momentum=0.937, wd=5e-4). Untuk AdamW gunakan wd ~0.05
+  (wd 0.001 pada AdamW praktis tanpa regularisasi).
+- Augmentasi anti-hafal-latar: mosaic=1.0, scale=0.5, mixup=0.1, translate=0.1.
+  (`copy_paste` TIDAK dipakai: Ultralytics hanya menerapkannya pada label segmentasi.
+   `dropout` TIDAK dipakai: hanya berlaku untuk model klasifikasi.)
+- Early stopping default MATI (`--patience 0`): mAP valid (67 box) bising ±0.05 sehingga
+  "best epoch" bias ke atas. Laporkan bobot epoch terakhir (EMA) / mean k-fold.
+- Audit dataset otomatis dilewati jika `--data` bukan layout train/valid/test standar
+  (mis. folds/foldK/data.yaml dari `kfold_camera.py`).
 
-Contoh penggunaan:
-  python yolo.py                                  # Training standar (100 epoch, single_cls=True)
-  python yolo.py --epochs 120 --batch 16 --device 0
-  python yolo.py --multi-cls --epochs 100         # Training 6 sub-kelas
-  python yolo.py --model yolo26n.pt --imgsz 640
+Contoh:
+  python AI-Patra/yolo.py --preset v5_960                     # rekomendasi utama (30 ep, mosaic s/d akhir)
+  python AI-Patra/yolo.py --preset v5_960 --data AI-Patra/folds/full/data.yaml --name v5_960_full   # final: train+valid
+  python AI-Patra/yolo.py --preset v5_640 --name base640
+  python AI-Patra/yolo.py --data AI-Patra/folds/fold0/data.yaml --preset v5_960 --name v5_960_f0 --no-copy-best
+  python AI-Patra/yolo.py --preset teacher_1280               # teacher besar untuk pseudo-label (bukan untuk browser)
 """
 
 from __future__ import annotations
@@ -29,220 +38,193 @@ AI_ROOT = Path(__file__).resolve().parent
 MODEL_DIR = AI_ROOT / "model"
 RUNS_DIR = AI_ROOT / "runs"
 
+# Nilai preset menimpa default argparse HANYA untuk argumen yang tidak diketik user.
+PRESETS: dict[str, dict] = {
+    # Rekomendasi utama: train square 960 (mosaic), export rect 544x960 untuk browser.
+    # Jadwal pendek terbukti di 5-fold kamera: 30 ep + mosaic s/d akhir = 0.365±0.045 mAP50,
+    # vs 80 ep + close_mosaic 15 = 0.269±0.022 (overfit mulai ~ep 15; close_mosaic memperparah).
+    "v5_960": dict(imgsz=960, batch=8, epochs=30, close_mosaic=0, name="v5_yolo26n_960"),
+    # Baseline pembanding di resolusi lama.
+    "v5_640": dict(imgsz=640, batch=16, epochs=30, close_mosaic=0, name="v5_yolo26n_640"),
+    # Teacher besar (offline, untuk pseudo-label 594 stream HLS) — TIDAK untuk browser.
+    "teacher_1280": dict(
+        model="yolo11l.pt", imgsz=1280, batch=4, epochs=120, freeze=0, lr0=0.002, name="teacher_yolo11l_1280"
+    ),
+}
+
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Train YOLO for PATRA High-Angle CCTV PKL Detection")
-    parser.add_argument("--model", type=str, default="yolo26n.pt", help="Base checkpoint (mis. yolo11n.pt, yolo26n.pt)")
-    parser.add_argument("--data", type=Path, default=DATASET_DIR / "data.yaml", help="Path ke data.yaml")
-    parser.add_argument("--epochs", type=int, default=120, help="Jumlah epoch training (default: 120)")
-    parser.add_argument("--imgsz", type=int, default=640, help="Ukuran input gambar (default: 640)")
-    parser.add_argument("--batch", type=int, default=16, help="Batch size (default: 16, gunakan -1 untuk auto)")
-    parser.add_argument("--device", type=str, default="", help="Device GPU/CPU, mis. '0' atau 'cpu' (default: auto)")
-    parser.add_argument("--workers", type=int, default=2, help="Jumlah dataloader workers (default: 2, aman untuk Windows)")
-    parser.add_argument("--patience", type=int, default=35, help="Early stopping patience (default: 35)")
-    parser.add_argument("--optimizer", type=str, default="AdamW", help="Optimizer (default: AdamW)")
-    parser.add_argument("--lr0", type=float, default=0.001, help="Initial learning rate (default: 0.001)")
-    parser.add_argument("--weight-decay", type=float, default=0.001, help="Weight decay regularization (default: 0.001)")
-    parser.add_argument("--freeze", type=int, default=0, help="Jumlah layer backbone yang di-freeze (mis. 10 untuk dataset kecil)")
-    parser.add_argument("--mosaic", type=float, default=0.4, help="Probabilitas mosaic (default: 0.4, aman untuk tiny objects)")
-    parser.add_argument("--close-mosaic", type=int, default=25, help="Matikan mosaic N epoch terakhir (default: 25)")
-    parser.add_argument("--scale", type=float, default=0.25, help="Random scale gain (default: 0.25, agar tiny objects tidak hilang)")
-    parser.add_argument("--translate", type=float, default=0.05, help="Random translation fraction (default: 0.05)")
-    parser.add_argument("--hsv-v", type=float, default=0.35, help="HSV value/brightness augmentation gain (default: 0.35)")
-    parser.add_argument("--box", type=float, default=7.5, help="Box regression loss gain (default: 7.5)")
-    parser.add_argument("--warmup-epochs", type=float, default=5.0, help="Jumlah warmup epoch (default: 5.0)")
-    parser.add_argument("--seed", type=int, default=42, help="Random seed deterministik")
-    parser.add_argument("--name", type=str, default="patra_yolo26n_pkl", help="Nama folder eksperimen di runs/")
-    parser.add_argument(
-        "--eval-split",
-        type=str,
-        choices=("valid", "test", "none"),
-        default="valid",
-        help="Split evaluasi pasca-training (default: valid agar test set tidak bocor saat tuning)",
-    )
-    parser.add_argument(
-        "--no-copy-best",
-        action="store_true",
-        help="Jangan timpa AI-Patra/model/best.pt (simpan bobot hanya di AI-Patra/runs/<name>/weights/best.pt)",
-    )
-    parser.add_argument(
-        "--multi-cls",
-        action="store_true",
-        help="Latih 6 sub-kelas terpisah (default: single_cls=True -> 1 kelas PKL)",
-    )
-    parser.add_argument(
-        "--preset",
-        type=str,
-        choices=("v2_ft", "v2_base", "v3_ft", "v3_base"),
-        default="",
-        help="Preset konfigurasi eksperimen singkat agar perintah CLI tidak terpotong.",
-    )
-    parser.add_argument(
-        "--skip-audit",
-        action="store_true",
-        help="Lewati audit integritas dataset sebelum training",
-    )
-    return parser.parse_args()
+    p = argparse.ArgumentParser(description="Train YOLO for PATRA High-Angle CCTV PKL Detection")
+    p.add_argument("--preset", type=str, choices=tuple(PRESETS), default="", help="Preset konfigurasi v5")
+    p.add_argument("--model", type=str, default="yolo26n.pt", help="Base checkpoint (yolo26n.pt, yolo11n.pt, ...)")
+    p.add_argument("--data", type=Path, default=DATASET_DIR / "data.yaml", help="Path ke data.yaml")
+    p.add_argument("--epochs", type=int, default=80)
+    p.add_argument("--imgsz", type=int, default=960, help="Ukuran train square (export bisa rect, lihat export_onnx.py)")
+    p.add_argument("--batch", type=int, default=8, help="Batch size (-1 = auto)")
+    p.add_argument("--device", type=str, default="", help="'0', 'cpu', atau kosong = auto")
+    p.add_argument("--workers", type=int, default=2, help="Dataloader workers (2 aman di Windows)")
+    p.add_argument("--cache", type=str, default="", choices=("", "ram", "disk"), help="Cache gambar")
+    p.add_argument("--patience", type=int, default=0, help="Early stopping (0 = mati; disarankan untuk val kecil)")
+    p.add_argument("--optimizer", type=str, default="SGD", help="SGD | AdamW | auto")
+    p.add_argument("--lr0", type=float, default=0.005)
+    p.add_argument("--lrf", type=float, default=0.01)
+    p.add_argument("--momentum", type=float, default=0.937)
+    p.add_argument("--weight-decay", type=float, default=None, help="Default: 5e-4 (SGD) / 0.05 (AdamW)")
+    p.add_argument("--warmup-epochs", type=float, default=3.0)
+    p.add_argument("--warmup-bias-lr", type=float, default=0.0, help="0.0 mencegah lonjakan lr bias di epoch awal")
+    p.add_argument("--freeze", type=int, default=10, help="Jumlah layer awal di-freeze (0 = full fine-tune)")
+    p.add_argument("--mosaic", type=float, default=1.0)
+    p.add_argument("--close-mosaic", type=int, default=15)
+    p.add_argument("--mixup", type=float, default=0.1)
+    p.add_argument("--scale", type=float, default=0.5, help="Random scale gain (0.5 -> zoom 0.5x..1.5x)")
+    p.add_argument("--translate", type=float, default=0.1)
+    p.add_argument("--degrees", type=float, default=0.0)
+    p.add_argument("--hsv-v", type=float, default=0.4, help="Variasi brightness siang/malam")
+    p.add_argument("--fliplr", type=float, default=0.5)
+    p.add_argument("--box", type=float, default=7.5)
+    p.add_argument("--cls", type=float, default=0.5)
+    p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--name", type=str, default="v5_yolo26n_960", help="Nama folder eksperimen di runs/")
+    p.add_argument("--eval-split", type=str, choices=("valid", "test", "none"), default="valid")
+    p.add_argument("--no-copy-best", action="store_true", help="Jangan timpa AI-Patra/model/best.pt")
+    p.add_argument("--multi-cls", action="store_true", help="Latih 2 kelas (Emperan/Gerobak) terpisah")
+    p.add_argument("--skip-audit", action="store_true", help="Lewati audit integritas dataset")
+
+    args = p.parse_args()
+    if args.preset:
+        defaults = {a.dest: a.default for a in p._actions}
+        for key, val in PRESETS[args.preset].items():
+            if getattr(args, key) == defaults.get(key):  # hanya isi yang tidak diketik user
+                setattr(args, key, val)
+    is_adamw = args.optimizer.lower() == "adamw"
+    if args.weight_decay is None:
+        args.weight_decay = 0.05 if is_adamw else 5e-4
+    if is_adamw and args.lr0 == defaults_lr0(p):
+        args.lr0 = 0.001  # lr0 SGD (0.005) terlalu besar untuk AdamW
+    return args
 
 
-def apply_preset(args: argparse.Namespace) -> None:
-    if not args.preset:
-        return
-    args.data = AI_ROOT / "dataset_v2" / "data_v2.yaml"
-    args.imgsz = 640
-    args.batch = 16
-    args.device = "0"
-    args.scale = 0.35
-    args.translate = 0.08
-    args.hsv_v = 0.45
-    args.skip_audit = True
-    args.no_copy_best = True
-    args.eval_split = "valid"
-    if args.preset == "v2_ft":
-        args.model = str(MODEL_DIR / "best.pt")
-        args.name = "patra_v2_curated_ft"
-        args.epochs = 60
-        args.patience = 25
-        args.lr0 = 0.00025
-        args.warmup_epochs = 2.0
-        args.mosaic = 0.35
-        args.close_mosaic = 15
-    elif args.preset == "v2_base":
-        args.model = "yolo26n.pt"
-        args.name = "patra_v2_curated_base"
-        args.epochs = 120
-        args.patience = 35
-        args.lr0 = 0.001
-        args.warmup_epochs = 5.0
-        args.mosaic = 0.40
-        args.close_mosaic = 25
-    elif args.preset == "v3_ft":
-        args.data = AI_ROOT / "dataset_v3_gerobak" / "data_v3.yaml"
-        args.model = str(MODEL_DIR / "best.pt")
-        args.name = "patra_v3_gerobak_ft"
-        args.epochs = 60
-        args.patience = 25
-        args.lr0 = 0.0003
-        args.warmup_epochs = 2.0
-        args.mosaic = 0.35
-        args.close_mosaic = 15
-    elif args.preset == "v3_base":
-        args.data = AI_ROOT / "dataset_v3_gerobak" / "data_v3.yaml"
-        args.model = "yolo26n.pt"
-        args.name = "patra_v3_gerobak_base"
-        args.epochs = 120
-        args.patience = 35
-        args.lr0 = 0.001
-        args.warmup_epochs = 5.0
-        args.mosaic = 0.40
-        args.close_mosaic = 25
+def defaults_lr0(parser: argparse.ArgumentParser) -> float:
+    return next(a.default for a in parser._actions if a.dest == "lr0")
+
+
+def is_standard_layout(data_yaml: Path) -> bool:
+    root = data_yaml.parent
+    return all((root / sp / "images").is_dir() for sp in ("train", "valid", "test"))
+
+
+def resolve_model_path(model: str) -> str:
+    """Checkpoint dasar (mis. yolo26n.pt) disimpan di AI-Patra/model/ agar root repo bersih."""
+    m = Path(model)
+    if not m.is_absolute() and len(m.parts) == 1:
+        return str(MODEL_DIR / m.name)
+    return str(m)
 
 
 def main() -> int:
     args = parse_args()
-    apply_preset(args)
 
-    if not args.skip_audit:
-        print("[1/4] Menjalankan audit integritas & anti-leakage dataset...")
+    if not args.skip_audit and is_standard_layout(args.data):
+        print("[1/4] Audit integritas & anti-leakage dataset...")
         if not verify_dataset(args.data.parent):
-            print("[ERR] Audit dataset gagal. Jalankan `python prepare_dataset.py --split` terlebih dahulu.")
+            print("[ERR] Audit dataset gagal. Perbaiki dataset atau gunakan --skip-audit.")
             return 1
+    else:
+        print("[1/4] Audit dataset dilewati (layout non-standar / --skip-audit).")
 
     try:
         from ultralytics import YOLO
     except ImportError:
-        print(
-            "[ERR] Package `ultralytics` belum terpasang.\n"
-            "      Jalankan: pip install -r AI-Patra/requirements.txt"
-        )
+        print("[ERR] Package `ultralytics` belum terpasang. Jalankan: pip install -r AI-Patra/requirements.txt")
         return 1
 
     single_cls = not args.multi_cls
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
-
-    # Simpan checkpoint base (mis. yolo26n.pt) di AI-Patra/model/ agar root repo tetap bersih
-    model_arg = Path(args.model)
-    if not model_arg.is_absolute() and len(model_arg.parts) == 1:
-        model_path = str(MODEL_DIR / model_arg.name)
-    else:
-        model_path = str(model_arg)
+    model_path = resolve_model_path(args.model)
 
     print(
-        f"[2/4] Memulai fine-tuning `{model_path}` | data={args.data} | "
-        f"imgsz={args.imgsz} | epochs={args.epochs} | single_cls={single_cls} | "
-        f"opt={args.optimizer} lr0={args.lr0} freeze={args.freeze} mosaic={args.mosaic} scale={args.scale}"
+        f"[2/4] Training `{model_path}` | data={args.data} | imgsz={args.imgsz} | epochs={args.epochs} | "
+        f"single_cls={single_cls} | opt={args.optimizer} lr0={args.lr0} wd={args.weight_decay} "
+        f"warmup_bias_lr={args.warmup_bias_lr} | freeze={args.freeze} | mosaic={args.mosaic} "
+        f"scale={args.scale} mixup={args.mixup} | patience={args.patience or 'off'}"
     )
 
     model = YOLO(model_path)
-
-    # Augmentasi & regularisasi khusus dataset CCTV kecil + tiny objects (<1% area gambar)
     train_kwargs = dict(
         data=str(args.data),
         epochs=args.epochs,
         imgsz=args.imgsz,
         batch=args.batch,
         workers=args.workers,
-        patience=args.patience,
+        patience=args.patience,  # 0 -> Ultralytics menonaktifkan early stopping
         seed=args.seed,
+        deterministic=True,
         single_cls=single_cls,
         optimizer=args.optimizer,
         lr0=args.lr0,
-        lrf=0.01,
-        warmup_epochs=args.warmup_epochs,
+        lrf=args.lrf,
+        momentum=args.momentum,
         weight_decay=args.weight_decay,
+        warmup_epochs=args.warmup_epochs,
+        warmup_bias_lr=args.warmup_bias_lr,
         box=args.box,
+        cls=args.cls,
         cos_lr=True,
         project=str(RUNS_DIR),
         name=args.name,
         exist_ok=True,
         pretrained=True,
-        # CCTV & tiny-object-safe augmentations
+        # Augmentasi CCTV high-angle
         hsv_h=0.015,
-        hsv_s=0.45,
-        hsv_v=args.hsv_v,  # Adaptasi siang/malam & silau lampu malam CCTV
-        degrees=3.0,       # Kemiringan kamera CCTV tipis
+        hsv_s=0.5,
+        hsv_v=args.hsv_v,
+        degrees=args.degrees,
         translate=args.translate,
         scale=args.scale,
-        fliplr=0.50,
-        flipud=0.0,     # CCTV tidak pernah upside-down
-        erasing=0.0,    # Hindari random erasing yang menghapus objek kecil
+        fliplr=args.fliplr,
+        flipud=0.0,      # CCTV tidak pernah terbalik
+        erasing=0.0,     # random erasing menghapus objek kecil
         mosaic=args.mosaic,
         close_mosaic=args.close_mosaic,
+        mixup=args.mixup,
     )
     if args.freeze > 0:
         train_kwargs["freeze"] = args.freeze
     if args.device:
         train_kwargs["device"] = args.device
+    if args.cache:
+        train_kwargs["cache"] = args.cache
 
     results = model.train(**train_kwargs)
 
     save_dir = Path(getattr(results, "save_dir", RUNS_DIR / args.name))
-    best_pt_src = save_dir / "weights" / "best.pt"
-    if not best_pt_src.exists():
-        print(f"[ERR] File bobot terbaik tidak ditemukan di: {best_pt_src}")
+    # Dengan early stopping mati, last.pt = bobot EMA epoch terakhir (bebas bias pemilihan epoch).
+    weights_dir = save_dir / "weights"
+    src = weights_dir / ("best.pt" if args.patience > 0 else "last.pt")
+    if not src.exists():
+        src = weights_dir / "best.pt"
+    if not src.exists():
+        print(f"[ERR] File bobot tidak ditemukan di: {weights_dir}")
         return 1
 
     if args.no_copy_best:
-        eval_weights = best_pt_src
-        print(
-            f"[3/4] --no-copy-best aktif: AI-Patra/model/best.pt dipertahankan. "
-            f"Bobot eksperimen tersimpan di: {best_pt_src} ({best_pt_src.stat().st_size / 1e6:.2f} MB)"
-        )
+        eval_weights = src
+        print(f"[3/4] --no-copy-best: bobot eksperimen di {src} ({src.stat().st_size / 1e6:.2f} MB)")
     else:
-        best_pt_dst = MODEL_DIR / "best.pt"
-        shutil.copy2(best_pt_src, best_pt_dst)
-        eval_weights = best_pt_dst
-        print(f"[3/4] Bobot terbaik disalin ke: {best_pt_dst} ({best_pt_dst.stat().st_size / 1e6:.2f} MB)")
+        dst = MODEL_DIR / "best.pt"
+        shutil.copy2(src, dst)
+        eval_weights = dst
+        print(f"[3/4] {src.name} disalin ke: {dst} ({dst.stat().st_size / 1e6:.2f} MB)")
 
     if args.eval_split != "none":
         split_label = "val" if args.eval_split == "valid" else args.eval_split
-        print(f"[4/4] Mengevaluasi bobot terbaik pada split `{args.eval_split}`...")
-        best_model = YOLO(str(eval_weights))
+        print(f"[4/4] Evaluasi `{eval_weights.name}` pada split `{args.eval_split}`...")
         val_kwargs = dict(
             data=str(args.data),
             split=split_label,
             imgsz=args.imgsz,
+            batch=max(1, args.batch if args.batch > 0 else 8),
             workers=args.workers,
             single_cls=single_cls,
             project=str(RUNS_DIR),
@@ -251,8 +233,7 @@ def main() -> int:
         )
         if args.device:
             val_kwargs["device"] = args.device
-
-        metrics = best_model.val(**val_kwargs)
+        metrics = YOLO(str(eval_weights)).val(**val_kwargs)
         box = getattr(metrics, "box", None)
         if box is not None:
             print(f"\n================ {args.eval_split.upper()} SPLIT METRICS ================")
@@ -264,9 +245,10 @@ def main() -> int:
     else:
         print("[4/4] Evaluasi pasca-training dilewati (--eval-split none).")
 
+    h, w = (round(args.imgsz * 9 / 16 / 32) * 32, args.imgsz)
     print("\nLangkah berikutnya:")
-    print(f"  1) Export ONNX eksperimen: python AI-Patra/export_onnx.py --weights {eval_weights} --out AI-Patra/model/{args.name}.onnx --imgsz {args.imgsz} --no-copy-fe")
-    print(f"  2) Evaluasi pada valid   : python AI-Patra/evaluate_models.py --split valid --models patra_orig=AI-Patra/model/best_patra_highangle.onnx {args.name}=AI-Patra/model/{args.name}.onnx --run-name cmp_valid_{args.name}")
+    print(f"  1) Export ONNX rect 16:9 : python AI-Patra/export_onnx.py --weights {eval_weights} --imgsz {h} {w} --out AI-Patra/model/{args.name}.onnx --no-copy-fe")
+    print(f"  2) Evaluasi ONNX         : python AI-Patra/evaluate_models.py --split valid --models {args.name}=AI-Patra/model/{args.name}.onnx --run-name {args.name}_valid")
     return 0
 
 

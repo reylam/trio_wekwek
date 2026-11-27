@@ -4,11 +4,7 @@ train: train/images
 val: valid/images
 test: test/images
 
-nc: 6
+nc: 2
 names:
   0: Emperan
   1: Gerobak
-  2: Panggul
-  3: Payung
-  4: Sepeda-motor
-  5: Terpal

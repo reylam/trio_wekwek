@@ -17,8 +17,9 @@ Menggunakan kembali utilitas `letterbox`, `box_iou`, `nms` dari `verify_onnx.py`
 `extract_camera_group`, `convert_line_to_yolo_bbox`, `CLASS_NAMES` dari `prepare_dataset.py`.
 
 Contoh penggunaan (jalankan dengan venv AI-Patra):
-  python AI-Patra/evaluate_models.py --split valid --models patra_orig=AI-Patra/model/best_patra_highangle.onnx --run-name phase2_valid --save-visuals
-  python AI-Patra/evaluate_models.py --split test  --models patra_orig=AI-Patra/model/best_patra_highangle.onnx --run-name phase2_test  --save-visuals
+  python AI-Patra/evaluate_models.py --preset valid_best
+  python AI-Patra/evaluate_models.py --split valid --models v4=AI-Patra/model/best.onnx v5=AI-Patra/model/v5_yolo26n_960.onnx --run-name cmp_v4_v5
+  python AI-Patra/evaluate_models.py --preset test_best   # evaluasi final, sekali saja
 """
 
 from __future__ import annotations
@@ -47,7 +48,7 @@ from prepare_dataset import (  # noqa: E402
     convert_line_to_yolo_bbox,
     extract_camera_group,
 )
-from verify_onnx import box_iou, letterbox, nms  # noqa: E402
+from verify_onnx import box_iou, letterbox, nms, onnx_input_hw  # noqa: E402
 
 DEFAULT_THRESHOLDS = [0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.60]
 DEFAULT_OUT_ROOT = AI_ROOT / "evaluation_results"
@@ -60,9 +61,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--preset",
         type=str,
-        choices=("valid5", "test6_expA", "test6_expD", "test6_expB", "valid7_v2", "test7_v2", "valid_v3", "test_v3"),
+        choices=("valid_best", "test_best"),
         default="",
-        help="Preset evaluasi singkat agar perintah CLI tidak terpotong di PowerShell.",
+        help="Preset: evaluasi AI-Patra/model/best.onnx pada split valid / test (final).",
     )
     parser.add_argument(
         "--models",
@@ -110,8 +111,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--imgsz",
         type=int,
-        default=0,
-        help="Override ukuran input ONNX (0 = auto-deteksi dari tensor input ONNX, fallback 640).",
+        nargs="+",
+        default=[0],
+        help="Override input ONNX: 1 angka (persegi) atau H W. 0 = auto dari tensor input ONNX (fallback 640).",
     )
     parser.add_argument(
         "--provider",
@@ -397,19 +399,15 @@ def decode_onnx_with_scores(
     return dets
 
 
-def detect_onnx_input_size(session: ort.InferenceSession, override: int) -> int:
-    if override > 0:
-        return override
-    inp_shape = session.get_inputs()[0].shape
-    if len(inp_shape) >= 4 and isinstance(inp_shape[2], int) and inp_shape[2] > 0:
-        return int(inp_shape[2])
-    return 640
+def detect_onnx_input_size(session: ort.InferenceSession, override: list[int]) -> tuple[int, int]:
+    """(H, W) input ONNX; mendukung model rect (mis. 544x960)."""
+    return onnx_input_hw(session, override if override and override[0] > 0 else None)
 
 
 def run_model_inference_all(
     model_path: Path,
     samples: list[dict[str, Any]],
-    imgsz_override: int,
+    imgsz_override: list[int],
     iou_nms: float,
     provider: str,
 ) -> dict[str, Any]:
@@ -422,10 +420,11 @@ def run_model_inference_all(
     active_providers = sess.get_providers()
     inp = sess.get_inputs()[0]
     out = sess.get_outputs()[0]
-    imgsz = detect_onnx_input_size(sess, imgsz_override)
+    in_h, in_w = detect_onnx_input_size(sess, imgsz_override)
+    imgsz = f"{in_h}x{in_w}"
 
     # Warmup 3x agar benchmark latency bebas cold-start
-    dummy = np.zeros((1, 3, imgsz, imgsz), dtype=np.float32)
+    dummy = np.zeros((1, 3, in_h, in_w), dtype=np.float32)
     for _ in range(3):
         sess.run(None, {inp.name: dummy})
 
@@ -439,7 +438,7 @@ def run_model_inference_all(
         orig_h, orig_w = img_bgr.shape[:2]
 
         t_e2e = time.perf_counter()
-        padded, scale, pad_left, pad_top = letterbox(img_bgr, imgsz)
+        padded, scale, pad_left, pad_top = letterbox(img_bgr, (in_h, in_w))
         rgb = cv2.cvtColor(padded, cv2.COLOR_BGR2RGB).astype(np.float32) / 255.0
         blob = np.ascontiguousarray(np.transpose(rgb, (2, 0, 1))[None, ...])
 
@@ -634,7 +633,7 @@ def evaluate_model(
     iou_thresh: float,
     iou_nms: float,
     op_conf: float,
-    imgsz_override: int,
+    imgsz_override: list[int],
     provider: str,
 ) -> dict[str, Any]:
     run_info = run_model_inference_all(
@@ -1103,76 +1102,15 @@ def render_markdown_report(
 def apply_preset(args: argparse.Namespace) -> None:
     if not args.preset:
         return
-    m = AI_ROOT / "model"
-    if args.preset == "valid5":
+    best = AI_ROOT / "model" / "best.onnx"
+    args.models = args.models or [f"best={best}"]
+    if args.preset == "valid_best":
         args.split = "valid"
-        args.op_conf = 0.25
-        args.run_name = "phase5_valid_selection"
-        args.models = [
-            f"patra_orig={m / 'best_patra_highangle.onnx'}",
-            f"expA_640={m / 'ft_expA_640_lowlr.onnx'}",
-            f"expB_640={m / 'ft_expB_640_freeze_loc.onnx'}",
-            f"expD_640={m / 'ft_expD_640_ultralow.onnx'}",
-        ]
-    elif args.preset == "valid7_v2":
-        args.split = "valid"
-        args.op_conf = 0.25
-        args.run_name = "phase7_v2_valid"
-        args.models = [
-            f"patra_orig={m / 'best_patra_highangle.onnx'}",
-            f"patra_v2_ft={m / 'patra_v2_curated_ft.onnx'}",
-            f"patra_v2_base={m / 'patra_v2_curated_base.onnx'}",
-        ]
-    elif args.preset == "test7_v2":
-        args.split = "test"
-        args.op_conf = 0.25
-        args.save_visuals = True
-        args.run_name = "phase7_v2_test"
-        args.models = [
-            f"patra_orig={m / 'best_patra_highangle.onnx'}",
-            f"patra_v2_ft={m / 'patra_v2_curated_ft.onnx'}",
-            f"patra_v2_base={m / 'patra_v2_curated_base.onnx'}",
-        ]
-    elif args.preset == "valid_v3":
-        args.dataset_dir = AI_ROOT / "dataset_v3_gerobak"
-        args.split = "valid"
-        args.op_conf = 0.30
-        args.run_name = "phase_v3_gerobak_valid"
-        cands = [
-            ("patra_orig", m / "best_patra_highangle.onnx"),
-            ("patra_v2_ft", m / "patra_v2_curated_ft.onnx"),
-            ("patra_v3_ft", m / "patra_v3_gerobak_ft.onnx"),
-            ("patra_v3_base", m / "patra_v3_gerobak_base.onnx"),
-        ]
-        args.models = [f"{name}={p}" for name, p in cands if p.exists()]
-    elif args.preset == "test_v3":
-        args.dataset_dir = AI_ROOT / "dataset_v3_gerobak"
-        args.split = "test"
-        args.op_conf = 0.30
-        args.save_visuals = True
-        args.run_name = "phase_v3_gerobak_test"
-        cands = [
-            ("patra_orig", m / "best_patra_highangle.onnx"),
-            ("patra_v2_ft", m / "patra_v2_curated_ft.onnx"),
-            ("patra_v3_ft", m / "patra_v3_gerobak_ft.onnx"),
-            ("patra_v3_base", m / "patra_v3_gerobak_base.onnx"),
-        ]
-        args.models = [f"{name}={p}" for name, p in cands if p.exists()]
-    elif args.preset in ("test6_expA", "test6_expD", "test6_expB"):
-        ft_map = {
-            "test6_expA": ("patra_ft_expA", m / "ft_expA_640_lowlr.onnx"),
-            "test6_expD": ("patra_ft_expD", m / "ft_expD_640_ultralow.onnx"),
-            "test6_expB": ("patra_ft_expB", m / "ft_expB_640_freeze_loc.onnx"),
-        }
-        ft_name, ft_path = ft_map[args.preset]
+        args.run_name = "best_valid"
+    elif args.preset == "test_best":
         args.split = "test"
         args.save_visuals = True
-        args.run_name = f"phase6_{args.preset}"
-        args.models = [
-            f"civision={m / 'best_civision.onnx'}",
-            f"patra_orig={m / 'best_patra_highangle.onnx'}",
-            f"{ft_name}={ft_path}",
-        ]
+        args.run_name = "best_test"
 
 
 def main() -> int:

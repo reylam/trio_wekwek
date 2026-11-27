@@ -100,7 +100,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--single-class",
         action="store_true",
-        help="Ekspor sebagai 1 kelas (0: PKL) alih-alih 6 kelas PATRA",
+        help="Ekspor sebagai 1 kelas (0: PKL) alih-alih 2 kelas (Emperan, Gerobak) PATRA",
     )
     parser.add_argument(
         "--include-empty",

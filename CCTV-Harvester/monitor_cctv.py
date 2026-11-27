@@ -11,6 +11,10 @@ Contoh penggunaan:
 
   # 3. Mode pantau terus-menerus (otomatis skip kamera jelek di putaran berikutnya)
   AI-Patra/.venv/Scripts/python.exe CCTV-Harvester/monitor_cctv.py --loop --interval-sec 180 --max-cameras 25
+
+Frame budget (default AKTIF): maks 5 frame PKL tersimpan per kamera, jeda >= 120 menit antar frame
+kamera yang sama, kamera paling sedikit frame diprioritaskan, berhenti mencoba kamera setelah
+6 percobaan tanpa PKL (hemat kuota Gemini). `--max-frames-per-camera 0` = perilaku lama.
 """
 
 from __future__ import annotations
@@ -39,6 +43,7 @@ from config import (
     get_gemini_api_key,
     get_gemini_model_chain,
 )
+from frame_budget import FrameBudget, add_budget_args, budget_from_args
 from gemini_labeler import GeminiAnalysisResult, analyze_frame_with_gemini
 from quality_filter import assess_frame_quality
 
@@ -109,7 +114,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--single-class",
         action="store_true",
-        help="Simpan semua PKL sebagai 1 kelas (0: PKL). Default: 6 kelas sesuai data.yaml PATRA.",
+        help="Simpan semua PKL sebagai 1 kelas (0: PKL). Default: 2 kelas (Emperan, Gerobak) sesuai data.yaml PATRA.",
     )
     parser.add_argument(
         "--skip-known-bad",
@@ -133,6 +138,7 @@ def parse_args() -> argparse.Namespace:
         default=180,
         help="Jeda antar putaran saat --loop aktif dalam detik (default: 180)",
     )
+    add_budget_args(parser)
     return parser.parse_args()
 
 
@@ -276,6 +282,7 @@ def run_scan_round(
     dirs: dict[str, Path],
     cameras: list[dict[str, Any]],
     round_num: int,
+    budget: FrameBudget,
 ) -> dict[str, int]:
     quality_report_path = dirs["state"] / "camera_quality_report.json"
     manifest_path = dirs["state"] / "manifest.json"
@@ -287,14 +294,24 @@ def run_scan_round(
     manifest: list[dict[str, Any]] = load_json_safe(manifest_path, [])
 
     known_bad: set[str] = set(quality_report.get("cctv_jelek", {}).keys())
+    skip_ids = known_bad if args.skip_known_bad else None
     cursor = int(quality_report.get("round_cursor", 0) or 0)
-    batch, next_cursor = select_round_cameras(
-        cameras=cameras,
-        max_cameras=args.max_cameras,
-        start_cursor=cursor,
-        skip_ids=known_bad if args.skip_known_bad else None,
-        rotate=not args.no_rotate,
-    )
+    if budget.enabled:
+        # Prioritas kamera dengan frame paling sedikit; kamera penuh / dalam jeda dilewati
+        batch, bstat = budget.pick(cameras, args.max_cameras, skip_ids=skip_ids)
+        next_cursor = cursor
+        print(
+            f"[Budget] siap={bstat['ok']} | penuh={bstat['full']} | jeda-antar-frame={bstat['gap']} | "
+            f"jeda-retry={bstat['retry']} | menyerah={bstat['gave_up']} | dilewati-jelek={bstat['skipped_bad']}"
+        )
+    else:
+        batch, next_cursor = select_round_cameras(
+            cameras=cameras,
+            max_cameras=args.max_cameras,
+            start_cursor=cursor,
+            skip_ids=skip_ids,
+            rotate=not args.no_rotate,
+        )
     quality_report["round_cursor"] = next_cursor
     worker_count = max(1, min(16, int(args.workers)))
 
@@ -343,6 +360,7 @@ def run_scan_round(
             }
             quality_report["cctv_bagus"].pop(cam_id, None)
             print(f"  [{stats['checked']:02d}] JELEK (offline)   | {cam_city} | {cam_name}")
+            budget.record_attempt(cam_id, None)
             continue
 
         # Tahap 1: Pre-check kualitas OpenCV (hemat kuota Gemini)
@@ -362,6 +380,7 @@ def run_scan_round(
             }
             quality_report["cctv_bagus"].pop(cam_id, None)
             print(f"  [{stats['checked']:02d}] JELEK ({qres.category:10s}) | {cam_city} | {cam_name} -> {qres.reason}")
+            budget.record_attempt(cam_id, None)
             continue
 
         # Tahap 2: Analisis visual & auto-label PKL via Gemini Vision
@@ -377,6 +396,7 @@ def run_scan_round(
         except Exception as exc:
             stats["gemini_errors"] += 1
             print(f"  [{stats['checked']:02d}] ERROR Gemini     | {cam_city} | {cam_name} -> {exc}")
+            # Error API bukan kesalahan kamera: tidak dihitung sebagai percobaan gagal
             time.sleep(max(1.0, args.delay_sec))
             continue
 
@@ -397,6 +417,7 @@ def run_scan_round(
             }
             quality_report["cctv_bagus"].pop(cam_id, None)
             print(f"  [{stats['checked']:02d}] JELEK (gemini)    | {cam_city} | {cam_name} -> {analysis.quality_reason}")
+            budget.record_attempt(cam_id, None)
             time.sleep(args.delay_sec)
             continue
 
@@ -430,6 +451,7 @@ def run_scan_round(
             )
             preview = draw_yolo_preview(frame, analysis)
             cv2.imwrite(str(prev_path), preview, [cv2.IMWRITE_JPEG_QUALITY, 90])
+            budget.record_attempt(cam_id, base_stem)
 
             classes_found = ", ".join(
                 f"{d.class_name}({d.confidence:.2f})" for d in analysis.detections
@@ -437,6 +459,7 @@ def run_scan_round(
             print(
                 f"  [{stats['checked']:02d}] PKL TERDETEKSI   | {cam_city} | {cam_name} "
                 f"-> {len(analysis.detections)} objek [{classes_found}]"
+                + (f" | frame {budget.frames_of(cam_id)}/{budget.max_frames}" if budget.enabled else "")
             )
             manifest.append(
                 {
@@ -453,6 +476,7 @@ def run_scan_round(
             )
         else:
             stats["good_clean"] += 1
+            budget.record_attempt(cam_id, None)
             print(
                 f"  [{stats['checked']:02d}] BAGUS (0 PKL)    | {cam_city} | {cam_name} "
                 f"-> dilewati (hanya simpan PKL)"
@@ -467,6 +491,8 @@ def run_scan_round(
         }
         save_json(quality_report_path, quality_report)
         save_json(manifest_path, manifest)
+        if budget.enabled:
+            budget.save()
 
         time.sleep(args.delay_sec)
 
@@ -487,6 +513,10 @@ def run_scan_round(
         f"ErrGemini={stats['gemini_errors']}"
     )
     print(f"  Output dataset PKL tersimpan di: {dirs['dataset_pkl']}")
+    if budget.enabled:
+        budget.save()
+        print("  " + budget.summary_line(cameras))
+    stats["batch"] = len(batch)
     return stats
 
 
@@ -501,16 +531,26 @@ def main() -> int:
         print("Tidak ada kamera HLS yang cocok dengan filter.")
         return 1
 
+    budget = budget_from_args(args, dirs["state"], cameras)
+
     round_num = 1
     try:
         while True:
-            run_scan_round(args, api_key, model_chain, dirs, cameras, round_num)
+            stats = run_scan_round(args, api_key, model_chain, dirs, cameras, round_num, budget)
+            if budget.enabled and stats.get("batch", 0) == 0:
+                report = load_json_safe(dirs["state"] / "camera_quality_report.json", {})
+                known_bad = set(report.get("cctv_jelek", {}).keys())
+                if not budget.has_future_work(cameras, known_bad if args.skip_known_bad else None):
+                    print("[Budget] Semua kamera sudah penuh / tidak menghasilkan PKL. Panen selesai.")
+                    break
             if not args.loop:
                 break
             round_num += 1
             print(f"\nMenunggu {args.interval_sec} detik sebelum putaran berikutnya (Ctrl+C untuk berhenti)...")
             time.sleep(args.interval_sec)
     except KeyboardInterrupt:
+        if budget.enabled:
+            budget.save()
         print("\nDihentikan oleh pengguna. Seluruh hasil dan laporan sudah tersimpan aman.")
     return 0
 

@@ -1,0 +1,1014 @@
+{
+ "version": "v6",
+ "audited_on": "2026-11-27",
+ "policy": [
+  "Opsi 1 (keputusan tim): SEMUA gerobak/lapak yang ditinggal di trotoar/bahu jalan dilabeli, BUKA maupun TERTUTUP terpal. Objek tertutup yang tidak jelas gerobak atau bukan (mis. tumpukan terpal tanpa rangka/roda) tidak dilabeli.",
+  "Train+valid: kandidat dari prediksi out-of-fold (model fold-k pada kamera yang tidak pernah dilihatnya), conf>=0.20 & IoU<0.3 vs GT, diverifikasi visual 1-per-1 (56 diterima dari 105).",
+  "Test: review buta (hanya GT, tanpa prediksi model) -> hanya aturan opsi 1 yang diterapkan; kasus ambigu dibiarkan.",
+  "Diterapkan SETELAH v5."
+ ],
+ "delete": [],
+ "add": [
+  {
+   "stem": "501722_JKS_DISHUB_JL-MOH-KAHFI-I-C01_CCTV-01_20240118233840_jpg.rf.11870833b7fd3ff8f55a9d2dbca6eb2a",
+   "box": [
+    1,
+    0.06707,
+    0.56119,
+    0.128936,
+    0.232271
+   ],
+   "reason": "OOF review #0: prediksi model fold1 (conf 0.677) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501813_JKS_DISHUB_STASIUN-DUREN-KALIBATA-C01_CCTV-01_20240118172832_jpg.rf.6a81ef0791d5caeb5a5c04ead4ebaf73",
+   "box": [
+    1,
+    0.869189,
+    0.410867,
+    0.037326,
+    0.105949
+   ],
+   "reason": "OOF review #2: prediksi model fold0 (conf 0.646) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501819_JKU_DISHUB_JL-TAMAN-STASIUN-C01_CCTV-02_20240118172836_jpg.rf.c7e49e2df5a4641bf5bbd12a0edd1884",
+   "box": [
+    1,
+    0.226014,
+    0.207563,
+    0.039679,
+    0.057479
+   ],
+   "reason": "OOF review #6: prediksi model fold3 (conf 0.595) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501718_JKT_DISHUB_JL-TIPAR-CAKUNG-C01_CCTV-01_20240118195521_jpg.rf.f0d6bb035c070dfa2135bf51c8164820",
+   "box": [
+    1,
+    0.072755,
+    0.70807,
+    0.137652,
+    0.243772
+   ],
+   "reason": "OOF review #7: prediksi model fold0 (conf 0.584) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501718_JKT_DISHUB_JL-TIPAR-CAKUNG-C01_CCTV-01_20240119021055_jpg.rf.ab8d32401e10535a35b3f14ef10a7f01",
+   "box": [
+    1,
+    0.071675,
+    0.708889,
+    0.137143,
+    0.247881
+   ],
+   "reason": "OOF review #8: prediksi model fold0 (conf 0.581) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501807_JKS_KESBANGPOL_JL-RAWAJATI-TIMUR-C02_CCTV-01_20240118184110_jpg.rf.8110c040f86f2efa1b6d85acf69dc0f1",
+   "box": [
+    1,
+    0.694659,
+    0.795173,
+    0.078349,
+    0.131181
+   ],
+   "reason": "OOF review #9: prediksi model fold3 (conf 0.568) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501718_JKT_DISHUB_JL-TIPAR-CAKUNG-C01_CCTV-01_20240118222414_jpg.rf.64a9d885fef08472d1af43acce04ba32",
+   "box": [
+    1,
+    0.395302,
+    0.150664,
+    0.151357,
+    0.268029
+   ],
+   "reason": "OOF review #11: prediksi model fold0 (conf 0.553) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501718_JKT_DISHUB_JL-TIPAR-CAKUNG-C01_CCTV-01_20240119005305_jpg.rf.53a6f06016ebe7b038d1b1bfb07a7d8a",
+   "box": [
+    1,
+    0.397579,
+    0.147123,
+    0.148873,
+    0.269525
+   ],
+   "reason": "OOF review #12: prediksi model fold0 (conf 0.547) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501864_JKT_DISHUB_TERMINAL-KAMPUNG-RAMBUTAN-C01_CCTV-03_20240118172855_jpg.rf.91609e909d54f1d306227292784c52e8",
+   "box": [
+    0,
+    0.323515,
+    0.84312,
+    0.117538,
+    0.22292
+   ],
+   "reason": "OOF review #13: prediksi model fold3 (conf 0.536) terverifikasi visual sebagai lapak emperan tak berlabel"
+  },
+  {
+   "stem": "501919_JKT_DISHUB_JPO-PASAR-IKAN-C01_CCTV-03_20240118222500_jpg.rf.3059d7233a37109022fe64ebf3fb6101",
+   "box": [
+    1,
+    0.807045,
+    0.268069,
+    0.047396,
+    0.097379
+   ],
+   "reason": "OOF review #15: prediksi model fold4 (conf 0.525) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501718_JKT_DISHUB_JL-TIPAR-CAKUNG-C01_CCTV-01_20240118233837_jpg.rf.51ecb3a2805965a129b3694bd959dbad",
+   "box": [
+    1,
+    0.073923,
+    0.709463,
+    0.13718,
+    0.242062
+   ],
+   "reason": "OOF review #19: prediksi model fold0 (conf 0.506) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501718_JKT_DISHUB_JL-TIPAR-CAKUNG-C01_CCTV-01_20240119032607_jpg.rf.60672c8ee5fd76d6c3e194738d4b6127",
+   "box": [
+    1,
+    0.073059,
+    0.711138,
+    0.139257,
+    0.252001
+   ],
+   "reason": "OOF review #20: prediksi model fold0 (conf 0.494) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501722_JKS_DISHUB_JL-MOH-KAHFI-I-C01_CCTV-01_20240119044122_jpg.rf.79996540a111333f92ef236a5bff7d53",
+   "box": [
+    1,
+    0.049109,
+    0.700247,
+    0.091122,
+    0.128779
+   ],
+   "reason": "OOF review #22: prediksi model fold1 (conf 0.48) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501864_JKT_DISHUB_TERMINAL-KAMPUNG-RAMBUTAN-C01_CCTV-03_20240118195600_jpg.rf.8137fbea9cb48fdbe4d3a603b1c82e47",
+   "box": [
+    1,
+    0.467627,
+    0.880895,
+    0.110363,
+    0.166694
+   ],
+   "reason": "OOF review #24: prediksi model fold3 (conf 0.458) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501919_JKT_DISHUB_JPO-PASAR-IKAN-C01_CCTV-03_20240119021143_jpg.rf.d59305d215f0c90daa8b553a4e3f9c83",
+   "box": [
+    1,
+    0.955297,
+    0.252524,
+    0.089128,
+    0.194542
+   ],
+   "reason": "OOF review #25: prediksi model fold4 (conf 0.455) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501718_JKT_DISHUB_JL-TIPAR-CAKUNG-C01_CCTV-01_20240118222414_jpg.rf.64a9d885fef08472d1af43acce04ba32",
+   "box": [
+    1,
+    0.850417,
+    0.281167,
+    0.099145,
+    0.206744
+   ],
+   "reason": "OOF review #26: prediksi model fold0 (conf 0.451) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501908_JKT_DISHUB_JPO-PASAR-PRAMUKA-C01_CCTV-03_20240118222457_jpg.rf.c3c8beb3e0972cf54b5fa0f346be4bd7",
+   "box": [
+    1,
+    0.688169,
+    0.277066,
+    0.040093,
+    0.099268
+   ],
+   "reason": "OOF review #31: prediksi model fold0 (conf 0.424) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501718_JKT_DISHUB_JL-TIPAR-CAKUNG-C01_CCTV-01_20240119021055_jpg.rf.ab8d32401e10535a35b3f14ef10a7f01",
+   "box": [
+    1,
+    0.395772,
+    0.146474,
+    0.1591,
+    0.257249
+   ],
+   "reason": "OOF review #32: prediksi model fold0 (conf 0.423) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501718_JKT_DISHUB_JL-TIPAR-CAKUNG-C01_CCTV-01_20240118210948_jpg.rf.5ebba3bd64769448e06a0e914aed6110",
+   "box": [
+    1,
+    0.383624,
+    0.219187,
+    0.116372,
+    0.144037
+   ],
+   "reason": "OOF review #34: prediksi model fold0 (conf 0.412) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501718_JKT_DISHUB_JL-TIPAR-CAKUNG-C01_CCTV-01_20240119044119_jpg.rf.8a42af80bcdfe6d87a6fecdcf61bf2f1",
+   "box": [
+    1,
+    0.853964,
+    0.272588,
+    0.108635,
+    0.230202
+   ],
+   "reason": "OOF review #36: prediksi model fold0 (conf 0.388) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "Kabupaten_Cian_cian_013_SP_3_Ciranjang_Arah_Bandu_20261126_173453",
+   "box": [
+    1,
+    0.255588,
+    0.346544,
+    0.070011,
+    0.181317
+   ],
+   "reason": "OOF review #38: prediksi model fold1 (conf 0.387) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501864_JKT_DISHUB_TERMINAL-KAMPUNG-RAMBUTAN-C01_CCTV-03_20240119032645_jpg.rf.fcd3bf3374c29c45a74373dc1f5a2d32",
+   "box": [
+    1,
+    0.490457,
+    0.929553,
+    0.11923,
+    0.140894
+   ],
+   "reason": "OOF review #40: prediksi model fold3 (conf 0.373) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501718_JKT_DISHUB_JL-TIPAR-CAKUNG-C01_CCTV-01_20240119082732_jpg.rf.7d9b99b0fe0fff9542bb674b9888d60a",
+   "box": [
+    1,
+    0.111769,
+    0.629801,
+    0.223538,
+    0.4391
+   ],
+   "reason": "OOF review #41: prediksi model fold0 (conf 0.366) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501814_JKT_DISHUB_STASIUN-KALENDER-C01_CCTV-01_20240118222432_jpg.rf.67e9fc4e07c750df9cd6ca1230981156",
+   "box": [
+    1,
+    0.271235,
+    0.38591,
+    0.061987,
+    0.139385
+   ],
+   "reason": "OOF review #44: prediksi model fold4 (conf 0.355) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "idcctv28_raw",
+   "box": [
+    1,
+    0.520128,
+    0.380808,
+    0.209953,
+    0.348358
+   ],
+   "reason": "OOF review #45: prediksi model fold0 (conf 0.349) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "Kota_Banda_Ace_bna_52_Kartini_190_View_20261126_173123",
+   "box": [
+    0,
+    0.418325,
+    0.899104,
+    0.089843,
+    0.194093
+   ],
+   "reason": "OOF review #46: prediksi model fold4 (conf 0.349) terverifikasi visual sebagai lapak emperan tak berlabel"
+  },
+  {
+   "stem": "501718_JKT_DISHUB_JL-TIPAR-CAKUNG-C01_CCTV-01_20240118195521_jpg.rf.f0d6bb035c070dfa2135bf51c8164820",
+   "box": [
+    1,
+    0.846361,
+    0.263604,
+    0.075107,
+    0.151123
+   ],
+   "reason": "OOF review #48: prediksi model fold0 (conf 0.34) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501718_JKT_DISHUB_JL-TIPAR-CAKUNG-C01_CCTV-01_20240119005305_jpg.rf.53a6f06016ebe7b038d1b1bfb07a7d8a",
+   "box": [
+    1,
+    0.072757,
+    0.703758,
+    0.137774,
+    0.256402
+   ],
+   "reason": "OOF review #51: prediksi model fold0 (conf 0.334) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "Kabupaten_Cian_cian_004_Bundaran_Lampu_Gentur_Dar_20261126_173452",
+   "box": [
+    1,
+    0.214013,
+    0.245632,
+    0.026057,
+    0.062849
+   ],
+   "reason": "OOF review #52: prediksi model fold4 (conf 0.333) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501814_JKT_DISHUB_STASIUN-KALENDER-C01_CCTV-01_20240118184113_jpg.rf.a6b6a20b9b71802e0941ae55e167ff49",
+   "box": [
+    1,
+    0.453684,
+    0.808833,
+    0.104088,
+    0.196385
+   ],
+   "reason": "OOF review #53: prediksi model fold4 (conf 0.329) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "Kota_Yogyakart_yogy_020_Yogyakarta_CCTV_-_Maliobo_20261126_171830",
+   "box": [
+    1,
+    0.579863,
+    0.31295,
+    0.049086,
+    0.099228
+   ],
+   "reason": "OOF review #54: prediksi model fold3 (conf 0.328) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501814_JKT_DISHUB_STASIUN-KALENDER-C01_CCTV-01_20240118184113_jpg.rf.a6b6a20b9b71802e0941ae55e167ff49",
+   "box": [
+    1,
+    0.233219,
+    0.303066,
+    0.036536,
+    0.104147
+   ],
+   "reason": "OOF review #58: prediksi model fold4 (conf 0.316) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501918_JKT_DISHUB_JPO-MATRAMAN-BARU-C01_CCTV-02_20240119032655_jpg.rf.2d159fbb59f8a6abdb413e698748ade8",
+   "box": [
+    1,
+    0.693539,
+    0.396088,
+    0.037833,
+    0.113108
+   ],
+   "reason": "OOF review #61: prediksi model fold2 (conf 0.309) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501825_JKT_DISHUB_JL-RAYA-CAKUNG-CILINCING-BARAT-C01_CCTV-01_20240119071224_jpg.rf.9801000f2ade9639864feb7eee57babe",
+   "box": [
+    1,
+    0.912401,
+    0.473315,
+    0.08082,
+    0.145319
+   ],
+   "reason": "OOF review #63: prediksi model fold0 (conf 0.308) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501718_JKT_DISHUB_JL-TIPAR-CAKUNG-C01_CCTV-01_20240119044119_jpg.rf.8a42af80bcdfe6d87a6fecdcf61bf2f1",
+   "box": [
+    1,
+    0.395369,
+    0.14824,
+    0.160468,
+    0.265927
+   ],
+   "reason": "OOF review #64: prediksi model fold0 (conf 0.301) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501807_JKS_KESBANGPOL_JL-RAWAJATI-TIMUR-C02_CCTV-01_20240118172829_jpg.rf.9552667cfafda3bb6c14cd78948886e3",
+   "box": [
+    1,
+    0.782971,
+    0.863588,
+    0.110313,
+    0.272824
+   ],
+   "reason": "OOF review #65: prediksi model fold3 (conf 0.3) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501917_JKT_DISHUB_JPO-WISMA-SETYA-BHAKTI-C01_CCTV-01_20240118184142_jpg.rf.900ca9fa8badce8f2be94e2684cbe0b6",
+   "box": [
+    0,
+    0.926171,
+    0.309789,
+    0.073456,
+    0.152656
+   ],
+   "reason": "OOF review #67: prediksi model fold3 (conf 0.295) terverifikasi visual sebagai lapak emperan tak berlabel"
+  },
+  {
+   "stem": "501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-02_20240118222500_jpg.rf.ee494a88d5d142ce4cc30ceb612793b2",
+   "box": [
+    0,
+    0.869054,
+    0.32783,
+    0.098433,
+    0.199431
+   ],
+   "reason": "OOF review #68: prediksi model fold1 (conf 0.291) terverifikasi visual sebagai lapak emperan tak berlabel"
+  },
+  {
+   "stem": "501711_JKU_DISHUB_JL-DANAU-SUNTER-BARAT-C02_CCTV-01_20240118184047_jpg.rf.1bcc430cc6afee5d2778baf19ef68331",
+   "box": [
+    1,
+    0.60939,
+    0.21525,
+    0.054771,
+    0.130579
+   ],
+   "reason": "OOF review #69: prediksi model fold1 (conf 0.289) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "Kota_Banda_Ace_bna_51_Diponegoro_SP_Ranup_20261126_173123",
+   "box": [
+    1,
+    0.459471,
+    0.959062,
+    0.1038,
+    0.080341
+   ],
+   "reason": "OOF review #70: prediksi model fold1 (conf 0.288) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501718_JKT_DISHUB_JL-TIPAR-CAKUNG-C01_CCTV-02_20240118210949_jpg.rf.75ff30d98cee3b30ff34244e1d24eed6",
+   "box": [
+    1,
+    0.438954,
+    0.30076,
+    0.057133,
+    0.100189
+   ],
+   "reason": "OOF review #71: prediksi model fold2 (conf 0.284) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501718_JKT_DISHUB_JL-TIPAR-CAKUNG-C01_CCTV-01_20240119032607_jpg.rf.60672c8ee5fd76d6c3e194738d4b6127",
+   "box": [
+    1,
+    0.392515,
+    0.14708,
+    0.160462,
+    0.272773
+   ],
+   "reason": "OOF review #72: prediksi model fold0 (conf 0.277) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "idcctv27_raw",
+   "box": [
+    0,
+    0.366095,
+    0.242441,
+    0.078346,
+    0.168778
+   ],
+   "reason": "OOF review #73: prediksi model fold3 (conf 0.277) terverifikasi visual sebagai lapak emperan tak berlabel"
+  },
+  {
+   "stem": "501814_JKT_DISHUB_STASIUN-KALENDER-C01_CCTV-01_20240118211009_jpg.rf.028e700876971efdafad4bbaf75833c8",
+   "box": [
+    1,
+    0.462362,
+    0.807909,
+    0.114753,
+    0.169047
+   ],
+   "reason": "OOF review #78: prediksi model fold4 (conf 0.271) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501722_JKS_DISHUB_JL-MOH-KAHFI-I-C01_CCTV-01_20240119055645_jpg.rf.bb74aa3da3f036aaeec6b074c5c11710",
+   "box": [
+    1,
+    0.050304,
+    0.700035,
+    0.090344,
+    0.12002
+   ],
+   "reason": "OOF review #80: prediksi model fold1 (conf 0.262) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501918_JKT_DISHUB_JPO-MATRAMAN-BARU-C01_CCTV-02_20240118211037_jpg.rf.8b444bc20292271a6e653ce634664fba",
+   "box": [
+    1,
+    0.840489,
+    0.912169,
+    0.080944,
+    0.123481
+   ],
+   "reason": "OOF review #83: prediksi model fold2 (conf 0.257) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501718_JKT_DISHUB_JL-TIPAR-CAKUNG-C01_CCTV-01_20240119055642_jpg.rf.202aba85040c4e17618224885da513de",
+   "box": [
+    1,
+    0.112934,
+    0.628962,
+    0.225869,
+    0.4426
+   ],
+   "reason": "OOF review #84: prediksi model fold0 (conf 0.255) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501718_JKT_DISHUB_JL-TIPAR-CAKUNG-C01_CCTV-01_20240118184053_jpg.rf.24e79ccdd6d5aa818cb380f9baad2da3",
+   "box": [
+    1,
+    0.385674,
+    0.220316,
+    0.114143,
+    0.141285
+   ],
+   "reason": "OOF review #86: prediksi model fold0 (conf 0.242) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501718_JKT_DISHUB_JL-TIPAR-CAKUNG-C01_CCTV-01_20240118195521_jpg.rf.f0d6bb035c070dfa2135bf51c8164820",
+   "box": [
+    1,
+    0.383038,
+    0.217856,
+    0.110661,
+    0.130691
+   ],
+   "reason": "OOF review #87: prediksi model fold0 (conf 0.242) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501721_JKS_DISHUB_JL-MOH-KAHFI-II-C01_CCTV-02_20240118195524_jpg.rf.3911e0488dc47fc0bae8925ba289ea25",
+   "box": [
+    1,
+    0.328646,
+    0.321614,
+    0.043121,
+    0.070333
+   ],
+   "reason": "OOF review #91: prediksi model fold4 (conf 0.234) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501718_JKT_DISHUB_JL-TIPAR-CAKUNG-C01_CCTV-01_20240118172809_jpg.rf.3850189c7df7494369ccf8a3cb15bd97",
+   "box": [
+    1,
+    0.379142,
+    0.219473,
+    0.107087,
+    0.111874
+   ],
+   "reason": "OOF review #95: prediksi model fold0 (conf 0.223) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "Kota_Jakarta_S_jkt_037_Simpang_Jl_Panglima_Polim-_20261126_174208",
+   "box": [
+    1,
+    0.62817,
+    0.36782,
+    0.063026,
+    0.172674
+   ],
+   "reason": "OOF review #96: prediksi model fold4 (conf 0.218) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501722_JKS_DISHUB_JL-MOH-KAHFI-I-C01_CCTV-01_20240118172813_jpg.rf.023e44c7e960ed94b23981a1c8552e99",
+   "box": [
+    1,
+    0.297389,
+    0.428054,
+    0.062098,
+    0.106051
+   ],
+   "reason": "OOF review #97: prediksi model fold1 (conf 0.216) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501711_JKU_DISHUB_JL-DANAU-SUNTER-BARAT-C02_CCTV-01_20240118210943_jpg.rf.54de1e581c031afa0a16d27c3a817372",
+   "box": [
+    1,
+    0.870554,
+    0.255584,
+    0.067862,
+    0.068594
+   ],
+   "reason": "OOF review #100: prediksi model fold1 (conf 0.205) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501814_JKT_DISHUB_STASIUN-KALENDER-C01_CCTV-01_20240118172833_jpg.rf.d2c4dbf911cff9a58abc0f0327146d6b",
+   "box": [
+    0,
+    0.241908,
+    0.579481,
+    0.060179,
+    0.135003
+   ],
+   "reason": "OOF review #103: prediksi model fold4 (conf 0.202) terverifikasi visual sebagai lapak emperan tak berlabel"
+  },
+  {
+   "stem": "501814_JKT_DISHUB_STASIUN-KALENDER-C01_CCTV-01_20240118184113_jpg.rf.a6b6a20b9b71802e0941ae55e167ff49",
+   "box": [
+    1,
+    0.2415,
+    0.303827,
+    0.059704,
+    0.129425
+   ],
+   "reason": "OOF review #104: prediksi model fold4 (conf 0.202) terverifikasi visual sebagai gerobak tak berlabel"
+  },
+  {
+   "stem": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-01_20240118172849_jpg.rf.1bad518bdbfd12a1cb3be9d8b7bd4109",
+   "box": [
+    1,
+    0.9525,
+    0.3075,
+    0.095,
+    0.355
+   ],
+   "reason": "Opsi 1: gerobak hijau beroda + terpal biru (sisi kanan), statis semua frame"
+  },
+  {
+   "stem": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-01_20240118172849_jpg.rf.1bad518bdbfd12a1cb3be9d8b7bd4109",
+   "box": [
+    1,
+    0.8625,
+    0.3075,
+    0.085,
+    0.245
+   ],
+   "reason": "Opsi 1: gerobak rangka putih tertutup terpal biru, statis semua frame"
+  },
+  {
+   "stem": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-01_20240118184127_jpg.rf.2ff971a4967223fd0550d3c1adc32e70",
+   "box": [
+    1,
+    0.9525,
+    0.3075,
+    0.095,
+    0.355
+   ],
+   "reason": "Opsi 1: gerobak hijau beroda + terpal biru (sisi kanan), statis semua frame"
+  },
+  {
+   "stem": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-01_20240118184127_jpg.rf.2ff971a4967223fd0550d3c1adc32e70",
+   "box": [
+    1,
+    0.8625,
+    0.3075,
+    0.085,
+    0.245
+   ],
+   "reason": "Opsi 1: gerobak rangka putih tertutup terpal biru, statis semua frame"
+  },
+  {
+   "stem": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-01_20240118195555_jpg.rf.352bd9fae97d856d724857dea84c45a1",
+   "box": [
+    1,
+    0.9525,
+    0.3075,
+    0.095,
+    0.355
+   ],
+   "reason": "Opsi 1: gerobak hijau beroda + terpal biru (sisi kanan), statis semua frame"
+  },
+  {
+   "stem": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-01_20240118195555_jpg.rf.352bd9fae97d856d724857dea84c45a1",
+   "box": [
+    1,
+    0.8625,
+    0.3075,
+    0.085,
+    0.245
+   ],
+   "reason": "Opsi 1: gerobak rangka putih tertutup terpal biru, statis semua frame"
+  },
+  {
+   "stem": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-01_20240118211022_jpg.rf.c96090541e218db9a0dd996cf40dd470",
+   "box": [
+    1,
+    0.9525,
+    0.3075,
+    0.095,
+    0.355
+   ],
+   "reason": "Opsi 1: gerobak hijau beroda + terpal biru (sisi kanan), statis semua frame"
+  },
+  {
+   "stem": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-01_20240118211022_jpg.rf.c96090541e218db9a0dd996cf40dd470",
+   "box": [
+    1,
+    0.8625,
+    0.3075,
+    0.085,
+    0.245
+   ],
+   "reason": "Opsi 1: gerobak rangka putih tertutup terpal biru, statis semua frame"
+  },
+  {
+   "stem": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-01_20240118222445_jpg.rf.70285676345310813b9842a83d999c7e",
+   "box": [
+    1,
+    0.9525,
+    0.3075,
+    0.095,
+    0.355
+   ],
+   "reason": "Opsi 1: gerobak hijau beroda + terpal biru (sisi kanan), statis semua frame"
+  },
+  {
+   "stem": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-01_20240118222445_jpg.rf.70285676345310813b9842a83d999c7e",
+   "box": [
+    1,
+    0.8625,
+    0.3075,
+    0.085,
+    0.245
+   ],
+   "reason": "Opsi 1: gerobak rangka putih tertutup terpal biru, statis semua frame"
+  },
+  {
+   "stem": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-01_20240118233909_jpg.rf.5939ee8ba3f4b428fd510340c0d5cf4c",
+   "box": [
+    1,
+    0.9525,
+    0.3075,
+    0.095,
+    0.355
+   ],
+   "reason": "Opsi 1: gerobak hijau beroda + terpal biru (sisi kanan), statis semua frame"
+  },
+  {
+   "stem": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-01_20240118233909_jpg.rf.5939ee8ba3f4b428fd510340c0d5cf4c",
+   "box": [
+    1,
+    0.8625,
+    0.3075,
+    0.085,
+    0.245
+   ],
+   "reason": "Opsi 1: gerobak rangka putih tertutup terpal biru, statis semua frame"
+  },
+  {
+   "stem": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-01_20240119005338_jpg.rf.9468a340242871eed71da8b2dccb37d3",
+   "box": [
+    1,
+    0.9525,
+    0.3075,
+    0.095,
+    0.355
+   ],
+   "reason": "Opsi 1: gerobak hijau beroda + terpal biru (sisi kanan), statis semua frame"
+  },
+  {
+   "stem": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-01_20240119005338_jpg.rf.9468a340242871eed71da8b2dccb37d3",
+   "box": [
+    1,
+    0.8625,
+    0.3075,
+    0.085,
+    0.245
+   ],
+   "reason": "Opsi 1: gerobak rangka putih tertutup terpal biru, statis semua frame"
+  },
+  {
+   "stem": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-01_20240119021128_jpg.rf.8818e1631609a22357dd041840db1cdd",
+   "box": [
+    1,
+    0.9525,
+    0.3075,
+    0.095,
+    0.355
+   ],
+   "reason": "Opsi 1: gerobak hijau beroda + terpal biru (sisi kanan), statis semua frame"
+  },
+  {
+   "stem": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-01_20240119021128_jpg.rf.8818e1631609a22357dd041840db1cdd",
+   "box": [
+    1,
+    0.8625,
+    0.3075,
+    0.085,
+    0.245
+   ],
+   "reason": "Opsi 1: gerobak rangka putih tertutup terpal biru, statis semua frame"
+  },
+  {
+   "stem": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-01_20240119032640_jpg.rf.d053c3e37590b5aa24c5a404b3330938",
+   "box": [
+    1,
+    0.9525,
+    0.3075,
+    0.095,
+    0.355
+   ],
+   "reason": "Opsi 1: gerobak hijau beroda + terpal biru (sisi kanan), statis semua frame"
+  },
+  {
+   "stem": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-01_20240119032640_jpg.rf.d053c3e37590b5aa24c5a404b3330938",
+   "box": [
+    1,
+    0.8625,
+    0.3075,
+    0.085,
+    0.245
+   ],
+   "reason": "Opsi 1: gerobak rangka putih tertutup terpal biru, statis semua frame"
+  },
+  {
+   "stem": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-01_20240119044151_jpg.rf.414e110b1fb9fe5f9aca7c6ea2877535",
+   "box": [
+    1,
+    0.9525,
+    0.3075,
+    0.095,
+    0.355
+   ],
+   "reason": "Opsi 1: gerobak hijau beroda + terpal biru (sisi kanan), statis semua frame"
+  },
+  {
+   "stem": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-01_20240119044151_jpg.rf.414e110b1fb9fe5f9aca7c6ea2877535",
+   "box": [
+    1,
+    0.8625,
+    0.3075,
+    0.085,
+    0.245
+   ],
+   "reason": "Opsi 1: gerobak rangka putih tertutup terpal biru, statis semua frame"
+  },
+  {
+   "stem": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-01_20240119055715_jpg.rf.8c3478005757e749128043d15115732d",
+   "box": [
+    1,
+    0.9525,
+    0.3075,
+    0.095,
+    0.355
+   ],
+   "reason": "Opsi 1: gerobak hijau beroda + terpal biru (sisi kanan), statis semua frame"
+  },
+  {
+   "stem": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-01_20240119055715_jpg.rf.8c3478005757e749128043d15115732d",
+   "box": [
+    1,
+    0.8625,
+    0.3075,
+    0.085,
+    0.245
+   ],
+   "reason": "Opsi 1: gerobak rangka putih tertutup terpal biru, statis semua frame"
+  },
+  {
+   "stem": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-01_20240119082806_jpg.rf.184d0f44981b524a288773a30a4287c3",
+   "box": [
+    1,
+    0.9525,
+    0.3075,
+    0.095,
+    0.355
+   ],
+   "reason": "Opsi 1: gerobak hijau beroda + terpal biru (sisi kanan), statis semua frame"
+  },
+  {
+   "stem": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-01_20240119082806_jpg.rf.184d0f44981b524a288773a30a4287c3",
+   "box": [
+    1,
+    0.8625,
+    0.3075,
+    0.085,
+    0.245
+   ],
+   "reason": "Opsi 1: gerobak rangka putih tertutup terpal biru, statis semua frame"
+  },
+  {
+   "camera": "501717_JKU_DISHUB_JL-PLUMPANG-SEMPER-RAYA-C01_CCTV-02",
+   "ts": "20240119055641",
+   "box": [
+    1,
+    0.1809,
+    0.5211,
+    0.0477,
+    0.1484
+   ],
+   "reason": "Opsi 1: lemari gerobak tertutup terpal hijau (lokasi sama dgn frame buka)"
+  },
+  {
+   "camera": "501717_JKU_DISHUB_JL-PLUMPANG-SEMPER-RAYA-C01_CCTV-02",
+   "ts": "20240119071157",
+   "box": [
+    1,
+    0.1809,
+    0.5211,
+    0.0477,
+    0.1484
+   ],
+   "reason": "Opsi 1: lemari gerobak tertutup terpal hijau (lokasi sama dgn frame buka)"
+  },
+  {
+   "camera": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-02",
+   "ts": "20240118222445",
+   "box": [
+    1,
+    0.54,
+    0.5445,
+    0.246,
+    0.451
+   ],
+   "reason": "Opsi 1 (review test buta): warung gerobak terpal biru TUTUP"
+  },
+  {
+   "camera": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-02",
+   "ts": "20240118233909",
+   "box": [
+    1,
+    0.54,
+    0.5445,
+    0.246,
+    0.451
+   ],
+   "reason": "Opsi 1 (review test buta): warung gerobak terpal biru TUTUP"
+  },
+  {
+   "camera": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-02",
+   "ts": "20240119005338",
+   "box": [
+    1,
+    0.54,
+    0.5445,
+    0.246,
+    0.451
+   ],
+   "reason": "Opsi 1 (review test buta): warung gerobak terpal biru TUTUP"
+  },
+  {
+   "camera": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-02",
+   "ts": "20240119021128",
+   "box": [
+    1,
+    0.54,
+    0.5445,
+    0.246,
+    0.451
+   ],
+   "reason": "Opsi 1 (review test buta): warung gerobak terpal biru TUTUP"
+  },
+  {
+   "camera": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-02",
+   "ts": "20240119032640",
+   "box": [
+    1,
+    0.54,
+    0.5445,
+    0.246,
+    0.451
+   ],
+   "reason": "Opsi 1 (review test buta): warung gerobak terpal biru TUTUP"
+  },
+  {
+   "camera": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-02",
+   "ts": "20240119044151",
+   "box": [
+    1,
+    0.54,
+    0.5445,
+    0.246,
+    0.451
+   ],
+   "reason": "Opsi 1 (review test buta): warung gerobak terpal biru TUTUP"
+  },
+  {
+   "camera": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-02",
+   "ts": "20240119055716",
+   "box": [
+    1,
+    0.54,
+    0.5445,
+    0.246,
+    0.451
+   ],
+   "reason": "Opsi 1 (review test buta): warung gerobak terpal biru TUTUP"
+  },
+  {
+   "camera": "501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-02",
+   "ts": "20240119071232",
+   "box": [
+    1,
+    0.54,
+    0.5445,
+    0.246,
+    0.451
+   ],
+   "reason": "Opsi 1 (review test buta): warung gerobak terpal biru TUTUP"
+  }
+ ],
+ "quarantine": []
+}

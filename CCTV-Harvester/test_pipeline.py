@@ -54,13 +54,15 @@ class TestCctvHarvester(unittest.TestCase):
         {
           "camera_quality": "good",
           "quality_reason": "Jalan dan trotoar tampak jelas",
-          "scene_summary": "Terlihat gerobak dan tenda terpal di sisi kiri jalan",
+          "scene_summary": "Terlihat gerobak dan lapak emperan di sisi kiri jalan",
           "has_pkl": true,
           "detections": [
             {"label": "Gerobak", "confidence": 0.91, "box_2d": [500, 200, 750, 400], "note": "gerobak bakso"},
-            {"label": "Tenda PKL", "confidence": 0.80, "box_2d": [450, 500, 700, 800], "note": "terpal biru"},
+            {"label": "Lapak", "confidence": 0.80, "box_2d": [450, 500, 700, 800], "note": "emperan trotoar"},
+            {"label": "Tenda PKL", "confidence": 0.85, "box_2d": [400, 450, 650, 750], "note": "terpal harus diabaikan"},
+            {"label": "Sepeda-motor", "confidence": 0.92, "box_2d": [320, 120, 520, 320], "note": "motor harus diabaikan"},
             {"label": "Mobil", "confidence": 0.95, "box_2d": [300, 100, 500, 300], "note": "harus diabaikan"},
-            {"label": "Payung", "confidence": 0.20, "box_2d": [100, 100, 200, 200], "note": "conf rendah"}
+            {"label": "Gerobak", "confidence": 0.20, "box_2d": [100, 100, 200, 200], "note": "conf rendah"}
           ]
         }
         ```"""
@@ -69,7 +71,7 @@ class TestCctvHarvester(unittest.TestCase):
         self.assertTrue(parsed.has_pkl)
         self.assertEqual(len(parsed.detections), 2)
         self.assertEqual(parsed.detections[0].class_id, 1)  # Gerobak
-        self.assertEqual(parsed.detections[1].class_id, 5)  # Terpal via alias Tenda PKL
+        self.assertEqual(parsed.detections[1].class_id, 0)  # Emperan via alias Lapak
         self.assertTrue(parsed.detections[0].to_yolo_line().startswith("1 0.300000 0.625000"))
 
     def test_roi_crop_and_roboflow_coco_export(self) -> None:
@@ -93,7 +95,7 @@ class TestCctvHarvester(unittest.TestCase):
             ],
             single_class=False,
         )
-        self.assertEqual(len(coco["categories"]), 6)
+        self.assertEqual(len(coco["categories"]), 2)
         self.assertEqual(len(coco["images"]), 1)
         self.assertEqual(coco["annotations"][0]["bbox"], [400.0, 150.0, 200.0, 200.0])
 

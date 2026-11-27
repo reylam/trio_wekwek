@@ -11,14 +11,10 @@ DEFAULT_CATALOG_PATH = REPO_ROOT / "AI-Patra" / "cctv_catalog" / "cctv_snapshot.
 DEFAULT_OUTPUT_DIR = HARVESTER_ROOT / "output"
 DEFAULT_STATE_DIR = HARVESTER_ROOT / ".state"
 
-# Pemetaan 6 kelas YOLO identik dengan AI-Patra/dataset/data.yaml
+# Pemetaan 5 kelas YOLO identik dengan AI-Patra/dataset/data.yaml (tanpa Sepeda-motor)
 YOLO_CLASS_NAMES: list[str] = [
     "Emperan",
     "Gerobak",
-    "Panggul",
-    "Payung",
-    "Sepeda-motor",
-    "Terpal",
 ]
 
 CLASS_NAME_TO_ID: dict[str, int] = {
@@ -35,30 +31,12 @@ CLASS_ALIASES: dict[str, int] = {
     "gerobak pkl": 1,
     "gerobak dorong": 1,
     "cart": 1,
-    "panggul": 2,
-    "pikulan": 2,
-    "pedagang pikul": 2,
-    "payung": 3,
-    "payung dagang": 3,
-    "payung pkl": 3,
-    "sepeda-motor": 4,
-    "sepeda motor": 4,
-    "motor dagang": 4,
-    "motor pkl": 4,
-    "terpal": 5,
-    "tenda": 5,
-    "tenda pkl": 5,
-    "tenda terpal": 5,
 }
 
 # Warna BGR per kelas untuk gambar preview bounding box
 CLASS_COLORS_BGR: dict[int, tuple[int, int, int]] = {
-    0: (255, 140, 0),    # Emperan - biru oranye
-    1: (40, 40, 235),    # Gerobak - merah terang
-    2: (200, 60, 220),   # Panggul - magenta
-    3: (0, 185, 255),    # Payung - kuning/amber
-    4: (230, 110, 40),   # Sepeda-motor - biru
-    5: (40, 175, 60),    # Terpal - hijau
+    0: (255, 140, 0),  # Emperan
+    1: (40, 40, 235),  # Gerobak
 }
 
 # Ambang batas pre-check kualitas gambar (sebelum panggil Gemini)
@@ -116,7 +94,7 @@ def get_gemini_model_chain(primary_override: str | None = None) -> list[str]:
 
 
 def resolve_class_id(label: str, single_class: bool = False) -> int | None:
-    """Konversi nama kelas dari Gemini ke ID YOLO (0..5, atau 0 jika single_class)."""
+    """Konversi nama kelas dari Gemini ke ID YOLO (0..1, atau 0 jika single_class)."""
     norm = label.strip().lower().replace("_", "-")
     if norm in CLASS_NAME_TO_ID:
         return 0 if single_class else CLASS_NAME_TO_ID[norm]

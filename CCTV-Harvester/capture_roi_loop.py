@@ -14,6 +14,12 @@ Contoh penggunaan:
 
   # Custom ROI kotak (x1,y1,x2,y2 skala 0..1) jika ingin fokus bagian bawah/trotoar
   .\AI-Patra\.venv\Scripts\python.exe CCTV-Harvester/capture_roi_loop.py --roi 0.05,0.45,0.95,0.98 --interval-sec 300
+
+Frame budget (default AKTIF): maks 5 frame per kamera, jeda >= 120 menit antar frame kamera yang sama,
+kamera dengan frame paling sedikit diprioritaskan -> dataset menyebar ke ratusan kamera berbeda.
+  .\AI-Patra\.venv\Scripts\python.exe CCTV-Harvester/capture_roi_loop.py --max-cameras 40 --skip-known-bad
+  .\AI-Patra\.venv\Scripts\python.exe CCTV-Harvester/capture_roi_loop.py --max-frames-per-camera 3 --min-gap-min 180
+  .\AI-Patra\.venv\Scripts\python.exe CCTV-Harvester/capture_roi_loop.py --max-frames-per-camera 0   # perilaku lama (tanpa batas)
 """
 
 from __future__ import annotations
@@ -33,6 +39,7 @@ import cv2
 import numpy as np
 
 from config import DEFAULT_CATALOG_PATH, DEFAULT_STATE_DIR
+from frame_budget import add_budget_args, budget_from_args
 from quality_filter import assess_frame_quality
 
 
@@ -104,6 +111,7 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Selalu mulai dari kamera urutan pertama (matikan rotasi round-robin)",
     )
+    add_budget_args(parser)
     return parser.parse_args()
 
 
@@ -284,6 +292,7 @@ def main() -> int:
     raw_roi_dir.mkdir(parents=True, exist_ok=True)
 
     quality_report_path = args.out_dir / "camera_quality_report.json"
+    budget = budget_from_args(args, args.out_dir, cameras)
 
     round_num = 1
     try:
@@ -293,14 +302,34 @@ def main() -> int:
                 {"updated_at": None, "round_cursor": 0, "summary": {}, "cctv_bagus": {}, "cctv_jelek": {}},
             )
             known_bad = set(report.get("cctv_jelek", {}).keys())
+            skip_ids = known_bad if args.skip_known_bad else None
             cursor = int(report.get("round_cursor", 0) or 0)
-            batch, next_cursor = select_round_cameras(
-                cameras=cameras,
-                max_cameras=args.max_cameras,
-                start_cursor=cursor,
-                skip_ids=known_bad if args.skip_known_bad else None,
-                rotate=not args.no_rotate,
-            )
+            if budget.enabled:
+                # Prioritas kamera dengan frame paling sedikit; kamera penuh / dalam jeda dilewati
+                batch, bstat = budget.pick(cameras, args.max_cameras, skip_ids=skip_ids)
+                next_cursor = cursor
+                print(
+                    f"[Budget] siap={bstat['ok']} | penuh={bstat['full']} | jeda-antar-frame={bstat['gap']} | "
+                    f"jeda-retry={bstat['retry']} | menyerah={bstat['gave_up']} | dilewati-jelek={bstat['skipped_bad']}"
+                )
+                if not batch:
+                    if not budget.has_future_work(cameras, skip_ids):
+                        print("[Budget] Semua kamera sudah penuh / tidak menghasilkan frame. Panen selesai.")
+                        break
+                    if args.once:
+                        print("[Budget] Tidak ada kamera yang siap saat ini (semua dalam jeda).")
+                        break
+                    print(f"[Budget] Semua kamera dalam jeda, menunggu {args.interval_sec} detik...")
+                    time.sleep(args.interval_sec)
+                    continue
+            else:
+                batch, next_cursor = select_round_cameras(
+                    cameras=cameras,
+                    max_cameras=args.max_cameras,
+                    start_cursor=cursor,
+                    skip_ids=skip_ids,
+                    rotate=not args.no_rotate,
+                )
             report["round_cursor"] = next_cursor
 
             checked = len(batch)
@@ -338,6 +367,7 @@ def main() -> int:
                         "checked_at": now_iso,
                     }
                     print(f"  [{idx:02d}] OFFLINE | {cam_city} | {cam_name}")
+                    budget.record_attempt(cam_id, None)
                     continue
 
                 # Cek kualitas frame asli sebelum crop (tanpa simpan sampel gambar jelek ke disk)
@@ -354,6 +384,7 @@ def main() -> int:
                         "checked_at": now_iso,
                     }
                     print(f"  [{idx:02d}] JELEK   | {cam_city} | {cam_name} ({qres.category})")
+                    budget.record_attempt(cam_id, None)
                     continue
 
                 # Tentukan poligon ROI: override manual -> roi_polygon katalog -> opsional default area bawah
@@ -390,10 +421,14 @@ def main() -> int:
                 }
                 report["cctv_jelek"].pop(cam_id, None)
                 saved_good += 1
+                budget.record_attempt(cam_id, stem)
                 roi_tag = f"ROI:{roi_info['mode']}"
+                frame_tag = (
+                    f", frame {budget.frames_of(cam_id)}/{budget.max_frames}" if budget.enabled else ""
+                )
                 print(
                     f"  [{idx:02d}] SIMPAN  | {cam_city} | {cam_name} "
-                    f"[{roi_tag}, {processed.shape[1]}x{processed.shape[0]}]"
+                    f"[{roi_tag}, {processed.shape[1]}x{processed.shape[0]}{frame_tag}]"
                 )
 
             report["updated_at"] = datetime.now(timezone.utc).isoformat()
@@ -402,11 +437,15 @@ def main() -> int:
                 "total_cctv_jelek": len(report["cctv_jelek"]),
             }
             save_json(quality_report_path, report)
+            if budget.enabled:
+                budget.save()
 
             print(
                 f"[Selesai Putaran #{round_num}] Diperiksa={checked} | Tersimpan={saved_good} | "
                 f"Jelek={bad_count} | Offline={offline_count} -> {raw_roi_dir}"
             )
+            if budget.enabled:
+                print("  " + budget.summary_line(cameras))
 
             if args.once:
                 break
@@ -414,6 +453,8 @@ def main() -> int:
             print(f"Menunggu {args.interval_sec} detik (5 menit) sebelum putaran berikutnya... (Ctrl+C untuk berhenti)")
             time.sleep(args.interval_sec)
     except KeyboardInterrupt:
+        if budget.enabled:
+            budget.save()
         print("\nDihentikan oleh pengguna. Semua screenshot ROI aman tersimpan.")
     return 0
 

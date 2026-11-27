@@ -41,6 +41,16 @@ import { cn } from '@/lib/utils';
 const DEFAULT_THRESHOLD_SEC = Number(
   import.meta.env.VITE_VIOLATION_THRESHOLD_SEC || 15,
 );
+/** Ambang deteksi mentah: rendah agar track yang sudah ada tidak putus saat conf turun sesaat */
+const INFERENCE_CONF_THRESH = 0.15;
+/**
+ * Ambang untuk MEMBUAT track baru (hysteresis). Model v6 (yolo26n 544x960, test mAP50 0.427):
+ * F1 per-frame 0.46 di conf 0.15, 0.40 di 0.20-0.25, 0.35 di 0.45. FP per-frame
+ * disaring oleh konfirmasi 3-dari-5 frame + filter stasioner di CameraTracker.
+ */
+const TRACKER_BIRTH_CONF = 0.2;
+/** Inferensi hanya pada area ROI trotoar (+margin) agar PKL kecil tampil lebih besar */
+const ROI_CROP_INFERENCE = true;
 
 export interface ExtendedCctvPlayerProps extends CctvPlayerWithAIProps {
   onViewOnMap?: () => void;
@@ -550,7 +560,15 @@ export default function CctvPlayerWithAI({
 
         if (canRunOnRealVideo && videoEl) {
           try {
-            const out = await runYoloInference(videoEl, { confThresh: 0.25, iouNms: 0.45 });
+            // conf rendah (0.25) hanya untuk memperpanjang track yang sudah ada; track baru tetap
+            // butuh >= TRACKER_BIRTH_CONF (hysteresis di CameraTracker). ROI-crop memperbesar PKL kecil.
+            const out = await runYoloInference(videoEl, {
+              confThresh: INFERENCE_CONF_THRESH,
+              iouNms: 0.45,
+              maxBoxArea: 0.15,
+              roiPolygon: activeRoiRef.current,
+              roiCrop: ROI_CROP_INFERENCE,
+            });
             usedBackend = out.backend;
             setAiBackend(out.backend);
             setModelStatus('ready');
@@ -572,6 +590,9 @@ export default function CctvPlayerWithAI({
         const step = tracker.update(detections, activeRoiRef.current, {
           violationThresholdSec,
           occlusionGraceSec,
+          birthConf: TRACKER_BIRTH_CONF,
+          confirmHits: 3,
+          confirmWindow: 5,
         });
 
         tracksRef.current = step.tracks;

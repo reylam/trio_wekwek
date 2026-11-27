@@ -37,17 +37,14 @@ IMG_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
 CLASS_NAMES = {
     0: "Emperan",
     1: "Gerobak",
-    2: "Panggul",
-    3: "Payung",
-    4: "Sepeda-motor",
-    5: "Terpal",
 }
 
 
 def extract_camera_group(stem: str) -> str:
     """Ambil ID kamera CCTV unik sebelum timestamp agar 1 kamera tidak terpecah antar split."""
     orig = stem.split(".rf.")[0]
-    m = re.match(r"^(.+?)_20\d{12}", orig)
+    # Cocokkan timestamp Roboflow (_20240118172826) maupun CCTV-Harvester (_20261126_092623)
+    m = re.match(r"^(.+?)_20\d{6}(?:_?\d{6})", orig)
     if m:
         return m.group(1)
     # Normalisasi case untuk grup non-CCTV (mis. Panggul vs panggul)
@@ -144,7 +141,7 @@ def stratified_camera_group_split(
     deterministik (greedy init + move/swap refinement):
     - 100% camera-grouped (0% kebocoran frame antar kamera yang sama).
     - Rasio gambar tepat mendekati 75% train / 15% valid / 10% test.
-    - Proporsi SETIAP kelas (termasuk Emperan, Panggul, Sepeda-motor) & frame background
+    - Proporsi SETIAP kelas (termasuk Emperan, Panggul) & frame background
       mengikuti 75/15/10 seimbang tanpa kekurangan di train/valid/test.
     """
     rng = random.Random(seed)

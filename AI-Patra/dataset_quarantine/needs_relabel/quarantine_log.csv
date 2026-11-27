@@ -1,0 +1,34 @@
+split,image,reason,manifest_version
+train,501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01_20240118195518_jpg.rf.4160e5c8157cfd13fa66029294830029.jpg,"Gerobak merah-putih di lokasi berlabel, bergerak antar frame",v5
+train,501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01_20240118210946_jpg.rf.8689ba7093900077f9c5ba33929f29ca.jpg,Gerobak merah-putih di lokasi berlabel,v5
+train,501714_JKU_DISHUB_JL-DANAU-SUNTER-SELATAN-C01_CCTV-01_20240118222411_jpg.rf.d49e1a4796f1de10a1496704ee9e31c1.jpg,Gerobak biru-putih di lokasi berlabel,v5
+train,501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-01_20240118222412_jpg.rf.ad8423372b45f21bd489383f664bd66b.jpg,Rak barang lapak menyala + lapak tertutup terpal (campuran buka/tutup),v5
+train,501806_JKS_KESBANGPOL_JL-PENGADEGAN-TIMUR-C01_CCTV-02_20240119071215_jpg.rf.5dcc774409d57a11cf48fec1e316de02.jpg,Gerobak berpayung biru/hijau di lokasi berlabel,v5
+train,501850_JKU_DISHUB_JL-PADEMANGAN-VIII-C01_CCTV-01_20240119071231_jpg.rf.3f2d9af2d033c72a1714fce410d53763.jpg,Beberapa gerobak buka di area pasar (frame 08:28 melabeli 4),v5
+train,501864_JKT_DISHUB_TERMINAL-KAMPUNG-RAMBUTAN-C01_CCTV-03_20240118211027_jpg.rf.f1f8622df65d9154086da2785d6b96b0.jpg,Tenda biru + banyak gerobak menyala malam hari,v5
+train,501864_JKT_DISHUB_TERMINAL-KAMPUNG-RAMBUTAN-C01_CCTV-03_20240118222449_jpg.rf.090dce5ece7d5a8e8ffc70552cb61190.jpg,Tenda biru + banyak gerobak menyala malam hari,v5
+train,501864_JKT_DISHUB_TERMINAL-KAMPUNG-RAMBUTAN-C01_CCTV-03_20240118233914_jpg.rf.cde862a243a48f3584490f6bd4fad8fb.jpg,Tenda biru + banyak gerobak menyala malam hari,v5
+train,501864_JKT_DISHUB_TERMINAL-KAMPUNG-RAMBUTAN-C01_CCTV-03_20240119005342_jpg.rf.c8c778662f8c61bda3907137ba9e73f4.jpg,Tenda biru + banyak gerobak menyala malam hari,v5
+train,501864_JKT_DISHUB_TERMINAL-KAMPUNG-RAMBUTAN-C01_CCTV-03_20240119021132_jpg.rf.e4faf6cebe0f8118d6588385fd733954.jpg,Tenda biru + banyak gerobak menyala malam hari,v5
+train,501864_JKT_DISHUB_TERMINAL-KAMPUNG-RAMBUTAN-C01_CCTV-03_20240119044156_jpg.rf.2ecebb77a191704bdae703677b71b5dc.jpg,Tenda biru + banyak gerobak menyala malam hari,v5
+train,501868_JKT_DISHUB_JL-JEND-BASUKI-RACHMAT-C01_CCTV-02_20240118233915_jpg.rf.3f69ed07941ba5faacd61dfbcc3b6cd5.jpg,Tenda biru + gerobak buka di lokasi berlabel,v5
+train,501868_JKT_DISHUB_JL-JEND-BASUKI-RACHMAT-C01_CCTV-02_20240119005344_jpg.rf.64a8f397487a348881ae74c21212acb8.jpg,Tenda biru + gerobak buka di lokasi berlabel,v5
+train,501907_JKT_DISHUB_JPO-BPKP-C01_CCTV-03_20240118211034_jpg.rf.bcd6216900ffd697bf0d462622f8724d.jpg,Tenda merah/oranye + gerobak menyala (sama dengan frame berlabel 19:56),v5
+train,501907_JKT_DISHUB_JPO-BPKP-C01_CCTV-03_20240118222456_jpg.rf.c614fe27c04dbb12dc6abf358ff7fa92.jpg,Tenda merah/oranye + gerobak menyala,v5
+train,501917_JKT_DISHUB_JPO-WISMA-SETYA-BHAKTI-C01_CCTV-01_20240119032654_jpg.rf.ecb3d86bfc1493b31ed5954e7da8896a.jpg,Kanopi biru gerobak kiri + bangku masih ada (ambigu buka/tutup),v5
+train,501920_JKT_DISHUB_JPO-JATINEGARA-C01_CCTV-01_20240118184144_jpg.rf.20f73bd66c63ac92db8dbfbc1335f3b5.jpg,Beberapa gerobak & lapak berpayung di halte,v5
+valid,501715_JKU_DISHUB_JL-SUNTER-KEMAYORAN-C02_CCTV-02_20240119044117_jpg.rf.3ea14c748c58e0d7221cfa754b98191c.jpg,Gerobak terbungkus terpal biru (di kamera ini objek yang sama DIlabeli) - butuh keputusan manual,v5
+valid,501814_JKT_DISHUB_STASIUN-KALENDER-C01_CCTV-02_20240118184114_jpg.rf.593086d87e50881c60357d14335235ab.jpg,Banyak gerobak di bawah payung pasar malam (valid),v5
+valid,501814_JKT_DISHUB_STASIUN-KALENDER-C01_CCTV-02_20240118211009_jpg.rf.d15d329abee2071d052e7389e59cd17d.jpg,Banyak gerobak di bawah payung pasar malam (valid),v5
+valid,501814_JKT_DISHUB_STASIUN-KALENDER-C01_CCTV-02_20240118233857_jpg.rf.fdd7846a0c29ae3e2ff8e37a1a1e4daf.jpg,Banyak gerobak di bawah payung pasar malam (valid),v5
+valid,501814_JKT_DISHUB_STASIUN-KALENDER-C01_CCTV-02_20240119005325_jpg.rf.f2c2301dad3dc5cb7d36aea94d0b0737.jpg,Banyak gerobak di bawah payung pasar malam (valid),v5
+valid,501814_JKT_DISHUB_STASIUN-KALENDER-C01_CCTV-02_20240119021115_jpg.rf.d6b47423da345362631111397643f70f.jpg,Banyak gerobak di bawah payung pasar malam (valid),v5
+valid,501814_JKT_DISHUB_STASIUN-KALENDER-C01_CCTV-02_20240119032628_jpg.rf.d589ac1a40ce8d1b0c43eaffaa660845.jpg,Banyak gerobak di bawah payung pasar malam (valid),v5
+valid,501814_JKT_DISHUB_STASIUN-KALENDER-C01_CCTV-02_20240119044139_jpg.rf.0e373a32aa8e76167337a102a42f6633.jpg,Banyak gerobak di bawah payung pasar malam (valid),v5
+valid,501823_JKU_DISHUB_JL-TAMAN-STASIUN-C02_CCTV-01_20240118211014_jpg.rf.52f6c1d2c5d2f05274f4edbb883c80b2.jpg,Gerobak kaca hijau + lapak payung merah (valid),v5
+valid,501868_JKT_DISHUB_JL-JEND-BASUKI-RACHMAT-C01_CCTV-03_20240118184134_jpg.rf.b1b95d3a2c14dd0ccbe59dd7137ad7d5.jpg,Deretan lapak tenda biru menyala (valid),v5
+valid,501868_JKT_DISHUB_JL-JEND-BASUKI-RACHMAT-C01_CCTV-03_20240118195601_jpg.rf.3a53965faf1c1a06c06db7e78eac67c6.jpg,Deretan lapak tenda biru menyala (valid),v5
+valid,501868_JKT_DISHUB_JL-JEND-BASUKI-RACHMAT-C01_CCTV-03_20240118233915_jpg.rf.199084176a5688dbabebad44efb8cb27.jpg,Deretan lapak tenda biru (hujan) (valid),v5
+test,501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118184052_jpg.rf.0480d12e360e81f8380c5e598d4adaa4.jpg,Deretan lapak buka menyala di trotoar kanan (test),v5
+test,501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118195520_jpg.rf.102be66a9f127efba0e8644e6cad18e9.jpg,Deretan lapak buka menyala di trotoar kanan (test),v5
+test,501716_JKU_DISHUB_JL-KRAMAT-JAYA-RAYA-C01_CCTV-02_20240118210947_jpg.rf.cc164f7cf579e402249391854061f4d8.jpg,Deretan lapak buka menyala di trotoar kanan (test),v5

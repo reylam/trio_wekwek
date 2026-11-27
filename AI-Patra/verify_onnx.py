@@ -37,7 +37,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--pt", type=Path, default=DEFAULT_PT, help="Path ke best.pt")
     parser.add_argument("--onnx", type=Path, default=DEFAULT_ONNX, help="Path ke best.onnx")
     parser.add_argument("--images", type=Path, default=DEFAULT_TEST_DIR, help="Folder gambar uji")
-    parser.add_argument("--imgsz", type=int, default=640, help="Resolusi input ONNX (default: 640)")
+    parser.add_argument(
+        "--imgsz", type=int, nargs="+", default=[0],
+        help="Override input ONNX: 1 angka (persegi) atau H W. Default 0 = auto dari tensor input ONNX",
+    )
     parser.add_argument("--conf", type=float, default=0.25, help="Confidence threshold (default: 0.25)")
     parser.add_argument("--iou-nms", type=float, default=0.45, help="IoU threshold NMS (default: 0.45)")
     parser.add_argument("--min-iou", type=float, default=0.50, help="Ambang kelulusan parity IoU (default: 0.50)")
@@ -45,15 +48,40 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def letterbox(img_bgr: np.ndarray, target_size: int = 640):
-    """Resize dengan mempertahankan rasio aspek + padding abu-abu 114 (identik Ultralytics/FE)."""
+def to_hw(size: int | tuple[int, int] | list[int]) -> tuple[int, int]:
+    """Normalisasi ukuran input ke (H, W). Int = persegi."""
+    if isinstance(size, int):
+        return size, size
+    if len(size) == 1:
+        return int(size[0]), int(size[0])
+    return int(size[0]), int(size[1])
+
+
+def onnx_input_hw(session, override: int | list[int] | tuple[int, int] | None = None) -> tuple[int, int]:
+    """Ambil (H, W) input statis dari model ONNX; fallback 640x640."""
+    if override:
+        hw = to_hw(override)
+        if hw[0] > 0 and hw[1] > 0:
+            return hw
+    shape = session.get_inputs()[0].shape
+    if len(shape) >= 4 and isinstance(shape[2], int) and isinstance(shape[3], int) and shape[2] > 0 and shape[3] > 0:
+        return int(shape[2]), int(shape[3])
+    return 640, 640
+
+
+def letterbox(img_bgr: np.ndarray, target_size: int | tuple[int, int] = 640):
+    """Resize dengan mempertahankan rasio aspek + padding abu-abu 114 (identik Ultralytics/FE).
+
+    `target_size` boleh int (persegi) atau (H, W) untuk input rect mis. (544, 960).
+    """
     import cv2
 
+    th, tw = to_hw(target_size)
     h, w = img_bgr.shape[:2]
-    scale = min(target_size / h, target_size / w)
+    scale = min(th / h, tw / w)
     new_w, new_h = int(round(w * scale)), int(round(h * scale))
-    pad_w = (target_size - new_w) / 2.0
-    pad_h = (target_size - new_h) / 2.0
+    pad_w = (tw - new_w) / 2.0
+    pad_h = (th - new_h) / 2.0
 
     resized = cv2.resize(img_bgr, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
     top, bottom = int(round(pad_h - 0.1)), int(round(pad_h + 0.1))
@@ -192,6 +220,8 @@ def main() -> int:
     pt_model = YOLO(str(args.pt))
     sess = ort.InferenceSession(str(args.onnx), providers=["CPUExecutionProvider"])
     input_name = sess.get_inputs()[0].name
+    in_h, in_w = onnx_input_hw(sess, args.imgsz if args.imgsz != [0] else None)
+    print(f"ONNX input: {in_h}x{in_w}")
 
     matched_ious: list[float] = []
     latencies_ms: list[float] = []
@@ -207,7 +237,7 @@ def main() -> int:
 
         # 1. PyTorch inference
         pt_res = pt_model.predict(
-            source=img_bgr, imgsz=args.imgsz, conf=args.conf, iou=args.iou_nms, verbose=False
+            source=img_bgr, imgsz=[in_h, in_w], conf=args.conf, iou=args.iou_nms, verbose=False
         )[0]
         pt_boxes = (
             pt_res.boxes.xyxy.cpu().numpy()
@@ -217,7 +247,7 @@ def main() -> int:
         pt_total += len(pt_boxes)
 
         # 2. ONNX Runtime inference
-        padded, scale, pad_left, pad_top = letterbox(img_bgr, args.imgsz)
+        padded, scale, pad_left, pad_top = letterbox(img_bgr, (in_h, in_w))
         rgb = cv2.cvtColor(padded, cv2.COLOR_BGR2RGB).astype(np.float32) / 255.0
         blob = np.transpose(rgb, (2, 0, 1))[None, ...]
 
