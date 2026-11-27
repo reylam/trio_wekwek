@@ -18,6 +18,7 @@ import wasmAsyncUrl from 'onnxruntime-web/ort-wasm-simd-threaded.asyncify.wasm?u
 import mjsAsyncUrl from 'onnxruntime-web/ort-wasm-simd-threaded.asyncify.mjs?url';
 import type { NormalizedPolygon } from '@/types';
 import { getRoiBounds, type RawDetection } from './roiAndTracker';
+import { applyNms, clamp01, parseYoloOutput } from './yoloPostprocess';
 
 // Map seluruh varian asset WASM/MJS lewat Vite ?url (pola teruji dari Civision)
 // agar dev server & production build tidak pernah mengembalikan index.html untuk .wasm
@@ -248,42 +249,6 @@ export function getYoloSessionState(): {
   };
 }
 
-function boxIoU(a: CropRectNorm, b: CropRectNorm): number {
-  const ix1 = Math.max(a.x1, b.x1);
-  const iy1 = Math.max(a.y1, b.y1);
-  const ix2 = Math.min(a.x2, b.x2);
-  const iy2 = Math.min(a.y2, b.y2);
-  const inter = Math.max(0, ix2 - ix1) * Math.max(0, iy2 - iy1);
-  if (inter <= 0) return 0;
-  const areaA = Math.max(0, a.x2 - a.x1) * Math.max(0, a.y2 - a.y1);
-  const areaB = Math.max(0, b.x2 - b.x1) * Math.max(0, b.y2 - b.y1);
-  return inter / Math.max(1e-6, areaA + areaB - inter);
-}
-
-function applyNms(detections: RawDetection[], iouThresh: number): RawDetection[] {
-  if (detections.length <= 1) return detections;
-  const sorted = [...detections].sort((a, b) => b.confidence - a.confidence);
-  const kept: RawDetection[] = [];
-
-  for (const cand of sorted) {
-    let suppressed = false;
-    for (const prev of kept) {
-      if (boxIoU(cand.bboxNorm, prev.bboxNorm) >= iouThresh) {
-        suppressed = true;
-        break;
-      }
-    }
-    if (!suppressed) {
-      kept.push(cand);
-    }
-  }
-  return kept;
-}
-
-function clamp01(v: number): number {
-  return Math.max(0, Math.min(1, v));
-}
-
 const FULL_FRAME: CropRectNorm = { x1: 0, y1: 0, x2: 1, y2: 1 };
 
 /**
@@ -331,103 +296,6 @@ export function computeRoiCropRect(
   };
   const area = (rect.x2 - rect.x1) * (rect.y2 - rect.y1);
   return area >= ROI_CROP_MIN_GAIN_AREA ? FULL_FRAME : rect;
-}
-
-/** Pemetaan koordinat input model (piksel letterbox) -> koordinat frame ternormalisasi */
-interface InputToFrameMap {
-  scale: number;
-  padX: number;
-  padY: number;
-  offX: number;
-  offY: number;
-  srcW: number;
-  srcH: number;
-}
-
-function toFrameX(v: number, m: InputToFrameMap): number {
-  return clamp01(((v - m.padX) / m.scale + m.offX) / m.srcW);
-}
-
-function toFrameY(v: number, m: InputToFrameMap): number {
-  return clamp01(((v - m.padY) / m.scale + m.offY) / m.srcH);
-}
-
-function parseYoloOutput(
-  data: Float32Array,
-  dims: readonly number[],
-  map: InputToFrameMap,
-  confThresh: number,
-  iouNms: number,
-  maxBoxArea: number,
-): RawDetection[] {
-  const rawDets: RawDetection[] = [];
-  const d1 = dims[1] ?? 0;
-  const d2 = dims[2] ?? 0;
-
-  const pushIfValid = (x1: number, y1: number, x2: number, y2: number, score: number) => {
-    const boxW = x2 - x1;
-    const boxH = y2 - y1;
-    if (boxW < 0.005 || boxH < 0.005 || boxW * boxH > maxBoxArea) return;
-    rawDets.push({
-      className: 'PKL',
-      confidence: Number(score.toFixed(3)),
-      bboxNorm: { x1, y1, x2, y2 },
-    });
-  };
-
-  // Format A: End-to-End NMS built-in [1, N, 6] -> (x1, y1, x2, y2, score, cls)
-  if (dims.length === 3 && d2 === 6) {
-    for (let i = 0; i < d1; i++) {
-      const off = i * 6;
-      const score = data[off + 4] ?? 0;
-      if (score < confThresh) continue;
-      pushIfValid(
-        toFrameX(data[off] ?? 0, map),
-        toFrameY(data[off + 1] ?? 0, map),
-        toFrameX(data[off + 2] ?? 0, map),
-        toFrameY(data[off + 3] ?? 0, map),
-        score,
-      );
-    }
-    // Box di tepi crop bisa terpotong & terduplikasi ringan -> NMS ringan tetap aman
-    return applyNms(rawDets, iouNms);
-  }
-
-  // Format B: Raw YOLO head [1, 4+nc, anchors] (atau [1, anchors, 4+nc])
-  if (dims.length === 3 && d1 > 0 && d2 > 0) {
-    const channelsFirst = d1 < d2;
-    const numAnchors = channelsFirst ? d2 : d1;
-    const numAttrs = channelsFirst ? d1 : d2;
-    const numClasses = Math.max(1, numAttrs - 4);
-
-    for (let i = 0; i < numAnchors; i++) {
-      let maxScore = 0;
-      for (let c = 0; c < numClasses; c++) {
-        const s = channelsFirst
-          ? (data[(4 + c) * numAnchors + i] ?? 0)
-          : (data[i * numAttrs + 4 + c] ?? 0);
-        if (s > maxScore) maxScore = s;
-      }
-      if (maxScore < confThresh) continue;
-
-      const cx = channelsFirst ? (data[i] ?? 0) : (data[i * numAttrs] ?? 0);
-      const cy = channelsFirst ? (data[numAnchors + i] ?? 0) : (data[i * numAttrs + 1] ?? 0);
-      const bw = channelsFirst ? (data[2 * numAnchors + i] ?? 0) : (data[i * numAttrs + 2] ?? 0);
-      const bh = channelsFirst ? (data[3 * numAnchors + i] ?? 0) : (data[i * numAttrs + 3] ?? 0);
-
-      pushIfValid(
-        toFrameX(cx - bw / 2, map),
-        toFrameY(cy - bh / 2, map),
-        toFrameX(cx + bw / 2, map),
-        toFrameY(cy + bh / 2, map),
-        maxScore,
-      );
-    }
-
-    return applyNms(rawDets, iouNms);
-  }
-
-  return rawDets;
 }
 
 /**
@@ -526,14 +394,22 @@ export async function runYoloInference(
       };
     }
 
-    const detections = parseYoloOutput(
+    const iouNms = options?.iouNms ?? DEFAULT_IOU_NMS;
+    const parsed = parseYoloOutput(
       outTensor.data as Float32Array,
       outTensor.dims,
-      { scale, padX, padY, offX: cropX, offY: cropY, srcW, srcH },
+      srcW,
+      srcH,
+      scale,
+      padX,
+      padY,
       options?.confThresh ?? DEFAULT_CONF_THRESH,
-      options?.iouNms ?? DEFAULT_IOU_NMS,
-      options?.maxBoxArea ?? DEFAULT_MAX_BOX_AREA,
+      iouNms,
+      { maxAreaNorm: options?.maxBoxArea ?? DEFAULT_MAX_BOX_AREA },
+      { offX: cropX, offY: cropY },
     );
+    // Box di tepi crop bisa terduplikasi ringan; NMS juga untuk output end2end (Format A)
+    const detections = applyNms(parsed, iouNms);
 
     return {
       detections,
