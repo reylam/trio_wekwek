@@ -12,11 +12,13 @@ import {
   FileDown,
   Loader2,
   MapPin,
+  Maximize2,
   ShieldCheck,
   X,
   XCircle,
 } from 'lucide-react';
 import { DinasTopHeader } from '@/components/layout/DinasLayout';
+import PhotoLightboxModal from '@/components/ui/PhotoLightboxModal';
 import { useToast } from '@/components/ui/Toast';
 import { ApiError } from '@/lib/apiClient';
 import { validateRevisionReason } from '@/lib/dinasHelpers';
@@ -41,6 +43,9 @@ export default function ValidationSplitPage() {
   const [revisionReason, setRevisionReason] = useState('');
   const [revisionError, setRevisionError] = useState<string | null>(null);
   const [pdfActionLoading, setPdfActionLoading] = useState<'download' | 'inline' | null>(
+    null,
+  );
+  const [lightboxImage, setLightboxImage] = useState<{ url: string; title: string } | null>(
     null,
   );
 
@@ -280,13 +285,27 @@ export default function ValidationSplitPage() {
           </div>
 
           <div className="p-5">
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-video-frame">
+            <button
+              type="button"
+              onClick={() =>
+                setLightboxImage({
+                  url: report.beforeImageUrl,
+                  title: `Bukti Awal (Before) • ${report.reportCode}`,
+                })
+              }
+              aria-label={`Perbesar Foto Before ${report.reportCode}`}
+              className="group relative block w-full overflow-hidden rounded-2xl border border-slate-200 bg-video-frame text-left focus:outline-none focus:ring-2 focus:ring-primary/40"
+            >
               <img
                 src={report.beforeImageUrl}
                 alt={`Foto Before ${report.reportCode}`}
-                className="aspect-video w-full object-cover"
+                className="aspect-video w-full object-contain transition duration-200 group-hover:scale-[1.01]"
               />
-            </div>
+              <span className="pointer-events-none absolute bottom-2.5 right-2.5 inline-flex items-center gap-1.5 rounded-full bg-slate-950/75 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-sm transition group-hover:bg-primary">
+                <Maximize2 className="h-3.5 w-3.5" />
+                <span>Perbesar</span>
+              </span>
+            </button>
 
             <dl className="mt-4 grid grid-cols-2 gap-3 rounded-2xl bg-canvas p-4 text-xs">
               <div>
@@ -333,13 +352,27 @@ export default function ValidationSplitPage() {
 
           <div className="p-5">
             {report.afterImageUrl ? (
-              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-video-frame">
+              <button
+                type="button"
+                onClick={() =>
+                  setLightboxImage({
+                    url: report.afterImageUrl!,
+                    title: `Bukti Penindakan (After) • ${report.reportCode}`,
+                  })
+                }
+                aria-label={`Perbesar Foto After ${report.reportCode}`}
+                className="group relative block w-full overflow-hidden rounded-2xl border border-slate-200 bg-video-frame text-left focus:outline-none focus:ring-2 focus:ring-primary/40"
+              >
                 <img
                   src={report.afterImageUrl}
                   alt={`Foto After ${report.reportCode}`}
-                  className="aspect-video w-full object-cover"
+                  className="aspect-video w-full object-contain transition duration-200 group-hover:scale-[1.01]"
                 />
-              </div>
+                <span className="pointer-events-none absolute bottom-2.5 right-2.5 inline-flex items-center gap-1.5 rounded-full bg-slate-950/75 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-sm transition group-hover:bg-primary">
+                  <Maximize2 className="h-3.5 w-3.5" />
+                  <span>Perbesar</span>
+                </span>
+              </button>
             ) : (
               <div className="flex aspect-video items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-canvas text-xs font-medium text-slate-500">
                 Foto bukti After belum dikirim oleh Satpol PP.
@@ -708,6 +741,14 @@ export default function ValidationSplitPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {lightboxImage && (
+        <PhotoLightboxModal
+          url={lightboxImage.url}
+          title={lightboxImage.title}
+          onClose={() => setLightboxImage(null)}
+        />
       )}
     </div>
   );
