@@ -62,14 +62,14 @@ def list_pairs(root: Path) -> list[tuple[Path, Path]]:
 
 
 def valid_label(lbl: Path) -> bool:
-    """Label YOLO 5 kolom, kelas 0/1, koordinat 0..1. File kosong/tidak ada = negatif (valid)."""
+    """Label YOLO 5 kolom, kelas 0 (Gerobak), koordinat 0..1. File kosong/tidak ada = negatif (valid)."""
     if not lbl.exists():
         return True
     for ln in lbl.read_text(encoding="utf-8").splitlines():
         parts = ln.split()
         if not parts:
             continue
-        if len(parts) != 5 or parts[0] not in ("0", "1"):
+        if len(parts) != 5 or parts[0] != "0":
             return False
         vals = [float(v) for v in parts[1:]]
         if any(v < 0 or v > 1 for v in vals) or vals[2] <= 0 or vals[3] <= 0:
@@ -141,7 +141,7 @@ def main() -> int:
                 rejected["label_rusak"] += 1
                 continue
             cam = extract_camera_group(img.stem)
-            if split_of_cam[cam] & {"valid", "test"}:
+            if split_of_cam.get(cam, set()) & {"valid", "test"}:
                 rejected["kamera_di_valid_test"] += 1
                 continue
             candidates[cam].append((img, lbl, kind))

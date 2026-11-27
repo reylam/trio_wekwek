@@ -41,14 +41,14 @@ import { cn } from '@/lib/utils';
 const DEFAULT_THRESHOLD_SEC = Number(
   import.meta.env.VITE_VIOLATION_THRESHOLD_SEC || 15,
 );
-/** Ambang deteksi mentah: rendah agar track yang sudah ada tidak putus saat conf turun sesaat */
-const INFERENCE_CONF_THRESH = 0.15;
+/** Ambang deteksi mentah: lebih rendah agar track yang sudah ada tidak putus saat conf turun sesaat */
+const INFERENCE_CONF_THRESH = 0.2;
 /**
- * Ambang untuk MEMBUAT track baru (hysteresis). Model v6 (yolo26n 544x960, test mAP50 0.427):
- * F1 per-frame 0.46 di conf 0.15, 0.40 di 0.20-0.25, 0.35 di 0.45. FP per-frame
- * disaring oleh konfirmasi 3-dari-5 frame + filter stasioner di CameraTracker.
+ * Ambang untuk MEMBUAT track baru (hysteresis). Model v8_gerobak (yolo26n 544x960, test mAP50 0.474):
+ * sweet spot di conf 0.35 (Precision 66.7%, Recall 38.5%, F1 0.488) — menekan FP statis seperti
+ * banner/rambu (yang tidak tersaring filter stasioner) sambil mempertahankan F1 mendekati puncak (0.500).
  */
-const TRACKER_BIRTH_CONF = 0.2;
+const TRACKER_BIRTH_CONF = 0.35;
 /** Inferensi hanya pada area ROI trotoar (+margin) agar PKL kecil tampil lebih besar */
 const ROI_CROP_INFERENCE = true;
 

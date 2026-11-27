@@ -35,8 +35,7 @@ SPLITS = ("train", "valid", "test")
 IMG_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
 
 CLASS_NAMES = {
-    0: "Emperan",
-    1: "Gerobak",
+    0: "Gerobak",
 }
 
 

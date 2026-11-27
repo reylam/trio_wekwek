@@ -1,10 +1,9 @@
-# PATRA — High-Angle PKL Detection Dataset (Camera-Grouped Split, 0% Leakage)
-# Tanpa key `path:` agar Ultralytics selalu me-resolve relatif terhadap folder data.yaml ini.
+# PATRA — High-Angle PKL Detection Dataset (Camera-Grouped Split, 0% Leakage, Gerobak-only)
+# Tanpa key path: agar Ultralytics selalu me-resolve relatif terhadap folder data.yaml ini.
 train: train/images
 val: valid/images
 test: test/images
 
-nc: 2
+nc: 1
 names:
-  0: Emperan
-  1: Gerobak
+  0: Gerobak

@@ -11,9 +11,8 @@ DEFAULT_CATALOG_PATH = REPO_ROOT / "AI-Patra" / "cctv_catalog" / "cctv_snapshot.
 DEFAULT_OUTPUT_DIR = HARVESTER_ROOT / "output"
 DEFAULT_STATE_DIR = HARVESTER_ROOT / ".state"
 
-# Pemetaan 5 kelas YOLO identik dengan AI-Patra/dataset/data.yaml (tanpa Sepeda-motor)
+# Pemetaan 1 kelas YOLO identik dengan AI-Patra/dataset/data.yaml (khusus Gerobak)
 YOLO_CLASS_NAMES: list[str] = [
-    "Emperan",
     "Gerobak",
 ]
 
@@ -23,20 +22,15 @@ CLASS_NAME_TO_ID: dict[str, int] = {
 
 # Alias tambahan bila Gemini mengembalikan variasi ejaan
 CLASS_ALIASES: dict[str, int] = {
-    "emperan": 0,
-    "lapak": 0,
-    "lesehan": 0,
-    "meja dagang": 0,
-    "gerobak": 1,
-    "gerobak pkl": 1,
-    "gerobak dorong": 1,
-    "cart": 1,
+    "gerobak": 0,
+    "gerobak pkl": 0,
+    "gerobak dorong": 0,
+    "cart": 0,
 }
 
 # Warna BGR per kelas untuk gambar preview bounding box
 CLASS_COLORS_BGR: dict[int, tuple[int, int, int]] = {
-    0: (255, 140, 0),  # Emperan
-    1: (40, 40, 235),  # Gerobak
+    0: (40, 40, 235),  # Gerobak
 }
 
 # Ambang batas pre-check kualitas gambar (sebelum panggil Gemini)

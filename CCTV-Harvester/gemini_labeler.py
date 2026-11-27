@@ -26,15 +26,14 @@ Tugasmu pada setiap gambar CCTV:
 1. Nilai apakah gambar CCTV ini BAGUS ("good") atau JELEK ("bad") untuk dijadikan dataset training YOLO deteksi PKL di trotoar/pinggir jalan.
    - "bad" jika: buram/pecah parah, terlalu gelap/silau, lensa berembun/kotor, kamera indoor/ruangan, layar error/no-signal, atau sudut pandang sama sekali tidak memperlihatkan jalan/trotoar (misal langit/tembok/pohon penuh).
    - "good" jika: gambar jalan/persimpangan/trotoar/pasar terlihat cukup jelas untuk mengenali objek PKL maupun kondisi jalan bersih.
-2. Deteksi semua objek PKL yang tampak jelas di trotoar/bahu jalan/area publik menggunakan TEPAT salah satu dari 2 kelas berikut:
-   - "Emperan": lapak/meja/hamparan dagangan di trotoar atau emperan toko
-   - "Gerobak": gerobak dorong / gerobak jualan PKL (bakso, mie ayam, gorengan, kopi, dll)
-   ATURAN TERTUTUP: gerobak/lapak yang ditinggal di trotoar atau bahu jalan TETAP dilabeli walaupun sedang TUTUP,
-   tidak ada pedagang, atau ditutup/dibungkus terpal — selama bentuk fisiknya (rangka, roda, etalase, meja) jelas
-   merupakan gerobak/lapak. Bounding box mencakup seluruh badan gerobak/lapak beserta atap/kanopinya.
-3. JANGAN memberi label pada: payung atau terpal yang berdiri sendiri tanpa gerobak/lapak di bawahnya, tumpukan
+2. Deteksi HANYA objek gerobak PKL yang tampak jelas di trotoar/bahu jalan/area publik menggunakan TEPAT 1 kelas berikut:
+   - "Gerobak": gerobak dorong / gerobak jualan PKL (bakso, mie ayam, gorengan, kopi, dll) dengan bentuk fisik gerobak yang jelas (rangka, etalase/kotak jualan, roda, atau atap gerobak).
+   ATURAN TERTUTUP: gerobak yang ditinggal di trotoar atau bahu jalan TETAP dilabeli walaupun sedang TUTUP,
+   tidak ada pedagang, atau ditutup/dibungkus terpal — selama bentuk fisik gerobaknya (rangka, roda, etalase) jelas.
+   Bounding box mencakup seluruh badan gerobak beserta atap/kanopinya.
+3. JANGAN memberi label pada: emperan/lapak meja/lesehan tanpa gerobak, payung atau terpal/tenda yang berdiri sendiri tanpa gerobak, tumpukan
    barang tertutup terpal yang bentuknya tidak jelas, Panggul, segala jenis sepeda motor, mobil, truk, angkot, bajaj,
-   pohon, tong sampah, tiang rambu, spanduk/baliho/mural, barrier jalan, atau bangunan toko/kios permanen.
+   pohon, tong sampah, tiang rambu, rambu lalu lintas, standing banner/X-banner, papan iklan/spanduk/baliho/mural, barrier jalan, atau bangunan toko/kios permanen.
 4. Untuk setiap objek PKL yang ditemukan, berikan koordinat bounding box `box_2d` dalam format standar Gemini: [ymin, xmin, ymax, xmax] bilangan bulat rentang 0 sampai 1000 (relatif terhadap tinggi & lebar gambar).
 
 Balas HANYA dalam JSON valid tanpa markdown fence, persis mengikuti struktur berikut:

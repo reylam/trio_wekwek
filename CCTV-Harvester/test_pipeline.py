@@ -69,10 +69,9 @@ class TestCctvHarvester(unittest.TestCase):
         parsed = parse_gemini_response(raw, model_used="gemini-3.5-flash-lite", min_conf=0.45)
         self.assertEqual(parsed.camera_quality, "good")
         self.assertTrue(parsed.has_pkl)
-        self.assertEqual(len(parsed.detections), 2)
-        self.assertEqual(parsed.detections[0].class_id, 1)  # Gerobak
-        self.assertEqual(parsed.detections[1].class_id, 0)  # Emperan via alias Lapak
-        self.assertTrue(parsed.detections[0].to_yolo_line().startswith("1 0.300000 0.625000"))
+        self.assertEqual(len(parsed.detections), 1)
+        self.assertEqual(parsed.detections[0].class_id, 0)  # Gerobak (Emperan/Lapak diabaikan)
+        self.assertTrue(parsed.detections[0].to_yolo_line().startswith("0 0.300000 0.625000"))
 
     def test_roi_crop_and_roboflow_coco_export(self) -> None:
         frame = np.zeros((720, 1280, 3), dtype=np.uint8)
@@ -89,13 +88,13 @@ class TestCctvHarvester(unittest.TestCase):
                     "width": 1000,
                     "height": 500,
                     "detections": [
-                        {"class_id": 1, "cx": 0.5, "cy": 0.5, "w": 0.2, "h": 0.4}
+                        {"class_id": 0, "cx": 0.5, "cy": 0.5, "w": 0.2, "h": 0.4}
                     ],
                 }
             ],
             single_class=False,
         )
-        self.assertEqual(len(coco["categories"]), 2)
+        self.assertEqual(len(coco["categories"]), 1)
         self.assertEqual(len(coco["images"]), 1)
         self.assertEqual(coco["annotations"][0]["bbox"], [400.0, 150.0, 200.0, 200.0])
 
