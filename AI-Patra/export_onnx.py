@@ -20,6 +20,7 @@ Contoh:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import shutil
 import sys
@@ -124,7 +125,9 @@ def main() -> int:
         print(f"[WARN] Ukuran model ({size_mb:.2f} MB) > {MAX_MODEL_MB:.0f} MB. Gunakan varian nano atau kuantisasi.")
 
     info = inspect_onnx(args.out)
+    model_version = hashlib.sha256(args.out.read_bytes()).hexdigest()[:12]
     sidecar = {
+        "version": model_version,
         "input": {"height": h, "width": w},
         "format": info.get("format", "unknown"),
         "output_shape": info.get("output_shape"),

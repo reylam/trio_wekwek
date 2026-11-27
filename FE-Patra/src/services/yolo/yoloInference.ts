@@ -18,6 +18,12 @@ import wasmAsyncUrl from 'onnxruntime-web/ort-wasm-simd-threaded.asyncify.wasm?u
 import mjsAsyncUrl from 'onnxruntime-web/ort-wasm-simd-threaded.asyncify.mjs?url';
 import type { NormalizedPolygon } from '@/types';
 import { getRoiBounds, type RawDetection } from './roiAndTracker';
+import {
+  isValidModelDim,
+  parseModelSidecarMeta,
+  resolveModelFetchPlan,
+  type ModelSidecarMeta,
+} from './yoloModelCache';
 import { applyNms, clamp01, parseYoloOutput } from './yoloPostprocess';
 
 // Map seluruh varian asset WASM/MJS lewat Vite ?url (pola teruji dari Civision)
@@ -48,7 +54,6 @@ async function isWebGpuAvailable(): Promise<boolean> {
 const MODEL_URL = '/models/best.onnx';
 const MODEL_META_URL = '/models/best.json';
 const FALLBACK_INPUT_SIZE = 640;
-const MODEL_STRIDE = 32;
 const DEFAULT_CONF_THRESH = 0.45;
 const DEFAULT_IOU_NMS = 0.45;
 const DEFAULT_MAX_BOX_AREA = 0.15;
@@ -138,10 +143,6 @@ function isLikelyHtmlOrInvalidOnnx(bytes: Uint8Array): boolean {
   return head.startsWith('<!doctype') || head.startsWith('<html') || head.startsWith('<');
 }
 
-function isValidDim(v: unknown): v is number {
-  return typeof v === 'number' && Number.isInteger(v) && v > 0 && v % MODEL_STRIDE === 0;
-}
-
 /** Baca dimensi input statis [1, 3, H, W] dari metadata sesi (onnxruntime-web >= 1.22). */
 function readInputDimsFromSession(session: ort.InferenceSession): { w: number; h: number } | null {
   const meta = (
@@ -150,31 +151,29 @@ function readInputDimsFromSession(session: ort.InferenceSession): { w: number; h
     }
   ).inputMetadata;
   const shape = meta?.[0]?.shape;
-  if (shape && shape.length === 4 && isValidDim(shape[2]) && isValidDim(shape[3])) {
+  if (shape && shape.length === 4 && isValidModelDim(shape[2]) && isValidModelDim(shape[3])) {
     return { h: shape[2], w: shape[3] };
   }
   return null;
 }
 
 /** Sidecar ditulis AI-Patra/export_onnx.py. SPA fallback (index.html) otomatis diabaikan. */
-async function fetchModelSidecarDims(): Promise<{ w: number; h: number } | null> {
+async function fetchModelSidecarMeta(): Promise<ModelSidecarMeta> {
   try {
     const res = await fetch(MODEL_META_URL, { cache: 'no-cache' });
-    if (!res.ok || (res.headers.get('content-type') ?? '').includes('text/html')) return null;
-    const json = (await res.json()) as { input?: { height?: unknown; width?: unknown } };
-    const h = json.input?.height;
-    const w = json.input?.width;
-    return isValidDim(h) && isValidDim(w) ? { w, h } : null;
+    if (!res.ok || (res.headers.get('content-type') ?? '').includes('text/html')) {
+      return { dims: null, version: null };
+    }
+    return parseModelSidecarMeta(await res.json());
   } catch {
-    return null;
+    return { dims: null, version: null };
   }
 }
 
 async function createSessionInternal(): Promise<LoadedSession> {
-  const [res, sidecarDims] = await Promise.all([
-    fetch(MODEL_URL, { cache: 'force-cache' }),
-    fetchModelSidecarDims(),
-  ]);
+  const sidecarMeta = await fetchModelSidecarMeta();
+  const modelPlan = resolveModelFetchPlan(MODEL_URL, sidecarMeta.version);
+  const res = await fetch(modelPlan.url, { cache: modelPlan.cache });
   if (!res.ok) {
     throw new Error(`Model ONNX tidak ditemukan di ${MODEL_URL} (HTTP ${res.status}).`);
   }
@@ -199,7 +198,7 @@ async function createSessionInternal(): Promise<LoadedSession> {
       // Metadata sesi = sumber kebenaran (selalu cocok dengan model yang benar-benar dimuat);
       // sidecar dipakai bila runtime tidak mengekspos inputMetadata.
       const dims = readInputDimsFromSession(session) ??
-        sidecarDims ?? { w: FALLBACK_INPUT_SIZE, h: FALLBACK_INPUT_SIZE };
+        sidecarMeta.dims ?? { w: FALLBACK_INPUT_SIZE, h: FALLBACK_INPUT_SIZE };
       const loaded: LoadedSession = {
         session,
         inputName: session.inputNames[0] ?? 'images',
