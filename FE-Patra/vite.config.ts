@@ -16,6 +16,20 @@ export default defineConfig({
         target: 'http://localhost:3001',
         changeOrigin: true,
       },
+      '/hls-proxy/magelang-restreamer': {
+        target: 'https://restreamer.magelangkota.go.id',
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/hls-proxy\/magelang-restreamer/, ''),
+      },
+    },
+  },
+  preview: {
+    proxy: {
+      '/hls-proxy/magelang-restreamer': {
+        target: 'https://restreamer.magelangkota.go.id',
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/hls-proxy\/magelang-restreamer/, ''),
+      },
     },
   },
   build: {

@@ -1,5 +1,9 @@
 import express from 'express';
-import { demoLoginSchema, loginSchema } from '../interface/index.js';
+import {
+  demoLoginSchema,
+  loginSchema,
+  updateProfilePhoneSchema,
+} from '../interface/index.js';
 import { authenticate, createAuthenticateMiddleware } from '../middlewares/auth.js';
 import { validateBody } from '../middlewares/validate.js';
 import AuthController, { createAuthController } from '../controller/auth.controller.js';
@@ -17,6 +21,7 @@ export function createAuthRouter(options?: {
   router.post('/login', validateBody(loginSchema), controller.login);
   router.post('/demo-login', validateBody(demoLoginSchema), controller.demoLogin);
   router.get('/me', authGuard, controller.me);
+  router.patch('/me', authGuard, validateBody(updateProfilePhoneSchema), controller.updateMe);
   router.post('/logout', authGuard, controller.logout);
 
   return router;

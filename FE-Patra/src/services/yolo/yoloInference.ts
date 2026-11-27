@@ -181,7 +181,7 @@ async function createSessionInternal(): Promise<LoadedSession> {
   const bytes = new Uint8Array(buffer);
   if (isLikelyHtmlOrInvalidOnnx(bytes)) {
     throw new Error(
-      `File ${MODEL_URL} tidak valid (bukan binary ONNX — pastikan best.onnx tersedia di public/models/).`,
+      `File ${MODEL_URL} tidak valid (bukan binary ONNX, pastikan best.onnx tersedia di public/models/).`,
     );
   }
 

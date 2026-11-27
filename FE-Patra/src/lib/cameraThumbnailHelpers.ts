@@ -98,9 +98,73 @@ export function isThumbnailFailureFresh(
   return true;
 }
 
+const SAME_ORIGIN_HLS_PROXIES: ReadonlyArray<{
+  host: string;
+  prefix: string;
+}> = [
+  {
+    host: 'restreamer.magelangkota.go.id',
+    prefix: '/hls-proxy/magelang-restreamer',
+  },
+];
+
+// Host yang terverifikasi mengirim `Access-Control-Allow-Origin: *` penuh (m3u8 + segmen .ts)
+const VERIFIED_CORS_ALLOWED_HOSTS = new Set<string>([
+  'dev.cctv.magelangkota.go.id',
+]);
+
+export interface ResolvedHlsUrl {
+  url: string;
+  proxied: boolean;
+  corsSafeHost: boolean;
+}
+
+/**
+ * Mengubah URL stream HLS dari host Pemda yang memblokir CORS (mis. restreamer Magelang)
+ * ke rute same-origin proxy (`/hls-proxy/...`) agar `hls.js` dan kanvas YOLO AI berjalan mulus.
+ */
+export function resolveHlsPlaybackUrl(rawUrl: string): ResolvedHlsUrl {
+  const trimmed = rawUrl.trim();
+  if (!trimmed) {
+    return { url: '', proxied: false, corsSafeHost: false };
+  }
+
+  try {
+    const parsed = new URL(trimmed);
+    const host = parsed.hostname.toLowerCase();
+
+    for (const entry of SAME_ORIGIN_HLS_PROXIES) {
+      if (host === entry.host) {
+        return {
+          url: `${entry.prefix}${parsed.pathname}${parsed.search}`,
+          proxied: true,
+          corsSafeHost: true,
+        };
+      }
+    }
+
+    if (VERIFIED_CORS_ALLOWED_HOSTS.has(host)) {
+      return {
+        url: trimmed,
+        proxied: false,
+        corsSafeHost: true,
+      };
+    }
+  } catch {
+    // URL relatif atau tidak valid — kembalikan apa adanya
+  }
+
+  return {
+    url: trimmed,
+    proxied: trimmed.startsWith('/hls-proxy/'),
+    corsSafeHost: trimmed.startsWith('/hls-proxy/'),
+  };
+}
+
 /**
  * Resolves how `CameraThumbnail` should connect to a camera stream, allowing
- * `needsCorsProxy` cameras to start in non-CORS paused-frame mode instead of skipping.
+ * `needsCorsProxy` cameras to start in non-CORS paused-frame mode instead of skipping,
+ * and routing CORS-blocked Magelang restreamer feeds through the same-origin HLS proxy.
  */
 export function resolveThumbnailGrabStrategy(
   camera: {
@@ -111,20 +175,23 @@ export function resolveThumbnailGrabStrategy(
   },
   pageProtocol = typeof window !== 'undefined' ? window.location.protocol : 'http:',
 ): ThumbnailGrabStrategy {
-  const sourceUrl = (camera.playbackUrl || camera.streamUrl || '').trim();
-  if (!sourceUrl) {
+  const rawSourceUrl = (camera.playbackUrl || camera.streamUrl || '').trim();
+  if (!rawSourceUrl) {
     return { canGrab: false, reason: 'NO_SOURCE' };
   }
   if (camera.streamType !== 'hls') {
     return { canGrab: false, reason: 'UNSUPPORTED_STREAM' };
   }
-  if (pageProtocol === 'https:' && sourceUrl.startsWith('http://')) {
+
+  const resolved = resolveHlsPlaybackUrl(rawSourceUrl);
+  if (!resolved.proxied && pageProtocol === 'https:' && resolved.url.startsWith('http://')) {
     return { canGrab: false, reason: 'MIXED_CONTENT' };
   }
+
   return {
     canGrab: true,
-    startWithCors: !camera.needsCorsProxy,
-    sourceUrl,
+    startWithCors: resolved.proxied || resolved.corsSafeHost || !camera.needsCorsProxy,
+    sourceUrl: resolved.url,
   };
 }
 

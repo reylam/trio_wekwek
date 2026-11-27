@@ -76,6 +76,20 @@ export const authApi = {
     return res.data.user;
   },
 
+  async updatePhoneNumber(noTelp: string): Promise<AuthUserDto> {
+    if (!IS_BACKEND_ENABLED) {
+      const mockUser = getMockSessionUser();
+      if (!mockUser) throw new Error('Sesi tidak ditemukan.');
+      return { ...mockUser, noTelp };
+    }
+
+    const res = await apiFetch<{ user: AuthUserDto }>('/api/auth/me', {
+      method: 'PATCH',
+      body: { noTelp },
+    });
+    return res.data.user;
+  },
+
   async logout(): Promise<void> {
     if (!IS_BACKEND_ENABLED) return;
     try {

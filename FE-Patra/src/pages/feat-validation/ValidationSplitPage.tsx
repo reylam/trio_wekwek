@@ -276,7 +276,7 @@ export default function ValidationSplitPage() {
             <div className="flex items-center gap-2">
               <Camera className="h-4 w-4 text-red-600" />
               <h2 className="text-sm font-bold text-slate-900">
-                Bukti Awal (Before — CCTV AI)
+                Bukti Awal (Before - CCTV AI)
               </h2>
             </div>
             <span className="font-mono text-[11px] font-semibold text-red-700">
@@ -342,7 +342,7 @@ export default function ValidationSplitPage() {
             <div className="flex items-center gap-2">
               <ShieldCheck className="h-4 w-4 text-emerald-700" />
               <h2 className="text-sm font-bold text-slate-900">
-                Bukti Penindakan (After — Satpol PP)
+                Bukti Penindakan (After - Satpol PP)
               </h2>
             </div>
             <span className="font-mono text-[11px] font-semibold text-emerald-700">

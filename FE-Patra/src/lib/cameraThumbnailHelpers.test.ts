@@ -13,6 +13,7 @@ import {
   paginateList,
   parseCctvListSearchParams,
   resolveCctvReturnPath,
+  resolveHlsPlaybackUrl,
   resolveThumbnailGrabStrategy,
   sanitizeCctvPage,
   saveCctvListViewState,
@@ -48,6 +49,49 @@ test('resolveThumbnailGrabStrategy memilih mode CORS dan non-CORS fallback sesua
     canGrab: true,
     startWithCors: false,
     sourceUrl: 'https://cctv.example.go.id/live/cam2/index.m3u8',
+  });
+});
+
+test('resolveHlsPlaybackUrl & resolveThumbnailGrabStrategy menangani CORS Magelang (restreamer proxy & dev.cctv CORS)', () => {
+  const restreamer = resolveHlsPlaybackUrl(
+    'https://restreamer.magelangkota.go.id/memfs/e87d2aad-61a2-464c-b49e-07734a664710.m3u8',
+  );
+  assert.deepEqual(restreamer, {
+    url: '/hls-proxy/magelang-restreamer/memfs/e87d2aad-61a2-464c-b49e-07734a664710.m3u8',
+    proxied: true,
+    corsSafeHost: true,
+  });
+
+  const restreamerStrategy = resolveThumbnailGrabStrategy(
+    {
+      streamUrl:
+        'https://restreamer.magelangkota.go.id/memfs/e87d2aad-61a2-464c-b49e-07734a664710.m3u8',
+      streamType: 'hls',
+      needsCorsProxy: true,
+    },
+    'https:',
+  );
+  assert.deepEqual(restreamerStrategy, {
+    canGrab: true,
+    startWithCors: true,
+    sourceUrl: '/hls-proxy/magelang-restreamer/memfs/e87d2aad-61a2-464c-b49e-07734a664710.m3u8',
+  });
+
+  // dev.cctv.magelangkota.go.id mengirim ACAO: *, sehingga tetap mulai dengan CORS meski flag DB lama masih true
+  const devMagelangStrategy = resolveThumbnailGrabStrategy(
+    {
+      streamUrl:
+        'https://dev.cctv.magelangkota.go.id/memfs/8fb93fb3-cf14-4d29-8ec5-6ae8d56419df.m3u8',
+      streamType: 'hls',
+      needsCorsProxy: true,
+    },
+    'https:',
+  );
+  assert.deepEqual(devMagelangStrategy, {
+    canGrab: true,
+    startWithCors: true,
+    sourceUrl:
+      'https://dev.cctv.magelangkota.go.id/memfs/8fb93fb3-cf14-4d29-8ec5-6ae8d56419df.m3u8',
   });
 });
 

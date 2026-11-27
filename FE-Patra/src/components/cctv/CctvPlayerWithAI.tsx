@@ -18,7 +18,11 @@ import {
   X,
 } from 'lucide-react';
 import { compressCanvasToJpegBlob } from '@/lib/imageCompress';
-import { isFatalHttpStatus, markCameraUnavailable } from '@/lib/cameraThumbnailHelpers';
+import {
+  isFatalHttpStatus,
+  markCameraUnavailable,
+  resolveHlsPlaybackUrl,
+} from '@/lib/cameraThumbnailHelpers';
 import { cctvApi } from '@/services/api';
 import {
   getCameraTracker,
@@ -181,8 +185,11 @@ export default function CctvPlayerWithAI({
     setCorsRestricted(false);
     setOfflineReason(null);
 
-    const sourceUrl = camera.playbackUrl || camera.streamUrl;
+    const rawSourceUrl = camera.playbackUrl || camera.streamUrl;
+    const resolvedStream = resolveHlsPlaybackUrl(rawSourceUrl);
+    const sourceUrl = resolvedStream.url;
     const isMixedContent =
+      !resolvedStream.proxied &&
       typeof window !== 'undefined' &&
       window.location.protocol === 'https:' &&
       sourceUrl.startsWith('http://');
@@ -308,8 +315,10 @@ export default function CctvPlayerWithAI({
       }
     };
 
-    // Jika kamera diketahui butuh proxy CORS, langsung putar mode non-CORS agar video live tetap tampil
-    connectStream(!camera.needsCorsProxy);
+    // Jika kamera diproxy same-origin atau host terverifikasi mendukung CORS penuh, jalankan mode CORS agar AI YOLO & Capture aktif
+    const shouldStartWithCors =
+      resolvedStream.proxied || resolvedStream.corsSafeHost || !camera.needsCorsProxy;
+    connectStream(shouldStartWithCors);
 
     return () => {
       cancelled = true;
@@ -397,7 +406,7 @@ export default function CctvPlayerWithAI({
         h - 24,
         pts.length < 3
           ? `MODE EDIT ROI: Klik minimal 3 titik area trotoar (${pts.length}/3)`
-          : `MODE EDIT ROI: ${pts.length} titik — klik "Simpan ROI" untuk menerapkan`,
+          : `MODE EDIT ROI: ${pts.length} titik, klik "Simpan ROI" untuk menerapkan`,
         'rgba(185, 28, 28, 0.92)',
       );
     } else if (showRoiRef.current) {
@@ -1113,7 +1122,7 @@ export default function CctvPlayerWithAI({
           {streamStatus === 'ERROR' ? (
             <>
               <WifiOff className="h-5 w-5 shrink-0 text-red-600" />
-              <span>Kamera sedang offline — pilih kamera aktif lainnya pada rekomendasi di bawah.</span>
+              <span>Kamera sedang offline, pilih kamera aktif lainnya pada rekomendasi di bawah.</span>
             </>
           ) : corsRestricted ? (
             <>

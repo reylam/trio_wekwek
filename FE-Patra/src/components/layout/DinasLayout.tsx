@@ -107,10 +107,10 @@ export function DinasTopHeader({
 
         <button
           type="button"
-          onClick={() => navigate('/dinas/validasi')}
+          onClick={() => navigate('/dinas/profile')}
           className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-white shadow-sm transition hover:bg-primary/90 sm:h-10 sm:w-10"
-          title={user?.fullName ?? 'Akun Dinas UMKM'}
-          aria-label="Buka antrean validasi"
+          title={user?.fullName ?? 'Profil Dinas UMKM'}
+          aria-label="Profil akun dinas"
         >
           <UserCircle2 className="h-5 w-5 sm:h-6 sm:w-6" />
         </button>
@@ -266,17 +266,33 @@ export default function DinasLayout() {
         <div className="mx-6 my-5 border-t border-slate-100" />
 
         <div className="space-y-1">
-          <button
-            type="button"
-            onClick={() => {
-              setMobileMenuOpen(false);
-              setModalType('profile');
-            }}
-            className="flex w-full items-center gap-3.5 px-6 py-3 text-sm font-medium text-slate-400 transition hover:bg-slate-50 hover:text-slate-700"
+          <NavLink
+            to="/dinas/profile"
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) =>
+              cn(
+                'relative flex w-full items-center gap-3.5 px-6 py-3 text-sm font-medium transition-colors',
+                isActive
+                  ? 'bg-[#E9F1FD] font-semibold text-primary'
+                  : 'text-slate-400 hover:bg-slate-50 hover:text-slate-700',
+              )
+            }
           >
-            <UserCircle2 className="h-5 w-5" />
-            <span>Profile</span>
-          </button>
+            {({ isActive }) => (
+              <>
+                <UserCircle2
+                  className={cn(
+                    'h-5 w-5 shrink-0',
+                    isActive ? 'text-primary' : 'text-slate-400',
+                  )}
+                />
+                <span>Profile</span>
+                {isActive && (
+                  <span className="absolute bottom-1 right-0 top-1 w-1 rounded-l-full bg-primary" />
+                )}
+              </>
+            )}
+          </NavLink>
           <button
             type="button"
             onClick={() => {

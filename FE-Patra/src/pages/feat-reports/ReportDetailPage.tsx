@@ -528,7 +528,7 @@ export default function ReportDetailPage() {
                       <span className="font-bold">
                         {AUDIT_ACTION_LABELS[log.action] ?? log.action}
                       </span>{' '}
-                      — {log.actorName}
+                      - {log.actorName}
                     </p>
                     {log.note && (
                       <p className="mt-0.5 text-[10px] text-primary/80">{log.note}</p>

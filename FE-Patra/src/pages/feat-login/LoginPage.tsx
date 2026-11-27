@@ -157,7 +157,7 @@ export default function LoginPage() {
             </div>
 
             <div className="mt-1.5 flex flex-col items-center">
-              <PatraMark inverted className="h-10 w-10 drop-shadow-sm" />
+              <PatraMark inverted className="h-12 w-12 drop-shadow-sm" />
             </div>
 
             <div className="mt-3">
@@ -182,15 +182,9 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Desktop Header Brand */}
-          <div className="relative z-20 hidden items-center gap-2.5 md:flex">
-            <PatraMark inverted className="h-9 w-9" />
-            <div>
-              <p className="text-sm font-extrabold tracking-tight text-white">PATRA</p>
-              <p className="text-[10.5px] text-blue-100/85">
-                Pantauan Transparan Ruang Publik
-              </p>
-            </div>
+          {/* Desktop Header Brand (hanya logogram putih sesuai mockup Log In) */}
+          <div className="relative z-20 hidden pt-3 md:flex md:pl-4">
+            <PatraMark inverted className="h-14 w-14 drop-shadow-sm lg:h-16 lg:w-16" />
           </div>
 
           {/* Desktop Officer (Polisi Login.png) overlap mulus di atas kurva putih */}

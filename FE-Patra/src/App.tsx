@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { Suspense } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   BrowserRouter,
@@ -11,43 +11,48 @@ import { AuthProvider, useAuth } from '@/context/AuthContext';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
 import { ToastProvider } from '@/components/ui/Toast';
 import { WalkthroughProvider } from '@/components/walkthrough/WalkthroughContext';
+import { lazyWithRetry } from '@/lib/lazyWithRetry';
 import type { UserRole } from '@/types';
 
-const WalkthroughOverlay = lazy(
+const WalkthroughOverlay = lazyWithRetry(
   () => import('@/components/walkthrough/WalkthroughOverlay'),
 );
 
-const PublicLayout = lazy(() => import('@/components/layout/PublicLayout'));
-const PublicHomePage = lazy(() => import('@/pages/feat-public/PublicHomePage'));
-const PublicGreenZonesPage = lazy(
+const PublicLayout = lazyWithRetry(() => import('@/components/layout/PublicLayout'));
+const PublicHomePage = lazyWithRetry(() => import('@/pages/feat-public/PublicHomePage'));
+const PublicGreenZonesPage = lazyWithRetry(
   () => import('@/pages/feat-public/PublicGreenZonesPage'),
 );
-const PublicPklGuidePage = lazy(
+const PublicPklGuidePage = lazyWithRetry(
   () => import('@/pages/feat-public/PublicPklGuidePage'),
 );
-const PublicAboutPage = lazy(
+const PublicAboutPage = lazyWithRetry(
   () => import('@/pages/feat-public/PublicAboutPage'),
 );
-const LoginPage = lazy(() => import('@/pages/feat-login/LoginPage'));
+const LoginPage = lazyWithRetry(() => import('@/pages/feat-login/LoginPage'));
 
-const SatpolLayout = lazy(() => import('@/components/layout/SatpolLayout'));
-const CctvListPage = lazy(() => import('@/pages/feat-cctv/CctvListPage'));
-const CctvLivePage = lazy(() => import('@/pages/feat-cctv/CctvLivePage'));
-const RegionalMapPage = lazy(() => import('@/pages/feat-maps/RegionalMapPage'));
-const ReportsListPage = lazy(() => import('@/pages/feat-reports/ReportsListPage'));
-const ReportDetailPage = lazy(() => import('@/pages/feat-reports/ReportDetailPage'));
+const SatpolLayout = lazyWithRetry(() => import('@/components/layout/SatpolLayout'));
+const CctvListPage = lazyWithRetry(() => import('@/pages/feat-cctv/CctvListPage'));
+const CctvLivePage = lazyWithRetry(() => import('@/pages/feat-cctv/CctvLivePage'));
+const RegionalMapPage = lazyWithRetry(() => import('@/pages/feat-maps/RegionalMapPage'));
+const ReportsListPage = lazyWithRetry(() => import('@/pages/feat-reports/ReportsListPage'));
+const ReportDetailPage = lazyWithRetry(() => import('@/pages/feat-reports/ReportDetailPage'));
+const ProfilePage = lazyWithRetry(() => import('@/pages/feat-profile/ProfilePage'));
+const SatpolGetHelpPage = lazyWithRetry(
+  () => import('@/pages/feat-help/SatpolGetHelpPage'),
+);
 
-const DinasLayout = lazy(() => import('@/components/layout/DinasLayout'));
-const DinasDashboardPage = lazy(
+const DinasLayout = lazyWithRetry(() => import('@/components/layout/DinasLayout'));
+const DinasDashboardPage = lazyWithRetry(
   () => import('@/pages/feat-dinas-dashboard/DinasDashboardPage'),
 );
-const ValidationListPage = lazy(
+const ValidationListPage = lazyWithRetry(
   () => import('@/pages/feat-validation/ValidationListPage'),
 );
-const ValidationSplitPage = lazy(
+const ValidationSplitPage = lazyWithRetry(
   () => import('@/pages/feat-validation/ValidationSplitPage'),
 );
-const RelocationSitesPage = lazy(
+const RelocationSitesPage = lazyWithRetry(
   () => import('@/pages/feat-relocation/RelocationSitesPage'),
 );
 
@@ -150,7 +155,17 @@ export default function App() {
                       <Route path="peta" element={<RegionalMapPage />} />
                       <Route path="laporan" element={<ReportsListPage />} />
                       <Route path="laporan/:reportId" element={<ReportDetailPage />} />
+                      <Route path="profile" element={<ProfilePage />} />
                     </Route>
+
+                    <Route
+                      path="/satpol/help"
+                      element={
+                        <RequireRole role="SATPOL_PP">
+                          <SatpolGetHelpPage />
+                        </RequireRole>
+                      }
+                    />
 
                     {/* Portal Dinas UMKM (Region-Locked — Hanya 3 Menu Inti) */}
                     <Route
@@ -166,6 +181,7 @@ export default function App() {
                       <Route path="validasi" element={<ValidationListPage />} />
                       <Route path="validasi/:reportId" element={<ValidationSplitPage />} />
                       <Route path="lokasi-binaan" element={<RelocationSitesPage />} />
+                      <Route path="profile" element={<ProfilePage />} />
                     </Route>
 
                     <Route path="*" element={<Navigate to="/" replace />} />

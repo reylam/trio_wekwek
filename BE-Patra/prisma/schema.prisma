@@ -80,6 +80,7 @@ model User {
   email            String            @unique
   passwordHash     String
   fullName         String
+  noTelp           String?           @map("no_telp")
   role             UserRole
   isDemo           Boolean           @default(false)
   demoKey          String?           @unique // mis. "satpol-jkt-pusat", "dinas-jkt-pusat"

@@ -17,7 +17,6 @@ import { useAuth } from '@/context/AuthContext';
 import { reportApi } from '@/services/api';
 import { PatraWordmark } from '@/components/ui/PatraLogo';
 import WalkthroughTriggerButton from '@/components/walkthrough/WalkthroughTriggerButton';
-import { useWalkthrough } from '@/components/walkthrough/WalkthroughContext';
 import { formatHeaderClock, REPORT_STATUS_META } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 
@@ -191,10 +190,10 @@ export function SatpolTopHeader({
 
         <button
           type="button"
-          onClick={() => navigate('/satpol/laporan')}
+          onClick={() => navigate('/satpol/profile')}
           className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-white shadow-sm transition hover:bg-primary/90 sm:h-10 sm:w-10"
           title={user?.fullName ?? 'Profil Petugas'}
-          aria-label="Akun petugas"
+          aria-label="Profil petugas"
         >
           <UserCircle2 className="h-5 w-5 sm:h-6 sm:w-6" />
         </button>
@@ -205,11 +204,9 @@ export function SatpolTopHeader({
 
 export default function SatpolLayout() {
   const { user, logout } = useAuth();
-  const { startTour } = useWalkthrough();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [modalType, setModalType] = useState<'profile' | 'help' | null>(null);
   const [clockText, setClockText] = useState(() => formatHeaderClock());
 
   useEffect(() => {
@@ -219,10 +216,13 @@ export default function SatpolLayout() {
 
   const isMapPage = location.pathname.startsWith('/satpol/peta');
   const isReportsList = location.pathname === '/satpol/laporan';
+  const isProfilePage = location.pathname === '/satpol/profile';
   const isLiveCctvDetail = /^\/satpol\/cctv\/.+/.test(location.pathname);
-  const mobileTitle = isReportsList
-    ? 'Reports & Actions'
-    : `${user?.region.city ?? ''}, ${user?.region.province ?? ''}`;
+  const mobileTitle = isProfilePage
+    ? 'Profile'
+    : isReportsList
+      ? 'Reports & Actions'
+      : `${user?.region.city ?? ''}, ${user?.region.province ?? ''}`;
 
   const handleLogout = async () => {
     await logout();
@@ -272,28 +272,60 @@ export default function SatpolLayout() {
         <div className="mx-6 my-5 border-t border-slate-100" />
 
         <div className="space-y-1">
-          <button
-            type="button"
-            onClick={() => {
-              setMobileMenuOpen(false);
-              setModalType('profile');
-            }}
-            className="flex w-full items-center gap-3.5 px-6 py-3 text-sm font-medium text-slate-400 transition hover:bg-slate-50 hover:text-slate-700"
+          <NavLink
+            to="/satpol/profile"
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) =>
+              cn(
+                'relative flex w-full items-center gap-3.5 px-6 py-3 text-sm font-medium transition-colors',
+                isActive
+                  ? 'bg-[#E9F1FD] font-semibold text-primary'
+                  : 'text-slate-400 hover:bg-slate-50 hover:text-slate-700',
+              )
+            }
           >
-            <UserCircle2 className="h-5 w-5" />
-            <span>Profile</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setMobileMenuOpen(false);
-              setModalType('help');
-            }}
-            className="flex w-full items-center gap-3.5 px-6 py-3 text-sm font-medium text-slate-400 transition hover:bg-slate-50 hover:text-slate-700"
+            {({ isActive }) => (
+              <>
+                <UserCircle2
+                  className={cn(
+                    'h-5 w-5 shrink-0',
+                    isActive ? 'text-primary' : 'text-slate-400',
+                  )}
+                />
+                <span>Profile</span>
+                {isActive && (
+                  <span className="absolute bottom-1 right-0 top-1 w-1 rounded-l-full bg-primary" />
+                )}
+              </>
+            )}
+          </NavLink>
+          <NavLink
+            to="/satpol/help"
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) =>
+              cn(
+                'relative flex w-full items-center gap-3.5 px-6 py-3 text-sm font-medium transition-colors',
+                isActive
+                  ? 'bg-[#E9F1FD] font-semibold text-primary'
+                  : 'text-slate-400 hover:bg-slate-50 hover:text-slate-700',
+              )
+            }
           >
-            <HelpCircle className="h-5 w-5" />
-            <span>Get Help</span>
-          </button>
+            {({ isActive }) => (
+              <>
+                <HelpCircle
+                  className={cn(
+                    'h-5 w-5 shrink-0',
+                    isActive ? 'text-primary' : 'text-slate-400',
+                  )}
+                />
+                <span>Get Help</span>
+                {isActive && (
+                  <span className="absolute bottom-1 right-0 top-1 w-1 rounded-l-full bg-primary" />
+                )}
+              </>
+            )}
+          </NavLink>
         </div>
       </div>
 
@@ -363,10 +395,10 @@ export default function SatpolLayout() {
 
             <button
               type="button"
-              onClick={() => navigate('/satpol/laporan')}
+              onClick={() => navigate('/satpol/profile')}
               className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white shadow-sm transition hover:bg-primary/90"
               title={user?.fullName ?? 'Profil Petugas'}
-              aria-label="Akun petugas"
+              aria-label="Profil petugas"
             >
               <UserCircle2 className="h-5 w-5" />
             </button>
@@ -408,90 +440,6 @@ export default function SatpolLayout() {
       >
         <Outlet />
       </main>
-
-      {/* Profile / Help Lightweight Modal */}
-      {modalType && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-900/45 p-4 backdrop-blur-[1px]">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h2 className="text-lg font-bold text-primary">
-                {modalType === 'profile' ? 'Profil Akun Wilayah' : 'Panduan Operasional PATRA'}
-              </h2>
-              <button
-                type="button"
-                onClick={() => setModalType(null)}
-                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            {modalType === 'profile' ? (
-              <div className="mt-4 space-y-3 text-sm">
-                <div className="rounded-xl bg-canvas p-3.5">
-                  <p className="text-xs font-medium text-slate-500">Nama Petugas</p>
-                  <p className="font-semibold text-slate-900">{user?.fullName}</p>
-                </div>
-                <div className="rounded-xl bg-canvas p-3.5">
-                  <p className="text-xs font-medium text-slate-500">Email & Peran</p>
-                  <p className="font-mono text-xs text-slate-800">{user?.email}</p>
-                  <span className="mt-1.5 inline-block rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-                    {user?.role === 'SATPOL_PP' ? 'Satpol PP' : 'Dinas UMKM'}
-                  </span>
-                </div>
-                <div className="rounded-xl bg-canvas p-3.5">
-                  <p className="text-xs font-medium text-slate-500">Wilayah Terkunci</p>
-                  <p className="font-semibold text-primary">
-                    {user?.region.city}, {user?.region.province}
-                  </p>
-                  <p className="text-xs text-slate-600">{user?.region.satpolAgencyName}</p>
-                </div>
-              </div>
-            ) : (
-              <div className="mt-4 space-y-3 text-xs leading-relaxed text-slate-600">
-                <p>
-                  <strong className="text-primary">1. CCTV Monitoring:</strong> Klik tombol{' '}
-                  <em>Inspect</em> pada kamera untuk memuat stream HLS secara <em>lazy-load</em>{' '}
-                  beserta deteksi AI 1 FPS dan poligon ROI trotoar.
-                </p>
-                <p>
-                  <strong className="text-primary">2. Regional Map:</strong> Gunakan filter layer
-                  untuk melihat Pin CCTV, Poligon Zona Terlarang, dan Pelanggaran Aktif, atau klik{' '}
-                  <em>+ Manage Restricted Zone</em> untuk menggambar zona baru.
-                </p>
-                <p>
-                  <strong className="text-primary">3. Reports & Actions:</strong> Unggah bukti foto{' '}
-                  <em>After</em>, pilih jenis tindakan persuasif, dan centang opsi relokasi agar
-                  Dinas UMKM menetapkan Lokasi Binaan terdekat.
-                </p>
-              </div>
-            )}
-
-            <div className="mt-5 flex items-center justify-end gap-2">
-              {modalType === 'help' && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setModalType(null);
-                    const isLiveDetail = /^\/satpol\/cctv\/.+/.test(location.pathname);
-                    startTour(isLiveDetail ? 'satpol-live' : 'satpol');
-                  }}
-                  className="rounded-xl border border-primary/25 bg-[#EEF4FD] px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/15"
-                >
-                  Mulai Tur Interaktif
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setModalType(null)}
-                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90"
-              >
-                Tutup
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

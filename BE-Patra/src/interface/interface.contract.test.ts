@@ -10,6 +10,7 @@ import {
   loginSchema,
   submitReportActionSchema,
   updateCctvRoiSchema,
+  updateProfilePhoneSchema,
   updateZoneSchema,
   validateReportSchema,
 } from './index.js';
@@ -26,6 +27,11 @@ test('auth schemas accept valid payloads and reject invalid email / empty demoKe
 
   const emptyDemoKey = demoLoginSchema.safeParse({ demoKey: '   ' });
   assert.equal(emptyDemoKey.success, false);
+
+  assert.equal(updateProfilePhoneSchema.safeParse({ noTelp: '+62 812 3456 7890' }).success, true);
+  assert.equal(updateProfilePhoneSchema.safeParse({ noTelp: '081234567890' }).success, true);
+  assert.equal(updateProfilePhoneSchema.safeParse({ noTelp: '1234' }).success, false);
+  assert.equal(updateProfilePhoneSchema.safeParse({ noTelp: '0812-abc-9999' }).success, false);
 });
 
 test('cctvCatalogRawItemSchema parses exact indonesia_sources.py object and rejects out-of-range ROI', () => {

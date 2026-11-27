@@ -446,7 +446,7 @@ export default function RegionalMapPage() {
         results.push({
           id: `r-${r.id}`,
           type: 'REPORT',
-          title: `${r.reportCode} — ${r.address}`,
+          title: `${r.reportCode} - ${r.address}`,
           subtitle: `${r.detectedCount} PKL aktif`,
           lat: r.lat,
           lng: r.lng,

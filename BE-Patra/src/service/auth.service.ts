@@ -5,6 +5,7 @@ import type {
   AuthUserDto,
   DemoLoginInput,
   LoginInput,
+  UpdateProfilePhoneInput,
 } from '../interface/index.js';
 import { AppError } from '../middlewares/errorHandler.js';
 import { signAuthToken } from '../middlewares/auth.js';
@@ -18,6 +19,7 @@ export function mapUserToAuthDto(record: UserWithRegionRecord): AuthUserDto {
     id: record.id,
     email: record.email,
     fullName: record.fullName,
+    noTelp: record.noTelp ?? null,
     role: record.role,
     isDemo: record.isDemo,
     region: {
@@ -110,6 +112,22 @@ export function createAuthService(
         );
       }
       return mapUserToAuthDto(record);
+    },
+
+    async updateMyPhone(
+      userId: string,
+      input: UpdateProfilePhoneInput,
+    ): Promise<AuthUserDto> {
+      const existing = await repo.findByIdWithRegion(userId);
+      if (!existing) {
+        throw new AppError(
+          401,
+          'UNAUTHORIZED',
+          'Akun tidak ditemukan atau sesi tidak lagi valid.',
+        );
+      }
+      const updated = await repo.updateNoTelp(userId, input.noTelp);
+      return mapUserToAuthDto(updated);
     },
   };
 }

@@ -52,6 +52,7 @@ const MOCK_USERS: UserWithRegionRecord[] = [
     email: 'satpol.jakpus@patra.demo',
     passwordHash: TEST_PASSWORD_HASH,
     fullName: 'Petugas Satpol PP Jakarta Pusat',
+    noTelp: '+62 812 3456 7890',
     role: 'SATPOL_PP',
     isDemo: true,
     demoKey: 'satpol-jkt-pusat',
@@ -62,6 +63,7 @@ const MOCK_USERS: UserWithRegionRecord[] = [
     email: 'dinas.semarang@patra.demo',
     passwordHash: TEST_PASSWORD_HASH,
     fullName: 'Admin Dinas Koperasi & UKM Semarang',
+    noTelp: null,
     role: 'DINAS_UMKM',
     isDemo: true,
     demoKey: 'dinas-semarang',
@@ -70,16 +72,23 @@ const MOCK_USERS: UserWithRegionRecord[] = [
 ];
 
 function createMockRepo(): AuthRepositoryPort {
+  const users = MOCK_USERS.map((u) => ({ ...u }));
   return {
     async findByEmailWithRegion(email: string) {
       const normalized = email.trim().toLowerCase();
-      return MOCK_USERS.find((u) => u.email.toLowerCase() === normalized) ?? null;
+      return users.find((u) => u.email.toLowerCase() === normalized) ?? null;
     },
     async findDemoByKeyWithRegion(demoKey: string) {
-      return MOCK_USERS.find((u) => u.isDemo && u.demoKey === demoKey.trim()) ?? null;
+      return users.find((u) => u.isDemo && u.demoKey === demoKey.trim()) ?? null;
     },
     async findByIdWithRegion(id: string) {
-      return MOCK_USERS.find((u) => u.id === id) ?? null;
+      return users.find((u) => u.id === id) ?? null;
+    },
+    async updateNoTelp(id: string, noTelp: string) {
+      const user = users.find((u) => u.id === id);
+      if (!user) throw new Error('User not found');
+      user.noTelp = noTelp;
+      return { ...user };
     },
   };
 }
@@ -171,6 +180,32 @@ test('Auth endpoints: login, demo-login, /me, and /logout succeed with expected 
     const meJson = (await meRes.json()) as any;
     assert.equal(meJson.ok, true);
     assert.equal(meJson.data.user.id, 'u-dinas-smg');
+    assert.equal(meJson.data.user.noTelp, null);
+
+    // 3b. PATCH /api/auth/me updates noTelp & rejects invalid format
+    const patchRes = await fetch(`${baseUrl}/api/auth/me`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${demoJson.data.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ noTelp: '+62 813 9988 7766' }),
+    });
+    assert.equal(patchRes.status, 200);
+    const patchJson = (await patchRes.json()) as any;
+    assert.equal(patchJson.ok, true);
+    assert.equal(patchJson.data.user.noTelp, '+62 813 9988 7766');
+
+    const badPatchRes = await fetch(`${baseUrl}/api/auth/me`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${demoJson.data.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ noTelp: 'abc12' }),
+    });
+    assert.equal(badPatchRes.status, 400);
+    assert.equal(((await badPatchRes.json()) as any).error.code, 'VALIDATION_ERROR');
 
     // 4. POST /api/auth/logout with Bearer token
     const logoutRes = await fetch(`${baseUrl}/api/auth/logout`, {

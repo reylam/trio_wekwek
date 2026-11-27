@@ -48,6 +48,7 @@ erDiagram
         string email UK
         string passwordHash
         string fullName
+        string no_telp
         UserRole role
         boolean isDemo
         string demoKey UK
@@ -250,6 +251,7 @@ model User {
   email            String            @unique
   passwordHash     String
   fullName         String
+  noTelp           String?           @map("no_telp")
   role             UserRole
   isDemo           Boolean           @default(false)
   demoKey          String?           @unique // mis. "satpol-jkt-pusat", "dinas-jkt-pusat"
@@ -431,7 +433,8 @@ model AuditLog {
 | **Health**   | `GET /health`, `GET /health/db`                                    | Publik                    | Diagnostik Vercel & Supabase Pooler                                                             |
 | **Auth**     | `POST /api/auth/login`                                             | Publik                    | Login email + password                                                                          |
 | **Auth**     | `POST /api/auth/demo-login`                                        | Publik                    | Panel Akses Demo 1-Klik (`demoKey`)                                                             |
-| **Auth**     | `GET /api/auth/me`                                                 | Auth                      | Profil akun, `role`, `region` & label instansi                                                  |
+| **Auth**     | `GET /api/auth/me`                                                 | Auth                      | Profil akun, `role`, `noTelp`, `region` & label instansi                                        |
+| **Auth**     | `PATCH /api/auth/me`                                               | Auth                      | Perbarui `noTelp` (`no_telp`) profil akun sendiri                                               |
 | **Auth**     | `POST /api/auth/logout`                                            | Auth                      | Konfirmasi logout klien                                                                         |
 | **Publik**   | `GET /api/public/cities`                                           | Publik                    | Daftar kota aktif (`s-maxage=900`)                                                              |
 | **Publik**   | `GET /api/public/overview?city=`                                   | Publik                    | 4 KPI _real-time_ per kota (atau semua kota)                                                    |

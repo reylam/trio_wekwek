@@ -6,6 +6,7 @@ export interface UserWithRegionRecord {
   email: string;
   passwordHash: string;
   fullName: string;
+  noTelp: string | null;
   role: UserRole;
   isDemo: boolean;
   demoKey: string | null;
@@ -60,6 +61,15 @@ export const AuthRepository = {
     const prisma = getPrisma();
     return prisma.user.findUnique({
       where: { id },
+      include: { region: { select: regionSelect } },
+    });
+  },
+
+  async updateNoTelp(id: string, noTelp: string): Promise<UserWithRegionRecord> {
+    const prisma = getPrisma();
+    return prisma.user.update({
+      where: { id },
+      data: { noTelp },
       include: { region: { select: regionSelect } },
     });
   },

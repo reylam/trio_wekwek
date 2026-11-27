@@ -22,6 +22,7 @@ interface AuthContextValue {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<AuthUserDto>;
   demoLogin: (demoKey: string) => Promise<AuthUserDto>;
+  updatePhoneNumber: (noTelp: string) => Promise<AuthUserDto>;
   logout: () => Promise<void>;
 }
 
@@ -104,6 +105,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return data.user;
   }, []);
 
+  const updatePhoneNumber = useCallback(async (noTelp: string) => {
+    const updatedUser = await authApi.updatePhoneNumber(noTelp);
+    setUser(updatedUser);
+    return updatedUser;
+  }, []);
+
   const logout = useCallback(async () => {
     await authApi.logout();
     setStoredToken(null);
@@ -117,9 +124,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading,
       login,
       demoLogin,
+      updatePhoneNumber,
       logout,
     }),
-    [user, isLoading, login, demoLogin, logout],
+    [user, isLoading, login, demoLogin, updatePhoneNumber, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

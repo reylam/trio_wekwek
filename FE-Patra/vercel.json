@@ -6,11 +6,24 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/((?!models/|videos/|data/|images/|assets/|favicon).*)",
+      "source": "/hls-proxy/magelang-restreamer/:path*",
+      "destination": "https://restreamer.magelangkota.go.id/:path*"
+    },
+    {
+      "source": "/((?!models/|videos/|data/|images/|assets/|hls-proxy/|favicon).*)",
       "destination": "/index.html"
     }
   ],
   "headers": [
+    {
+      "source": "/index.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    },
     {
       "source": "/models/(.*)",
       "headers": [

@@ -790,7 +790,7 @@ function openMockPrintableBeritaAcara(
   <html lang="id">
     <head>
       <meta charset="utf-8" />
-      <title>Berita Acara PATRA — ${escapeHtml(report.reportCode)}</title>
+      <title>Berita Acara PATRA - ${escapeHtml(report.reportCode)}</title>
       <style>
         body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #0f172a; margin: 32px; }
         .header { background: #043FA5; color: #fff; padding: 18px 24px; border-radius: 12px; display:flex; justify-content:space-between; align-items:center; }

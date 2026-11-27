@@ -17,6 +17,39 @@ import {
 
 const DEMO_PASSWORD = process.env.SEED_DEMO_PASSWORD || 'PatraDemo2026!';
 
+const SEED_PHONE_PREFIXES = [
+  '811',
+  '812',
+  '813',
+  '821',
+  '822',
+  '852',
+  '853',
+  '856',
+  '857',
+  '858',
+  '877',
+  '878',
+  '895',
+  '896',
+  '818',
+  '819',
+] as const;
+
+function buildDefaultNoTelp(seedKey: string): string {
+  let h = 2166136261;
+  for (let i = 0; i < seedKey.length; i++) {
+    h ^= seedKey.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  const prefix = SEED_PHONE_PREFIXES[h % SEED_PHONE_PREFIXES.length]!;
+  const h2 = Math.imul(h ^ 0x9e3779b9, 2246822519) >>> 0;
+  const h3 = Math.imul(h2 ^ 0x85ebca6b, 3266489917) >>> 0;
+  const mid = String(1000 + (h2 % 8999)).padStart(4, '0');
+  const tail = String(1000 + (h3 % 8999)).padStart(4, '0');
+  return `+62 ${prefix} ${mid} ${tail}`;
+}
+
 // 15 kota/kabupaten publik tambahan dari katalog indonesia_sources.py (total 17 kota, 594 CCTV)
 const EXTRA_PUBLIC_REGIONS = [
   {
@@ -310,11 +343,18 @@ async function main() {
         email: u.email,
         passwordHash,
         fullName: u.fullName,
+        noTelp: buildDefaultNoTelp(u.demoKey ?? u.email),
         role: u.role,
         isDemo: u.isDemo,
         demoKey: u.demoKey,
       },
     });
+    if (!row.noTelp) {
+      await prisma.user.update({
+        where: { id: row.id },
+        data: { noTelp: buildDefaultNoTelp(u.demoKey ?? u.email) },
+      });
+    }
     userByDemoKey.set(u.demoKey, row.id);
   }
 

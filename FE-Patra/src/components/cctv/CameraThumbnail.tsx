@@ -336,7 +336,7 @@ export default function CameraThumbnail({ camera }: { camera: CctvCameraDto }) {
             </span>
             <span className="px-2 text-center text-[10px] font-medium text-blue-100/75">
               {status === 'offline'
-                ? 'Pratinjau belum tersedia — klik Inspect'
+                ? 'Pratinjau belum tersedia, klik Inspect'
                 : status === 'loading'
                   ? 'Memuat pratinjau kamera...'
                   : 'Klik untuk Inspect'}

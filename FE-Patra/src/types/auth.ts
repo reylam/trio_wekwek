@@ -13,6 +13,7 @@ export interface AuthUserDto {
   id: string;
   email: string;
   fullName: string;
+  noTelp?: string | null;
   role: UserRole;
   isDemo: boolean;
   region: RegionDto;
