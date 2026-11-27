@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   AlertCircle,
@@ -16,9 +16,15 @@ import { cctvApi } from '@/services/api';
 import { SatpolTopHeader } from '@/components/layout/SatpolLayout';
 import CameraThumbnail from '@/components/cctv/CameraThumbnail';
 import {
+  buildCctvListSearchParams,
+  buildCctvListUrl,
   clearUnavailableCameras,
+  consumeSavedCctvScrollY,
+  getSavedCctvListViewState,
   getUnavailableCameraIdsSnapshot,
   paginateList,
+  parseCctvListSearchParams,
+  saveCctvListViewState,
   subscribeUnavailableCameras,
 } from '@/lib/cameraThumbnailHelpers';
 import { buildPaginationItems } from '@/lib/reportHelpers';
@@ -29,15 +35,74 @@ const CAMERAS_PER_PAGE = 12;
 export default function CctvListPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const regionId = user?.region.id ?? '';
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedDistrict, setSelectedDistrict] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
+  const initialViewRef = useRef<{
+    page: number;
+    searchQuery: string;
+    selectedDistrict: string;
+    syncUrlFromSaved: boolean;
+    pendingScrollY: number | null;
+  } | null>(null);
 
+  if (initialViewRef.current === null) {
+    const parsed = parseCctvListSearchParams(searchParams);
+    const saved = getSavedCctvListViewState(user?.region.id);
+    const useSaved = !parsed.hasParams && saved !== null;
+    const page = useSaved ? saved.page : parsed.page;
+    const searchQueryInit = useSaved ? saved.searchQuery : parsed.searchQuery;
+    const selectedDistrictInit = useSaved ? saved.selectedDistrict : parsed.selectedDistrict;
+    const matchesSaved =
+      saved !== null &&
+      saved.page === page &&
+      saved.searchQuery === searchQueryInit &&
+      saved.selectedDistrict === selectedDistrictInit;
+
+    initialViewRef.current = {
+      page,
+      searchQuery: searchQueryInit,
+      selectedDistrict: selectedDistrictInit,
+      syncUrlFromSaved: useSaved && buildCctvListSearchParams(saved).toString().length > 0,
+      pendingScrollY: matchesSaved && saved.scrollY > 0 ? saved.scrollY : null,
+    };
+  }
+
+  const [searchQuery, setSearchQuery] = useState(initialViewRef.current.searchQuery);
+  const [selectedDistrict, setSelectedDistrict] = useState(
+    initialViewRef.current.selectedDistrict,
+  );
+  const [currentPage, setCurrentPage] = useState(initialViewRef.current.page);
+  const pendingScrollYRef = useRef<number | null>(initialViewRef.current.pendingScrollY);
+  const prevRegionIdRef = useRef<string | undefined>(user?.region.id);
+
+  // Sinkronkan URL bila posisi/filter dipulihkan dari state sesi (mis. klik menu sidebar)
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, selectedDistrict, user?.region.id]);
+    if (!initialViewRef.current?.syncUrlFromSaved) return;
+    initialViewRef.current.syncUrlFromSaved = false;
+    setSearchParams(
+      buildCctvListSearchParams({
+        page: initialViewRef.current.page,
+        searchQuery: initialViewRef.current.searchQuery,
+        selectedDistrict: initialViewRef.current.selectedDistrict,
+      }),
+      { replace: true },
+    );
+  }, [setSearchParams]);
+
+  // Reset hanya saat wilayah akun benar-benar berganti (bukan saat mount kembali)
+  useEffect(() => {
+    const nextRegionId = user?.region.id;
+    if (prevRegionIdRef.current && nextRegionId && prevRegionIdRef.current !== nextRegionId) {
+      setSearchQuery('');
+      setSelectedDistrict('');
+      setCurrentPage(1);
+      pendingScrollYRef.current = null;
+      setSearchParams({}, { replace: true });
+    }
+    prevRegionIdRef.current = nextRegionId;
+  }, [user?.region.id, setSearchParams]);
 
   const camerasQuery = useQuery({
     queryKey: ['cctv', 'list', user?.region.id],
@@ -86,9 +151,87 @@ export default function CctvListPage() {
     [filteredCameras, currentPage],
   );
 
+  // Pulihkan posisi scroll daftar kamera setelah katalog selesai dimuat
+  useEffect(() => {
+    if (camerasQuery.isLoading || filteredCameras.length === 0) return;
+    const targetY = pendingScrollYRef.current;
+    if (targetY === null || targetY <= 0) return;
+
+    const raf = window.requestAnimationFrame(() => {
+      pendingScrollYRef.current = null;
+      consumeSavedCctvScrollY(user?.region.id);
+      window.scrollTo({ top: targetY, behavior: 'auto' });
+    });
+    return () => window.cancelAnimationFrame(raf);
+  }, [camerasQuery.isLoading, filteredCameras.length, user?.region.id]);
+
+  const persistViewState = useCallback(
+    (next: { page: number; searchQuery: string; selectedDistrict: string; scrollY: number }) => {
+      setSearchParams(buildCctvListSearchParams(next), { replace: true });
+      saveCctvListViewState({
+        regionId,
+        page: next.page,
+        searchQuery: next.searchQuery,
+        selectedDistrict: next.selectedDistrict,
+        scrollY: next.scrollY,
+      });
+    },
+    [regionId, setSearchParams],
+  );
+
+  const handleSearchChange = (nextQuery: string) => {
+    pendingScrollYRef.current = null;
+    setSearchQuery(nextQuery);
+    setCurrentPage(1);
+    persistViewState({
+      page: 1,
+      searchQuery: nextQuery,
+      selectedDistrict,
+      scrollY: 0,
+    });
+  };
+
+  const handleDistrictChange = (nextDistrict: string) => {
+    pendingScrollYRef.current = null;
+    setSelectedDistrict(nextDistrict);
+    setCurrentPage(1);
+    persistViewState({
+      page: 1,
+      searchQuery,
+      selectedDistrict: nextDistrict,
+      scrollY: 0,
+    });
+  };
+
+  const handleResetFilters = () => {
+    pendingScrollYRef.current = null;
+    setSearchQuery('');
+    setSelectedDistrict('');
+    setCurrentPage(1);
+    persistViewState({ page: 1, searchQuery: '', selectedDistrict: '', scrollY: 0 });
+  };
+
   const handlePageChange = (page: number) => {
+    pendingScrollYRef.current = null;
     setCurrentPage(page);
+    persistViewState({ page, searchQuery, selectedDistrict, scrollY: 0 });
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const openCameraDetail = (cameraId: string) => {
+    const view = {
+      page: pageData.currentPage,
+      searchQuery,
+      selectedDistrict,
+    };
+    saveCctvListViewState({
+      regionId,
+      ...view,
+      scrollY: window.scrollY,
+    });
+    navigate(`/satpol/cctv/${encodeURIComponent(cameraId)}`, {
+      state: { returnTo: buildCctvListUrl(view) },
+    });
   };
 
   return (
@@ -128,7 +271,7 @@ export default function CctvListPage() {
                 ref={searchInputRef}
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 placeholder="Search..."
                 aria-label="Cari kamera CCTV"
                 className="h-10 w-full rounded-full border border-primary/40 bg-[#EEF4FD] pl-10 pr-8 text-sm text-primary placeholder:text-primary/50 transition focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/15"
@@ -137,7 +280,7 @@ export default function CctvListPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    setSearchQuery('');
+                    handleSearchChange('');
                     searchInputRef.current?.focus();
                   }}
                   className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-primary/60 hover:bg-primary/10 hover:text-primary"
@@ -163,7 +306,7 @@ export default function CctvListPage() {
             <div className="relative w-full sm:w-auto">
               <select
                 value={selectedDistrict}
-                onChange={(e) => setSelectedDistrict(e.target.value)}
+                onChange={(e) => handleDistrictChange(e.target.value)}
                 aria-label="Filter kecamatan"
                 className="h-9 w-full appearance-none rounded-full border border-primary/40 bg-[#EEF4FD] pl-4 pr-10 text-xs font-semibold text-primary transition focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/15 sm:h-10 sm:w-auto"
               >
@@ -240,10 +383,7 @@ export default function CctvListPage() {
           {(searchQuery || selectedDistrict) && (
             <button
               type="button"
-              onClick={() => {
-                setSearchQuery('');
-                setSelectedDistrict('');
-              }}
+              onClick={handleResetFilters}
               className="mt-4 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary/90"
             >
               Reset Filter
@@ -262,7 +402,7 @@ export default function CctvListPage() {
             {pageData.items.map((camera, idx) => (
             <article
               key={camera.id}
-              onClick={() => navigate(`/satpol/cctv/${encodeURIComponent(camera.id)}`)}
+              onClick={() => openCameraDetail(camera.id)}
               style={{ animationDelay: `${Math.min(idx, 11) * 40}ms` }}
               className="animate-patra-enter group cursor-pointer overflow-hidden rounded-2xl border border-accent/50 bg-[#E6EFFC] shadow-sm transition duration-300 hover:-translate-y-1 hover:border-primary/55 hover:shadow-lg"
             >
@@ -294,7 +434,7 @@ export default function CctvListPage() {
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate(`/satpol/cctv/${encodeURIComponent(camera.id)}`);
+                    openCameraDetail(camera.id);
                   }}
                   className="shrink-0 rounded-full bg-[#B9D3F5] px-4 py-1.5 text-xs font-semibold text-primary transition group-hover:bg-primary group-hover:text-white"
                 >

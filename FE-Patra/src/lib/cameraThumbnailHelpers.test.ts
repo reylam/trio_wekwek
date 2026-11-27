@@ -1,13 +1,21 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  buildCctvListUrl,
+  clearSavedCctvListViewState,
   clearUnavailableCameras,
+  consumeSavedCctvScrollY,
+  getSavedCctvListViewState,
   getUnavailableCameraIdsSnapshot,
   isFatalHttpStatus,
   isThumbnailFailureFresh,
   markCameraUnavailable,
   paginateList,
+  parseCctvListSearchParams,
+  resolveCctvReturnPath,
   resolveThumbnailGrabStrategy,
+  sanitizeCctvPage,
+  saveCctvListViewState,
   setBoundedCacheEntry,
   subscribeUnavailableCameras,
 } from './cameraThumbnailHelpers.ts';
@@ -160,4 +168,103 @@ test('isFatalHttpStatus dan store unavailableCameraIds menandai & membersihkan k
   assert.equal(notifications, 2);
   assert.equal(getUnavailableCameraIdsSnapshot().size, 0);
   unsub();
+});
+
+test('buildCctvListUrl dan parseCctvListSearchParams menjaga halaman serta filter dengan URL bersih', () => {
+  assert.equal(
+    buildCctvListUrl({ page: 1, searchQuery: '  ', selectedDistrict: '' }),
+    '/satpol/cctv',
+  );
+
+  const url = buildCctvListUrl({
+    page: 3,
+    searchQuery: ' gerbang ',
+    selectedDistrict: 'Tanah Abang',
+  });
+  assert.equal(url, '/satpol/cctv?page=3&q=gerbang&district=Tanah+Abang');
+
+  const parsed = parseCctvListSearchParams(new URLSearchParams(url.split('?')[1]));
+  assert.deepEqual(parsed, {
+    hasParams: true,
+    page: 3,
+    searchQuery: 'gerbang',
+    selectedDistrict: 'Tanah Abang',
+  });
+
+  const emptyParsed = parseCctvListSearchParams(new URLSearchParams());
+  assert.deepEqual(emptyParsed, {
+    hasParams: false,
+    page: 1,
+    searchQuery: '',
+    selectedDistrict: '',
+  });
+});
+
+test('saveCctvListViewState dan consumeSavedCctvScrollY memulihkan halaman dan scroll per wilayah', () => {
+  clearSavedCctvListViewState();
+  saveCctvListViewState({
+    regionId: 'reg-jkp',
+    page: 2,
+    searchQuery: 'pasar',
+    selectedDistrict: 'Menteng',
+    scrollY: 642.6,
+  });
+
+  assert.deepEqual(getSavedCctvListViewState('reg-jkp'), {
+    regionId: 'reg-jkp',
+    page: 2,
+    searchQuery: 'pasar',
+    selectedDistrict: 'Menteng',
+    scrollY: 643,
+  });
+  // Wilayah berbeda tidak boleh mewarisi halaman/scroll wilayah sebelumnya
+  assert.equal(getSavedCctvListViewState('reg-smg'), null);
+
+  // ScrollY dikonsumsi sekali lalu di-reset ke 0 agar navigasi berikutnya bersih
+  assert.equal(consumeSavedCctvScrollY('reg-jkp'), 643);
+  assert.equal(consumeSavedCctvScrollY('reg-jkp'), null);
+  assert.equal(getSavedCctvListViewState('reg-jkp')?.page, 2);
+
+  clearSavedCctvListViewState();
+});
+
+test('sanitizeCctvPage dan parseCctvListSearchParams menolak input halaman korup atau negatif', () => {
+  for (const bad of ['abc', '-3', '0', 'NaN', '', null, undefined, Number.POSITIVE_INFINITY]) {
+    assert.equal(sanitizeCctvPage(bad), 1);
+  }
+  assert.equal(sanitizeCctvPage('2.8'), 2);
+
+  const parsedBad = parseCctvListSearchParams(new URLSearchParams('page=-9&q='));
+  assert.deepEqual(parsedBad, {
+    hasParams: true,
+    page: 1,
+    searchQuery: '',
+    selectedDistrict: '',
+  });
+});
+
+test('resolveCctvReturnPath menerima path CCTV yang sah dan menolak redirect berbahaya/luar rute', () => {
+  const saved = {
+    regionId: 'reg-jkp',
+    page: 2,
+    searchQuery: '',
+    selectedDistrict: '',
+    scrollY: 320,
+  };
+
+  assert.equal(
+    resolveCctvReturnPath('/satpol/cctv?page=3&q=pasar', saved),
+    '/satpol/cctv?page=3&q=pasar',
+  );
+
+  for (const unsafe of [
+    'https://evil.com/phish',
+    '//evil.com/satpol/cctv',
+    '/satpol/laporan',
+    'javascript:alert(1)',
+    '/satpol/cctv#hash',
+  ]) {
+    assert.equal(resolveCctvReturnPath(unsafe, saved), '/satpol/cctv?page=2');
+    assert.equal(resolveCctvReturnPath(unsafe, null), '/satpol/cctv');
+  }
 });

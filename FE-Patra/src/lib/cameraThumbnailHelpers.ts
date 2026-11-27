@@ -162,3 +162,124 @@ export function paginateList<T>(
     endIndex: offset + slice.length,
   };
 }
+
+export interface CctvListViewState {
+  regionId: string;
+  page: number;
+  searchQuery: string;
+  selectedDistrict: string;
+  scrollY: number;
+}
+
+export interface ParsedCctvListParams {
+  hasParams: boolean;
+  page: number;
+  searchQuery: string;
+  selectedDistrict: string;
+}
+
+let savedCctvListState: CctvListViewState | null = null;
+
+/**
+ * Menormalkan nomor halaman daftar CCTV menjadi bilangan bulat >= 1.
+ */
+export function sanitizeCctvPage(raw: unknown): number {
+  const num = typeof raw === 'number' ? raw : typeof raw === 'string' ? Number(raw.trim()) : Number.NaN;
+  if (!Number.isFinite(num) || num < 1) {
+    return 1;
+  }
+  return Math.floor(num);
+}
+
+export function parseCctvListSearchParams(params: URLSearchParams): ParsedCctvListParams {
+  const hasParams = params.has('page') || params.has('q') || params.has('district');
+  return {
+    hasParams,
+    page: sanitizeCctvPage(params.get('page')),
+    searchQuery: params.get('q') ?? '',
+    selectedDistrict: params.get('district') ?? '',
+  };
+}
+
+export function buildCctvListSearchParams(state: {
+  page: number;
+  searchQuery: string;
+  selectedDistrict: string;
+}): URLSearchParams {
+  const params = new URLSearchParams();
+  const safePage = sanitizeCctvPage(state.page);
+  if (safePage > 1) {
+    params.set('page', String(safePage));
+  }
+  const q = state.searchQuery.trim();
+  if (q) {
+    params.set('q', q);
+  }
+  const district = state.selectedDistrict.trim();
+  if (district) {
+    params.set('district', district);
+  }
+  return params;
+}
+
+export function buildCctvListUrl(state: {
+  page: number;
+  searchQuery: string;
+  selectedDistrict: string;
+}): string {
+  const qs = buildCctvListSearchParams(state).toString();
+  return qs ? `/satpol/cctv?${qs}` : '/satpol/cctv';
+}
+
+export function saveCctvListViewState(state: CctvListViewState): void {
+  savedCctvListState = {
+    regionId: state.regionId,
+    page: sanitizeCctvPage(state.page),
+    searchQuery: state.searchQuery,
+    selectedDistrict: state.selectedDistrict,
+    scrollY: Number.isFinite(state.scrollY) && state.scrollY > 0 ? Math.round(state.scrollY) : 0,
+  };
+}
+
+export function getSavedCctvListViewState(regionId?: string | null): CctvListViewState | null {
+  if (!savedCctvListState) return null;
+  if (regionId && savedCctvListState.regionId !== regionId) {
+    return null;
+  }
+  return { ...savedCctvListState };
+}
+
+export function consumeSavedCctvScrollY(regionId?: string | null): number | null {
+  if (!savedCctvListState) return null;
+  if (regionId && savedCctvListState.regionId !== regionId) {
+    return null;
+  }
+  if (savedCctvListState.scrollY <= 0) {
+    return null;
+  }
+  const y = savedCctvListState.scrollY;
+  savedCctvListState = { ...savedCctvListState, scrollY: 0 };
+  return y;
+}
+
+export function clearSavedCctvListViewState(): void {
+  savedCctvListState = null;
+}
+
+const SAFE_CCTV_LIST_PATH_RE = /^\/satpol\/cctv(\?[^#]*)?$/;
+
+/**
+ * Memvalidasi path kembali ke daftar CCTV agar tidak menerima URL eksternal / route lain.
+ */
+export function resolveCctvReturnPath(
+  candidateReturnTo: unknown,
+  savedState?: CctvListViewState | null,
+): string {
+  if (typeof candidateReturnTo === 'string' && SAFE_CCTV_LIST_PATH_RE.test(candidateReturnTo)) {
+    return candidateReturnTo;
+  }
+  if (savedState) {
+    return buildCctvListUrl(savedState);
+  }
+  return '/satpol/cctv';
+}

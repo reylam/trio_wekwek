@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertCircle,
@@ -18,7 +18,9 @@ import CctvPlayerWithAI from '@/components/cctv/CctvPlayerWithAI';
 import CameraThumbnail from '@/components/cctv/CameraThumbnail';
 import { useToast } from '@/components/ui/Toast';
 import {
+  getSavedCctvListViewState,
   getUnavailableCameraIdsSnapshot,
+  resolveCctvReturnPath,
   subscribeUnavailableCameras,
 } from '@/lib/cameraThumbnailHelpers';
 import { formatHeaderClock } from '@/lib/formatters';
@@ -45,9 +47,15 @@ function formatDistanceLabel(km: number): string {
 export default function CctvLivePage() {
   const { cameraId } = useParams<{ cameraId: string }>();
   const { user } = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { pushToast } = useToast();
+
+  const backToCamerasPath = useMemo(() => {
+    const state = location.state as { returnTo?: unknown } | null;
+    return resolveCctvReturnPath(state?.returnTo, getSavedCctvListViewState(user?.region.id));
+  }, [location.state, user?.region.id]);
 
   const [telemetry, setTelemetry] = useState<CctvLiveTelemetry | null>(null);
   const [clockText, setClockText] = useState(() => formatHeaderClock());
@@ -241,7 +249,7 @@ export default function CctvLivePage() {
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <button
             type="button"
-            onClick={() => navigate('/satpol/cctv')}
+            onClick={() => navigate(backToCamerasPath)}
             aria-label="Back to Cameras"
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#DCE8F8] text-primary transition hover:bg-primary hover:text-white"
           >
@@ -267,7 +275,7 @@ export default function CctvLivePage() {
             <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
-                onClick={() => navigate('/satpol/cctv')}
+                onClick={() => navigate(backToCamerasPath)}
                 className="inline-flex items-center gap-2 rounded-full bg-[#DCE8F8] px-4 py-2 text-xs font-bold text-primary transition duration-200 hover:-translate-x-0.5 hover:bg-primary hover:text-white"
               >
                 <ArrowLeft className="h-4 w-4" />
@@ -311,7 +319,7 @@ export default function CctvLivePage() {
           </p>
           <button
             type="button"
-            onClick={() => navigate('/satpol/cctv')}
+            onClick={() => navigate(backToCamerasPath)}
             className="mt-4 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary/90"
           >
             Kembali ke Daftar Kamera {user?.region.city}
@@ -428,7 +436,7 @@ export default function CctvLivePage() {
                 </div>
 
                 <Link
-                  to="/satpol/cctv"
+                  to={backToCamerasPath}
                   className="inline-flex items-center gap-1.5 rounded-full border border-primary/35 bg-[#EEF4FD] px-3 py-1 text-[11px] font-semibold text-primary transition hover:bg-primary hover:text-white sm:px-4 sm:py-1.5 sm:text-xs"
                 >
                   <span>Lihat Semua ({totalCityCameras})</span>
@@ -450,7 +458,11 @@ export default function CctvLivePage() {
                     return (
                       <article
                         key={cam.id}
-                        onClick={() => navigate(`/satpol/cctv/${encodeURIComponent(cam.id)}`)}
+                        onClick={() =>
+                          navigate(`/satpol/cctv/${encodeURIComponent(cam.id)}`, {
+                            state: { returnTo: backToCamerasPath },
+                          })
+                        }
                         className={cn(
                           'group min-w-[190px] max-w-[205px] shrink-0 cursor-pointer snap-start rounded-2xl border bg-white/95 p-3.5 shadow-sm backdrop-blur-sm transition',
                           isHighlighted
@@ -485,7 +497,9 @@ export default function CctvLivePage() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate(`/satpol/cctv/${encodeURIComponent(cam.id)}`);
+                              navigate(`/satpol/cctv/${encodeURIComponent(cam.id)}`, {
+                                state: { returnTo: backToCamerasPath },
+                              });
                             }}
                             className={cn(
                               'shrink-0 rounded-md px-3 py-1 text-[10px] font-bold text-white transition',
@@ -516,7 +530,11 @@ export default function CctvLivePage() {
                 {recommendedCameras.map(({ cam, reason }, idx) => (
                   <article
                     key={cam.id}
-                    onClick={() => navigate(`/satpol/cctv/${encodeURIComponent(cam.id)}`)}
+                    onClick={() =>
+                      navigate(`/satpol/cctv/${encodeURIComponent(cam.id)}`, {
+                        state: { returnTo: backToCamerasPath },
+                      })
+                    }
                     style={{ animationDelay: `${idx * 60}ms` }}
                     className="animate-patra-enter group cursor-pointer overflow-hidden rounded-2xl border border-accent/50 bg-[#E6EFFC] shadow-sm transition duration-300 hover:-translate-y-1 hover:border-primary/55 hover:shadow-lg"
                   >
