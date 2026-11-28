@@ -144,6 +144,11 @@ export interface BeritaAcaraContext {
     facilities: string[];
     distanceMeters: number;
   } | null;
+  relocationAllocations: Array<{
+    relocationSiteName: string;
+    allocatedCount: number;
+    rankOrder: number;
+  }>;
   relocationAssignedAt: Date | null;
   actionByUserName: string | null;
   validatedByUserName: string | null;
@@ -193,6 +198,11 @@ export function buildBeritaAcaraContext(
           distanceMeters: haversineDistanceMeters(record.lat, record.lng, site.lat, site.lng),
         }
       : null,
+    relocationAllocations: (record.relocationAllocations ?? []).map((alloc) => ({
+      relocationSiteName: alloc.relocationSiteName,
+      allocatedCount: alloc.allocatedCount,
+      rankOrder: alloc.rankOrder,
+    })),
     relocationAssignedAt: record.relocationAssignedAt,
     actionByUserName: record.actionByUserName,
     validatedByUserName: record.validatedByUserName,
@@ -464,16 +474,30 @@ export function renderBeritaAcaraPdf(
     if (ctx.relocationSite) {
       const s = ctx.relocationSite;
       boxText(doc, s.name, { x: M + 10, y: y + 8, w: leftW - 10, h: 12, size: 9.5, bold: true, color: COBALT });
-      boxText(doc, s.address, { x: M + 10, y: y + 22, w: leftW - 10, h: 20, size: 7.8 });
-      boxText(doc, `Jarak dari titik pelanggaran: ${formatDistanceLabel(s.distanceMeters)}`, {
-        x: M + 10, y: y + 43, w: leftW - 10, h: 10, size: 7.5, color: MUTED,
-      });
-      boxText(doc, `Kategori: ${s.tradeCategories.join(', ') || '-'}`, {
-        x: M + 10, y: y + 55, w: leftW - 10, h: 10, size: 7.5,
-      });
-      boxText(doc, `Fasilitas: ${s.facilities.join(', ') || '-'}`, {
-        x: M + 10, y: y + 67, w: leftW - 10, h: 10, size: 7.5,
-      });
+      if (ctx.relocationAllocations.length > 1) {
+        const splitSummary = `Split Relokasi: ${ctx.relocationAllocations
+          .map((a) => `${a.relocationSiteName} (${a.allocatedCount} PKL)`)
+          .join(', ')}`;
+        boxText(doc, splitSummary, { x: M + 10, y: y + 21, w: leftW - 10, h: 21, size: 7.4, bold: true });
+        boxText(doc, s.address, { x: M + 10, y: y + 43, w: leftW - 10, h: 11, size: 7.3 });
+        boxText(doc, `Jarak utama: ${formatDistanceLabel(s.distanceMeters)}  |  Kategori: ${s.tradeCategories.join(', ') || '-'}`, {
+          x: M + 10, y: y + 55, w: leftW - 10, h: 10, size: 7.2, color: MUTED,
+        });
+        boxText(doc, `Fasilitas: ${s.facilities.join(', ') || '-'}`, {
+          x: M + 10, y: y + 67, w: leftW - 10, h: 10, size: 7.2,
+        });
+      } else {
+        boxText(doc, s.address, { x: M + 10, y: y + 22, w: leftW - 10, h: 20, size: 7.8 });
+        boxText(doc, `Jarak dari titik pelanggaran: ${formatDistanceLabel(s.distanceMeters)}`, {
+          x: M + 10, y: y + 43, w: leftW - 10, h: 10, size: 7.5, color: MUTED,
+        });
+        boxText(doc, `Kategori: ${s.tradeCategories.join(', ') || '-'}`, {
+          x: M + 10, y: y + 55, w: leftW - 10, h: 10, size: 7.5,
+        });
+        boxText(doc, `Fasilitas: ${s.facilities.join(', ') || '-'}`, {
+          x: M + 10, y: y + 67, w: leftW - 10, h: 10, size: 7.5,
+        });
+      }
     } else {
       boxText(
         doc,

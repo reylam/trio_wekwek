@@ -2,7 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { AddressInfo } from 'node:net';
 import express from 'express';
-import type { ListReportsQuery, ReportStatus } from '../interface/index.js';
+import type {
+  ListReportsQuery,
+  RelocationAllocationDto,
+  ReportStatus,
+} from '../interface/index.js';
 import { signAuthToken } from '../middlewares/auth.js';
 import errorHandler from '../middlewares/errorHandler.js';
 import type {
@@ -10,6 +14,7 @@ import type {
   ActiveZoneRecord,
   AuditLogRecord,
   CameraLookupRecord,
+  CreateReportAllocationData,
   ReportDetailRecord,
   ReportRecord,
   ReportRepositoryPort,
@@ -19,6 +24,7 @@ import {
   findNearestRelocationSites,
   formatDistanceLabel,
   haversineDistanceMeters,
+  selectRecommendedRelocationPlan,
 } from './geo.service.js';
 import type { StorageServicePort } from './storage.service.js';
 import { createPdfBeritaAcaraService } from './pdfBeritaAcara.service.js';
@@ -92,6 +98,7 @@ function makeTestHarness(opts: { cooldownSec?: number; nowMs?: number } = {}) {
   let uploadCounter = 0;
   let reportCounter = 0;
   let auditCounter = 0;
+  let allocationCounter = 0;
 
   const cameras: CameraLookupRecord[] = [
     {
@@ -195,8 +202,37 @@ function makeTestHarness(opts: { cooldownSec?: number; nowMs?: number } = {}) {
   ];
 
   const reports: ReportRecord[] = [];
+  const reportAllocations: Array<RelocationAllocationDto & { reportId: string }> = [];
   const auditLogs: AuditLogRecord[] = [];
   const uploadedFiles: Array<{ folder: string; url: string }> = [];
+  const patrolTeams = [
+    { id: 'team-jkp-1', regionId: 'reg-jkp', assignedDistricts: ['Tanah Abang'] },
+    { id: 'team-jkp-2', regionId: 'reg-jkp', assignedDistricts: ['Gambir'] },
+    { id: 'team-smg-1', regionId: 'reg-smg', assignedDistricts: ['Semarang Tengah'] },
+  ];
+
+  function replaceAllocationsForReport(
+    reportId: string,
+    allocations: CreateReportAllocationData[],
+  ) {
+    for (let i = reportAllocations.length - 1; i >= 0; i--) {
+      if (reportAllocations[i]!.reportId === reportId) {
+        reportAllocations.splice(i, 1);
+      }
+    }
+    for (const a of allocations) {
+      const site = relocationSites.find((s) => s.id === a.relocationSiteId);
+      reportAllocations.push({
+        id: `alloc-${++allocationCounter}`,
+        reportId,
+        relocationSiteId: a.relocationSiteId,
+        relocationSiteName: site?.name ?? a.relocationSiteId,
+        allocatedCount: a.allocatedCount,
+        rankOrder: a.rankOrder,
+        isRecommended: a.isRecommended,
+      });
+    }
+  }
 
   const storage: StorageServicePort = {
     async uploadEvidence(folder) {
@@ -245,10 +281,40 @@ function makeTestHarness(opts: { cooldownSec?: number; nowMs?: number } = {}) {
     async findActiveZonesByRegion(regionId) {
       return zones.filter((z) => z.regionId === regionId);
     },
-    async findActiveRelocationSitesByRegion(regionId) {
-      return relocationSites.filter(
-        (s) => s.regionId === regionId && !inactiveSiteIds.has(s.id),
+    async findActiveRelocationSitesByRegion(regionId, excludeReportId) {
+      const pendingBySite = new Map<string, number>();
+      for (const alloc of reportAllocations) {
+        if (excludeReportId && alloc.reportId === excludeReportId) continue;
+        const rep = reports.find((r) => r.id === alloc.reportId);
+        if (
+          rep &&
+          rep.regionId === regionId &&
+          rep.status === 'PENDING_VALIDATION' &&
+          rep.relocationRequested &&
+          !rep.relocationCapacityCommitted
+        ) {
+          pendingBySite.set(
+            alloc.relocationSiteId,
+            (pendingBySite.get(alloc.relocationSiteId) ?? 0) + alloc.allocatedCount,
+          );
+        }
+      }
+      return relocationSites
+        .filter((s) => s.regionId === regionId && !inactiveSiteIds.has(s.id))
+        .map((s) => ({
+          ...s,
+          pendingCapacity: pendingBySite.get(s.id) ?? s.pendingCapacity ?? 0,
+        }));
+    },
+    async findPatrolTeamIdByDistrict(regionId, district) {
+      const target = district?.trim().toLowerCase();
+      if (!target) return null;
+      const found = patrolTeams.find(
+        (t) =>
+          t.regionId === regionId &&
+          t.assignedDistricts.some((d) => d.trim().toLowerCase() === target),
       );
+      return found?.id ?? null;
     },
     async findRelocationSiteById(id) {
       const s = relocationSites.find((item) => item.id === id);
@@ -258,7 +324,7 @@ function makeTestHarness(opts: { cooldownSec?: number; nowMs?: number } = {}) {
         isActive: !inactiveSiteIds.has(s.id),
       };
     },
-    async createReportWithAuditLog(reportData, auditData) {
+    async createReportWithAuditLog(reportData, auditData, allocations) {
       const now = new Date(currentTimeMs);
       const rec: ReportRecord = {
         id: `rep-${++reportCounter}`,
@@ -282,6 +348,9 @@ function makeTestHarness(opts: { cooldownSec?: number; nowMs?: number } = {}) {
         updatedAt: now,
       };
       reports.push(rec);
+      if (allocations && allocations.length > 0) {
+        replaceAllocationsForReport(rec.id, allocations);
+      }
       auditLogs.push({
         id: `aud-${++auditCounter}`,
         reportId: rec.id,
@@ -290,11 +359,23 @@ function makeTestHarness(opts: { cooldownSec?: number; nowMs?: number } = {}) {
       });
       return rec;
     },
-    async updateReportAndAppendAudit(reportId, reportUpdate, auditData) {
+    async updateReportAndAppendAudit(reportId, reportUpdate, auditData, replaceAllocations) {
       const rec = reports.find((r) => r.id === reportId)!;
       rec.detectedCount = reportUpdate.detectedCount;
       rec.maxConfidence = reportUpdate.maxConfidence;
       rec.beforeImageUrl = reportUpdate.beforeImageUrl;
+      if (reportUpdate.recommendedRelocationSiteId !== undefined) {
+        rec.recommendedRelocationSiteId = reportUpdate.recommendedRelocationSiteId;
+      }
+      if (reportUpdate.relocationMatchStatus !== undefined) {
+        rec.relocationMatchStatus = reportUpdate.relocationMatchStatus;
+      }
+      if (reportUpdate.unaccommodatedPklCount !== undefined) {
+        rec.unaccommodatedPklCount = reportUpdate.unaccommodatedPklCount;
+      }
+      if (replaceAllocations !== undefined) {
+        replaceAllocationsForReport(reportId, replaceAllocations);
+      }
       rec.updatedAt = new Date(currentTimeMs);
       auditLogs.push({
         id: `aud-${++auditCounter}`,
@@ -354,19 +435,34 @@ function makeTestHarness(opts: { cooldownSec?: number; nowMs?: number } = {}) {
       const rec = reports.find((r) => r.id === id);
       if (!rec) return null;
       const cam = cameras.find((c) => c.id === rec.cameraId);
+      const recSiteName = rec.recommendedRelocationSiteId
+        ? relocationSites.find((s) => s.id === rec.recommendedRelocationSiteId)?.name ?? null
+        : null;
+      const relocSiteName = rec.relocationSiteId
+        ? relocationSites.find((s) => s.id === rec.relocationSiteId)?.name ?? null
+        : null;
       return {
         ...rec,
         cameraName: cam?.name,
         cameraDistrict: cam?.district ?? null,
         zoneName: zones.find((z) => z.id === rec.zoneId)?.id ?? null,
         assignedTeam: null,
-        recommendedRelocationSiteName: null,
-        relocationSiteName: null,
-        relocationAllocations: [],
+        recommendedRelocationSiteName: recSiteName,
+        relocationSiteName: relocSiteName,
+        relocationAllocations: reportAllocations
+          .filter((a) => a.reportId === id)
+          .sort((a, b) => a.rankOrder - b.rankOrder)
+          .map(({ reportId: _rid, ...rest }) => rest),
         auditLogs: auditLogs.filter((l) => l.reportId === id),
       };
     },
-    async guardedSubmitAction(id, expectedStatuses, updateData, auditData) {
+    async guardedSubmitAction(
+      id,
+      expectedStatuses,
+      updateData,
+      auditData,
+      replaceAllocations,
+    ) {
       const rec = reports.find((r) => r.id === id);
       if (!rec || !expectedStatuses.includes(rec.status)) {
         return null;
@@ -379,6 +475,18 @@ function makeTestHarness(opts: { cooldownSec?: number; nowMs?: number } = {}) {
       rec.relocationRequested = updateData.relocationRequested;
       rec.actionByUserId = updateData.actionByUserId;
       rec.actionSubmittedAt = updateData.actionSubmittedAt;
+      if (updateData.recommendedRelocationSiteId !== undefined) {
+        rec.recommendedRelocationSiteId = updateData.recommendedRelocationSiteId;
+      }
+      if (updateData.relocationMatchStatus !== undefined) {
+        rec.relocationMatchStatus = updateData.relocationMatchStatus;
+      }
+      if (updateData.unaccommodatedPklCount !== undefined) {
+        rec.unaccommodatedPklCount = updateData.unaccommodatedPklCount;
+      }
+      if (replaceAllocations !== undefined) {
+        replaceAllocationsForReport(id, replaceAllocations);
+      }
       rec.updatedAt = new Date(currentTimeMs);
 
       auditLogs.push({
@@ -414,6 +522,47 @@ function makeTestHarness(opts: { cooldownSec?: number; nowMs?: number } = {}) {
       });
       return this.findDetailById(id);
     },
+    async guardedValidateWithRelocationCommit(params) {
+      const rec = reports.find((r) => r.id === params.id);
+      if (!rec || rec.status !== 'PENDING_VALIDATION' || rec.relocationCapacityCommitted) {
+        return { ok: false, reason: 'CONFLICT' };
+      }
+      for (const alloc of params.allocations) {
+        const site = relocationSites.find((s) => s.id === alloc.relocationSiteId);
+        if (
+          !site ||
+          site.regionId !== params.regionId ||
+          inactiveSiteIds.has(site.id) ||
+          site.maxCapacity !== alloc.expectedMaxCapacity ||
+          site.occupiedCapacity + alloc.allocatedCount > site.maxCapacity
+        ) {
+          return { ok: false, reason: 'CONFLICT' };
+        }
+      }
+      for (const alloc of params.allocations) {
+        const site = relocationSites.find((s) => s.id === alloc.relocationSiteId)!;
+        site.occupiedCapacity += alloc.allocatedCount;
+      }
+      replaceAllocationsForReport(params.id, params.allocations);
+      rec.status = 'VALIDATED';
+      rec.validatedByUserId = params.validatedByUserId;
+      rec.validatedAt = params.validatedAt;
+      rec.revisionReason = null;
+      rec.relocationSiteId = params.relocationSiteId;
+      rec.relocationAssignedAt = params.validatedAt;
+      rec.relocationMatchStatus = params.relocationMatchStatus;
+      rec.unaccommodatedPklCount = params.unaccommodatedPklCount;
+      rec.relocationCapacityCommitted = true;
+      rec.updatedAt = new Date(currentTimeMs);
+      auditLogs.push({
+        id: `aud-${++auditCounter}`,
+        reportId: params.id,
+        ...params.auditLogData,
+        createdAt: new Date(currentTimeMs),
+      });
+      const detail = await this.findDetailById(params.id);
+      return detail ? { ok: true, detail } : { ok: false, reason: 'CONFLICT' };
+    },
     async guardedAssignRelocation(id, updateData, auditData) {
       const rec = reports.find((r) => r.id === id);
       if (
@@ -434,6 +583,48 @@ function makeTestHarness(opts: { cooldownSec?: number; nowMs?: number } = {}) {
         createdAt: new Date(currentTimeMs),
       });
       return this.findDetailById(id);
+    },
+    async guardedAssignRelocationWithCommit(params) {
+      const rec = reports.find((r) => r.id === params.id);
+      if (
+        !rec ||
+        rec.status !== 'VALIDATED' ||
+        !rec.relocationRequested ||
+        rec.relocationCapacityCommitted
+      ) {
+        return { ok: false, reason: 'CONFLICT' };
+      }
+      for (const alloc of params.allocations) {
+        const site = relocationSites.find((s) => s.id === alloc.relocationSiteId);
+        if (
+          !site ||
+          site.regionId !== params.regionId ||
+          inactiveSiteIds.has(site.id) ||
+          site.maxCapacity !== alloc.expectedMaxCapacity ||
+          site.occupiedCapacity + alloc.allocatedCount > site.maxCapacity
+        ) {
+          return { ok: false, reason: 'CONFLICT' };
+        }
+      }
+      for (const alloc of params.allocations) {
+        const site = relocationSites.find((s) => s.id === alloc.relocationSiteId)!;
+        site.occupiedCapacity += alloc.allocatedCount;
+      }
+      replaceAllocationsForReport(params.id, params.allocations);
+      rec.relocationSiteId = params.relocationSiteId;
+      rec.relocationAssignedAt = params.relocationAssignedAt;
+      rec.relocationMatchStatus = params.relocationMatchStatus;
+      rec.unaccommodatedPklCount = params.unaccommodatedPklCount;
+      rec.relocationCapacityCommitted = true;
+      rec.updatedAt = new Date(currentTimeMs);
+      auditLogs.push({
+        id: `aud-${++auditCounter}`,
+        reportId: params.id,
+        ...params.auditLogData,
+        createdAt: new Date(currentTimeMs),
+      });
+      const detail = await this.findDetailById(params.id);
+      return detail ? { ok: true, detail } : { ok: false, reason: 'CONFLICT' };
     },
     async findPdfContextById(id) {
       const detail = await this.findDetailById(id);
@@ -490,6 +681,8 @@ function makeTestHarness(opts: { cooldownSec?: number; nowMs?: number } = {}) {
   return {
     app,
     reports,
+    reportAllocations,
+    relocationSites,
     auditLogs,
     uploadedFiles,
     advanceSeconds(sec: number) {
@@ -1038,6 +1231,12 @@ test('POST /api/reports/:id/validate, /relocation, and GET /:id/pdf enforce RBAC
     assert.equal(approve1Json.data.report.status, 'VALIDATED');
     assert.equal(approve1Json.data.report.revisionReason, null);
     assert.ok(approve1Json.data.report.validatedAt);
+    assert.equal(approve1Json.data.report.relocationSiteId, 'site-near');
+    assert.equal(approve1Json.data.report.relocationCapacityCommitted, true);
+    assert.equal(
+      harness.relocationSites.find((s) => s.id === 'site-near')?.occupiedCapacity,
+      13,
+    );
     assert.equal(approve1Json.data.report.auditLogs.at(-1).action, 'REPORT_VALIDATED');
 
     // Validasi ulang setelah VALIDATED -> 409 REPORT_STATUS_CONFLICT
@@ -1071,8 +1270,67 @@ test('POST /api/reports/:id/validate, /relocation, and GET /:id/pdf enforce RBAC
     assert.equal(noReqReloc.status, 400);
     assert.equal(((await noReqReloc.json()) as any).error.code, 'RELOCATION_NOT_REQUESTED');
 
+    // Laporan yang sudah commit saat APPROVE ditolak jika ditetapkan ulang -> 409 RELOCATION_ALREADY_ASSIGNED
+    const alreadyCommittedReloc = await fetch(`${baseUrl}/api/reports/${repWithRelocId}/relocation`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${DINAS_JKT_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ relocationSiteId: 'site-mid' }),
+    });
+    assert.equal(alreadyCommittedReloc.status, 409);
+    assert.equal(((await alreadyCommittedReloc.json()) as any).error.code, 'RELOCATION_ALREADY_ASSIGNED');
+
+    // 5-6. Skenario susulan (ALL_SITES_FULL saat validasi -> kapasitas ditambah -> POST /relocation susulan)
+    const prevCaps = harness.relocationSites.map((s) => ({ id: s.id, occ: s.occupiedCapacity }));
+    for (const s of harness.relocationSites) {
+      s.occupiedCapacity = s.maxCapacity;
+    }
+    harness.advanceSeconds(60);
+    const fullDetectRes = await fetch(`${baseUrl}/api/reports/auto-detect`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${SATPOL_JKT_TOKEN}` },
+      body: makeSnapshotForm({
+        cameraId: 'cam-jkp-1',
+        source: 'MANUAL',
+        currentActiveViolators: 2,
+        maxConfidence: 0.9,
+        isSimulationMode: false,
+      }),
+    });
+    const followUpReportId = ((await fullDetectRes.json()) as any).data.report.id as string;
+    await fetch(`${baseUrl}/api/reports/${followUpReportId}/action`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${SATPOL_JKT_TOKEN}` },
+      body: makeActionForm({
+        actionType: 'RELOCATION_ASSISTANCE',
+        actualPklCount: 2,
+        educationNotes: 'Menunggu pembukaan slot relokasi baru.',
+        relocationRequested: true,
+      }),
+    });
+    const followUpApproveRes = await fetch(`${baseUrl}/api/reports/${followUpReportId}/validate`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${DINAS_JKT_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ decision: 'APPROVE' }),
+    });
+    assert.equal(followUpApproveRes.status, 200);
+    const followUpApproveJson = (await followUpApproveRes.json()) as any;
+    assert.equal(followUpApproveJson.data.report.relocationMatchStatus, 'ALL_SITES_FULL');
+    assert.equal(followUpApproveJson.data.report.relocationCapacityCommitted, false);
+
+    // Buka kembali kapasitas site untuk penetapan susulan
+    for (const prev of prevCaps) {
+      const target = harness.relocationSites.find((s) => s.id === prev.id);
+      if (target) target.occupiedCapacity = prev.occ;
+    }
+
     // 5. Lokasi nonaktif/arsip ditolak (400 RELOCATION_SITE_INACTIVE)
-    const inactiveSiteReloc = await fetch(`${baseUrl}/api/reports/${repWithRelocId}/relocation`, {
+    const inactiveSiteReloc = await fetch(`${baseUrl}/api/reports/${followUpReportId}/relocation`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${DINAS_JKT_TOKEN}`,
@@ -1083,8 +1341,8 @@ test('POST /api/reports/:id/validate, /relocation, and GET /:id/pdf enforce RBAC
     assert.equal(inactiveSiteReloc.status, 400);
     assert.equal(((await inactiveSiteReloc.json()) as any).error.code, 'RELOCATION_SITE_INACTIVE');
 
-    // 6. Penetapan relokasi 1-klik sukses -> 200 + AuditLog RELOCATION_ASSIGNED
-    const okReloc = await fetch(`${baseUrl}/api/reports/${repWithRelocId}/relocation`, {
+    // 6. Penetapan relokasi susulan sukses -> 200 + atomic increment + AuditLog RELOCATION_ASSIGNED
+    const okReloc = await fetch(`${baseUrl}/api/reports/${followUpReportId}/relocation`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${DINAS_JKT_TOKEN}`,
@@ -1095,11 +1353,16 @@ test('POST /api/reports/:id/validate, /relocation, and GET /:id/pdf enforce RBAC
     assert.equal(okReloc.status, 200);
     const okRelocJson = (await okReloc.json()) as any;
     assert.equal(okRelocJson.data.report.relocationSiteId, 'site-near');
+    assert.equal(okRelocJson.data.report.relocationCapacityCommitted, true);
     assert.ok(okRelocJson.data.report.relocationAssignedAt);
     assert.equal(okRelocJson.data.report.auditLogs.at(-1).action, 'RELOCATION_ASSIGNED');
+    assert.equal(
+      harness.relocationSites.find((s) => s.id === 'site-near')?.occupiedCapacity,
+      15,
+    );
 
     // Penetapan ulang -> 409 RELOCATION_ALREADY_ASSIGNED
-    const dupReloc = await fetch(`${baseUrl}/api/reports/${repWithRelocId}/relocation`, {
+    const dupReloc = await fetch(`${baseUrl}/api/reports/${followUpReportId}/relocation`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${DINAS_JKT_TOKEN}`,
@@ -1251,6 +1514,333 @@ test('District hard-lock isolates reports per Satpol PP team and AuditLog actorN
       'Regu Tanah Abang (Tim Alpha — Kec. Tanah Abang)',
     );
     assert.equal(taActionReport.auditLogs.at(-1).actorName.includes('@'), false);
+  } finally {
+    await new Promise<void>((resolve, reject) => server.close((e) => (e ? reject(e) : resolve())));
+  }
+});
+
+test('selectRecommendedRelocationPlan enforces 4-tier waterfall, pendingCapacity deduction, and empty edge case', () => {
+  const originLat = -6.2005;
+  const originLng = 106.8229;
+  const makeSite = (
+    id: string,
+    name: string,
+    lat: number,
+    lng: number,
+    maxCapacity: number,
+    occupiedCapacity: number,
+    pendingCapacity = 0,
+  ) => ({
+    id,
+    name,
+    address: `Jl. ${name}`,
+    lat,
+    lng,
+    tradeCategories: ['Kuliner'],
+    facilities: ['Listrik'],
+    maxCapacity,
+    occupiedCapacity,
+    pendingCapacity,
+  });
+
+  // Edge: empty sites
+  const emptyPlan = selectRecommendedRelocationPlan(originLat, originLng, 3, []);
+  assert.equal(emptyPlan.relocationMatchStatus, 'ALL_SITES_FULL');
+  assert.equal(emptyPlan.unaccommodatedPklCount, 3);
+  assert.equal(emptyPlan.allocations.length, 0);
+
+  // Tier 1: NEAREST_AVAILABLE
+  const t1 = selectRecommendedRelocationPlan(originLat, originLng, 2, [
+    makeSite('s1', 'Terdekat', -6.199, 106.822, 10, 5, 1), // eff 4 >= 2
+    makeSite('s2', 'Cadangan', -6.185, 106.835, 10, 0, 0),
+  ]);
+  assert.equal(t1.relocationMatchStatus, 'NEAREST_AVAILABLE');
+  assert.equal(t1.recommendedRelocationSiteId, 's1');
+  assert.deepEqual(
+    t1.allocations.map((a) => [a.relocationSiteId, a.allocatedCount]),
+    [['s1', 2]],
+  );
+
+  // Tier 2: FALLBACK_AVAILABLE (Opsi A whole group when nearest effective = 3 < 4)
+  const t2 = selectRecommendedRelocationPlan(originLat, originLng, 4, [
+    makeSite('s1', 'Terdekat', -6.199, 106.822, 10, 5, 2), // eff 3 < 4
+    makeSite('s2', 'Alternatif', -6.185, 106.835, 10, 4, 0), // eff 6 >= 4
+  ]);
+  assert.equal(t2.relocationMatchStatus, 'FALLBACK_AVAILABLE');
+  assert.equal(t2.recommendedRelocationSiteId, 's2');
+  assert.equal(t2.skippedFullSites.length, 1);
+  assert.equal(t2.skippedFullSites[0]?.id, 's1');
+  assert.deepEqual(
+    t2.allocations.map((a) => [a.relocationSiteId, a.allocatedCount]),
+    [['s2', 4]],
+  );
+
+  // Tier 3: SPLIT_FALLBACK (3 PKL split -> 2 + 1 across two nearest sites)
+  const t3 = selectRecommendedRelocationPlan(originLat, originLng, 3, [
+    makeSite('s1', 'Lokasi 1', -6.199, 106.822, 10, 8, 0), // eff 2
+    makeSite('s2', 'Lokasi Full Tengah', -6.195, 106.824, 5, 5, 0), // eff 0
+    makeSite('s3', 'Lokasi 2', -6.185, 106.835, 10, 9, 0), // eff 1
+  ]);
+  assert.equal(t3.relocationMatchStatus, 'SPLIT_FALLBACK');
+  assert.equal(t3.unaccommodatedPklCount, 0);
+  assert.deepEqual(
+    t3.allocations.map((a) => [a.relocationSiteId, a.allocatedCount, a.rankOrder]),
+    [
+      ['s1', 2, 1],
+      ['s3', 1, 2],
+    ],
+  );
+  assert.equal(t3.skippedFullSites[0]?.id, 's2');
+
+  // Tier 4a: PARTIAL_UNACCOMMODATED
+  const t4a = selectRecommendedRelocationPlan(originLat, originLng, 5, [
+    makeSite('s1', 'Lokasi 1', -6.199, 106.822, 10, 8, 0), // eff 2
+    makeSite('s2', 'Lokasi 2', -6.185, 106.835, 10, 9, 0), // eff 1
+  ]);
+  assert.equal(t4a.relocationMatchStatus, 'PARTIAL_UNACCOMMODATED');
+  assert.equal(t4a.unaccommodatedPklCount, 2);
+  assert.equal(t4a.allocations.length, 2);
+
+  // Tier 4b: ALL_SITES_FULL
+  const t4b = selectRecommendedRelocationPlan(originLat, originLng, 4, [
+    makeSite('s1', 'Lokasi 1', -6.199, 106.822, 10, 10, 0),
+    makeSite('s2', 'Lokasi 2', -6.185, 106.835, 5, 3, 2),
+  ]);
+  assert.equal(t4b.relocationMatchStatus, 'ALL_SITES_FULL');
+  assert.equal(t4b.unaccommodatedPklCount, 4);
+  assert.equal(t4b.allocations.length, 0);
+});
+
+test('Waterfall relocation, pendingCapacity collision avoidance, race 409 CAPACITY_EXCEEDED + replan, revision release, override, escalation, and split PDF', async () => {
+  const harness = makeTestHarness();
+  // Set kapasitas terkontrol: site-near (5 kosong), site-mid (10 kosong), site-far & site-extra penuh
+  const siteNear = harness.relocationSites.find((s) => s.id === 'site-near')!;
+  const siteMid = harness.relocationSites.find((s) => s.id === 'site-mid')!;
+  const siteFar = harness.relocationSites.find((s) => s.id === 'site-far')!;
+  const siteExtra = harness.relocationSites.find((s) => s.id === 'site-extra')!;
+  siteNear.maxCapacity = 15;
+  siteNear.occupiedCapacity = 10;
+  siteNear.pendingCapacity = 0;
+  siteMid.maxCapacity = 20;
+  siteMid.occupiedCapacity = 10;
+  siteMid.pendingCapacity = 0;
+  siteFar.occupiedCapacity = siteFar.maxCapacity;
+  siteExtra.occupiedCapacity = siteExtra.maxCapacity;
+
+  const server = harness.app.listen(0);
+  const baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+
+  try {
+    // Scenario A: Pending capacity mencegah bentrokan slot antara 2 laporan berurutan
+    const r1Create = await fetch(`${baseUrl}/api/reports/auto-detect`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${SATPOL_JKT_TOKEN}` },
+      body: makeSnapshotForm({
+        cameraId: 'cam-jkp-1',
+        source: 'MANUAL',
+        currentActiveViolators: 2,
+        maxConfidence: 0.9,
+        isSimulationMode: false,
+      }),
+    });
+    const r1Id = ((await r1Create.json()) as any).data.report.id as string;
+
+    await fetch(`${baseUrl}/api/reports/${r1Id}/action`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${SATPOL_JKT_TOKEN}` },
+      body: makeActionForm({
+        actionType: 'RELOCATION_ASSISTANCE',
+        actualPklCount: 2,
+        educationNotes: 'Laporan 1 meminta relokasi 2 PKL ke site-near.',
+        relocationRequested: true,
+      }),
+    });
+
+    // Report 2 butuh 4 PKL (sisa efektif site-near sekarang 5 - 2 = 3 < 4) -> otomatis FALLBACK_AVAILABLE ke site-mid
+    const r2Create = await fetch(`${baseUrl}/api/reports/auto-detect`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${SATPOL_JKT_TOKEN}` },
+      body: makeSnapshotForm({
+        cameraId: 'cam-jkp-outside',
+        source: 'MANUAL',
+        currentActiveViolators: 4,
+        maxConfidence: 0.9,
+        isSimulationMode: false,
+      }),
+    });
+    const r2Json = (await r2Create.json()) as any;
+    const r2Id = r2Json.data.report.id as string;
+    assert.equal(r2Json.data.report.recommendedRelocationSiteId, 'site-mid');
+    assert.equal(r2Json.data.report.relocationMatchStatus, 'FALLBACK_AVAILABLE');
+
+    // Scenario C: REQUEST_REVISION melepas pending slot Report 1 seketika
+    const r1Rev = await fetch(`${baseUrl}/api/reports/${r1Id}/validate`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${DINAS_JKT_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        decision: 'REQUEST_REVISION',
+        revisionReason: 'Mohon foto ulang area trotoar yang lebih jelas.',
+      }),
+    });
+    assert.equal(r1Rev.status, 200);
+    // Detail r2 setelah revisi r1 menunjukkan effectiveAvailableCapacity site-near kembali 5
+    const r2DetailAfterRev = await fetch(`${baseUrl}/api/reports/${r2Id}`, {
+      headers: { Authorization: `Bearer ${DINAS_JKT_TOKEN}` },
+    });
+    const r2DetailJson = (await r2DetailAfterRev.json()) as any;
+    const nearDtoAfterRev = r2DetailJson.data.report.nearestRelocationSites.find(
+      (s: any) => s.id === 'site-near',
+    );
+    assert.equal(nearDtoAfterRev.pendingCapacity, 0);
+    assert.equal(nearDtoAfterRev.effectiveAvailableCapacity, 5);
+
+    // Scenario B: Race condition 2 laporan PENDING_VALIDATION menunjuk site-near (kapasitas 5) -> 1 sukses, 1 ditolak 409 CAPACITY_EXCEEDED + replan
+    harness.advanceSeconds(60);
+    await fetch(`${baseUrl}/api/reports/${r1Id}/action`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${SATPOL_JKT_TOKEN}` },
+      body: makeActionForm({
+        actionType: 'RELOCATION_ASSISTANCE',
+        actualPklCount: 2,
+        educationNotes: 'Foto ulang jelas untuk 2 PKL ke site-near.',
+        relocationRequested: true,
+        allocations: [{ relocationSiteId: 'site-near', allocatedCount: 2 }],
+      }),
+    });
+    await fetch(`${baseUrl}/api/reports/${r2Id}/action`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${SATPOL_JKT_TOKEN}` },
+      body: makeActionForm({
+        actionType: 'RELOCATION_ASSISTANCE',
+        actualPklCount: 4,
+        educationNotes: 'Petugas memilih site-near manual untuk 4 PKL.',
+        relocationRequested: true,
+        allocations: [{ relocationSiteId: 'site-near', allocatedCount: 4 }],
+      }),
+    });
+
+    // Validasi r1 lebih dulu -> sukses, site-near occupiedCapacity: 10 -> 12 (sisa 3)
+    const approveR1 = await fetch(`${baseUrl}/api/reports/${r1Id}/validate`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${DINAS_JKT_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ decision: 'APPROVE' }),
+    });
+    assert.equal(approveR1.status, 200);
+    assert.equal(siteNear.occupiedCapacity, 12);
+
+    // Validasi r2 yang juga menunjuk site-near (butuh 4, sisa resmi 3) -> 409 CAPACITY_EXCEEDED + meta.replan!
+    const collideR2 = await fetch(`${baseUrl}/api/reports/${r2Id}/validate`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${DINAS_JKT_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ decision: 'APPROVE' }),
+    });
+    assert.equal(collideR2.status, 409);
+    const collideJson = (await collideR2.json()) as any;
+    assert.equal(collideJson.error.code, 'CAPACITY_EXCEEDED');
+    assert.equal(collideJson.error.meta.replan.recommendedRelocationSiteId, 'site-mid');
+    assert.equal(collideJson.error.meta.replan.relocationMatchStatus, 'FALLBACK_AVAILABLE');
+    assert.equal(siteNear.occupiedCapacity, 12); // tidak overbooked
+
+    // Scenario D: Sudin overrideAllocations -> site-mid ter-commit, AuditLog = RELOCATION_OVERRIDDEN, site-near tetap 12
+    const overrideR2 = await fetch(`${baseUrl}/api/reports/${r2Id}/validate`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${DINAS_JKT_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        decision: 'APPROVE',
+        overrideAllocations: [{ relocationSiteId: 'site-mid', allocatedCount: 4 }],
+      }),
+    });
+    assert.equal(overrideR2.status, 200);
+    const overrideJson = (await overrideR2.json()) as any;
+    assert.equal(overrideJson.data.report.relocationSiteId, 'site-mid');
+    assert.equal(overrideJson.data.report.auditLogs.at(-1).action, 'RELOCATION_OVERRIDDEN');
+    assert.equal(siteMid.occupiedCapacity, 14);
+    assert.equal(siteNear.occupiedCapacity, 12);
+
+    // Scenario E & F: Escalation re-evaluasi waterfall -> SPLIT_FALLBACK (2 + 1) -> atomic multi-site commit + PDF 1 halaman
+    // Set sisa slot: site-near = 2 (13/15), site-mid = 1 (19/20) -> 3 PKL harus SPLIT_FALLBACK (2 + 1)
+    siteNear.occupiedCapacity = 13;
+    siteMid.occupiedCapacity = 19;
+
+    harness.advanceSeconds(60);
+    const r3Initial = await fetch(`${baseUrl}/api/reports/auto-detect`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${SATPOL_JKT_TOKEN}` },
+      body: makeSnapshotForm({
+        cameraId: 'cam-jkp-1',
+        source: 'AUTO_AI',
+        currentActiveViolators: 2,
+        maxConfidence: 0.88,
+        isSimulationMode: false,
+      }),
+    });
+    const r3InitJson = (await r3Initial.json()) as any;
+    const r3Id = r3InitJson.data.report.id as string;
+    assert.equal(r3InitJson.data.report.recommendedRelocationSiteId, 'site-near');
+    assert.equal(r3InitJson.data.report.relocationMatchStatus, 'NEAREST_AVAILABLE');
+
+    // Eskalasi 2 -> 3 PKL -> melebihi sisa site-near (2), total kota = 3 -> berubah otomatis jadi SPLIT_FALLBACK!
+    const r3Escalated = await fetch(`${baseUrl}/api/reports/auto-detect`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${SATPOL_JKT_TOKEN}` },
+      body: makeSnapshotForm({
+        cameraId: 'cam-jkp-1',
+        source: 'AUTO_AI',
+        currentActiveViolators: 3,
+        maxConfidence: 0.94,
+        isSimulationMode: false,
+      }),
+    });
+    assert.equal(r3Escalated.status, 200);
+    const r3EscJson = (await r3Escalated.json()) as any;
+    assert.equal(r3EscJson.data.outcome, 'MERGED_ESCALATED');
+    assert.equal(r3EscJson.data.report.relocationMatchStatus, 'SPLIT_FALLBACK');
+
+    // Action & Approve SPLIT_FALLBACK -> kedua lokasi bertambah atomik & PDF 1 halaman A4
+    await fetch(`${baseUrl}/api/reports/${r3Id}/action`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${SATPOL_JKT_TOKEN}` },
+      body: makeActionForm({
+        actionType: 'RELOCATION_ASSISTANCE',
+        actualPklCount: 3,
+        educationNotes: 'Split darurat 2 PKL ke Thamrin City & 1 PKL ke Kebon Kacang.',
+        relocationRequested: true,
+      }),
+    });
+    const r3Approve = await fetch(`${baseUrl}/api/reports/${r3Id}/validate`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${DINAS_JKT_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ decision: 'APPROVE' }),
+    });
+    assert.equal(r3Approve.status, 200);
+    const r3ApproveJson = (await r3Approve.json()) as any;
+    assert.equal(r3ApproveJson.data.report.relocationMatchStatus, 'SPLIT_FALLBACK');
+    assert.equal(r3ApproveJson.data.report.relocationAllocations.length, 2);
+    assert.equal(siteNear.occupiedCapacity, 15);
+    assert.equal(siteMid.occupiedCapacity, 20);
+
+    const splitPdfRes = await fetch(`${baseUrl}/api/reports/${r3Id}/pdf`, {
+      headers: { Authorization: `Bearer ${DINAS_JKT_TOKEN}` },
+    });
+    assert.equal(splitPdfRes.status, 200);
+    const splitPdfText = Buffer.from(await splitPdfRes.arrayBuffer()).toString('latin1');
+    const pageObjects = splitPdfText.match(/\/Type\s*\/Page(?![a-zA-Z])/g) ?? [];
+    assert.equal(pageObjects.length, 1);
   } finally {
     await new Promise<void>((resolve, reject) => server.close((e) => (e ? reject(e) : resolve())));
   }

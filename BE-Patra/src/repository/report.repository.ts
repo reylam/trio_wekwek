@@ -133,6 +133,9 @@ export interface UpdateReportBeforeData {
   detectedCount: number;
   maxConfidence: number;
   beforeImageUrl: string;
+  recommendedRelocationSiteId?: string | null;
+  relocationMatchStatus?: RelocationMatchStatus | null;
+  unaccommodatedPklCount?: number;
 }
 
 export interface SubmitActionUpdateData {
@@ -144,7 +147,48 @@ export interface SubmitActionUpdateData {
   relocationRequested: boolean;
   actionByUserId: string;
   actionSubmittedAt: Date;
+  recommendedRelocationSiteId?: string | null;
+  relocationMatchStatus?: RelocationMatchStatus | null;
+  unaccommodatedPklCount?: number;
 }
+
+export interface CreateReportAllocationData {
+  relocationSiteId: string;
+  allocatedCount: number;
+  rankOrder: number;
+  isRecommended: boolean;
+}
+
+export interface CommitAllocationGuardItem extends CreateReportAllocationData {
+  expectedMaxCapacity: number;
+}
+
+export interface ValidateWithCommitParams {
+  id: string;
+  regionId: string;
+  validatedByUserId: string;
+  validatedAt: Date;
+  relocationSiteId: string | null;
+  relocationMatchStatus: RelocationMatchStatus | null;
+  unaccommodatedPklCount: number;
+  allocations: CommitAllocationGuardItem[];
+  auditLogData: CreateAuditLogInputData;
+}
+
+export interface AssignRelocationWithCommitParams {
+  id: string;
+  regionId: string;
+  relocationSiteId: string;
+  relocationAssignedAt: Date;
+  relocationMatchStatus: RelocationMatchStatus;
+  unaccommodatedPklCount: number;
+  allocations: CommitAllocationGuardItem[];
+  auditLogData: CreateAuditLogInputData;
+}
+
+export type AtomicCommitResult =
+  | { ok: true; detail: ReportDetailRecord }
+  | { ok: false; reason: 'CONFLICT' };
 
 export interface ValidateUpdateData {
   status: ReportStatus;
@@ -436,6 +480,7 @@ export const ReportRepository = {
 
   async findActiveRelocationSitesByRegion(
     regionId: string,
+    excludeReportId?: string,
   ): Promise<ActiveRelocationSiteRecord[]> {
     const prisma = getPrisma();
     const [rows, pendingRows] = await prisma.$transaction([
@@ -455,6 +500,7 @@ export const ReportRepository = {
       }),
       prisma.reportRelocationAllocation.findMany({
         where: {
+          ...(excludeReportId ? { reportId: { not: excludeReportId } } : {}),
           report: {
             regionId,
             status: 'PENDING_VALIDATION',
@@ -485,14 +531,37 @@ export const ReportRepository = {
     }));
   },
 
+  async findPatrolTeamIdByDistrict(
+    regionId: string,
+    district: string | null,
+  ): Promise<string | null> {
+    const target = district?.trim().toLowerCase();
+    if (!target) return null;
+    const prisma = getPrisma();
+    const teams = await prisma.patrolTeam.findMany({
+      where: { regionId, isActive: true },
+      select: { id: true, assignedDistricts: true },
+    });
+    const matched = teams.find((team) =>
+      toStringArray(team.assignedDistricts).some(
+        (d) => d.trim().toLowerCase() === target,
+      ),
+    );
+    return matched?.id ?? null;
+  },
+
   async createReportWithAuditLog(
     reportData: CreateReportInputData,
     auditLogData: CreateAuditLogInputData,
+    allocations?: CreateReportAllocationData[],
   ): Promise<ReportRecord> {
     const prisma = getPrisma();
     const created = await prisma.violationReport.create({
       data: {
         ...reportData,
+        ...(allocations && allocations.length > 0
+          ? { relocationAllocations: { create: allocations } }
+          : {}),
         auditLogs: {
           create: buildAuditCreateFields(auditLogData),
         },
@@ -505,9 +574,10 @@ export const ReportRepository = {
     reportId: string,
     reportUpdateData: UpdateReportBeforeData,
     auditLogData: CreateAuditLogInputData,
+    replaceAllocations?: CreateReportAllocationData[],
   ): Promise<ReportRecord> {
     const prisma = getPrisma();
-    const [updated] = await prisma.$transaction([
+    const ops: Prisma.PrismaPromise<unknown>[] = [
       prisma.violationReport.update({
         where: { id: reportId },
         data: reportUpdateData,
@@ -518,7 +588,23 @@ export const ReportRepository = {
           ...buildAuditCreateFields(auditLogData),
         },
       }),
-    ]);
+    ];
+    if (replaceAllocations !== undefined) {
+      ops.push(
+        prisma.reportRelocationAllocation.deleteMany({ where: { reportId } }),
+      );
+      if (replaceAllocations.length > 0) {
+        ops.push(
+          prisma.reportRelocationAllocation.createMany({
+            data: replaceAllocations.map((a) => ({ reportId, ...a })),
+          }),
+        );
+      }
+    }
+    const [updated] = (await prisma.$transaction(ops)) as [
+      Prisma.ViolationReportGetPayload<object>,
+      ...unknown[],
+    ];
     return mapPrismaReport(updated);
   },
 
@@ -606,12 +692,210 @@ export const ReportRepository = {
     expectedStatuses: ReportStatus[],
     updateData: SubmitActionUpdateData,
     auditLogData: CreateAuditLogInputData,
+    replaceAllocations?: CreateReportAllocationData[],
   ): Promise<ReportDetailRecord | null> {
-    return guardedUpdateWithAudit(
-      { id, status: { in: expectedStatuses } },
-      updateData,
-      auditLogData,
+    if (replaceAllocations === undefined) {
+      return guardedUpdateWithAudit(
+        { id, status: { in: expectedStatuses } },
+        updateData,
+        auditLogData,
+      );
+    }
+
+    const prisma = getPrisma();
+    const ops: Prisma.PrismaPromise<unknown>[] = [
+      prisma.violationReport.update({
+        where: { id, status: { in: expectedStatuses } },
+        data: {
+          ...updateData,
+          auditLogs: {
+            create: buildAuditCreateFields(auditLogData),
+          },
+        },
+      }),
+      prisma.reportRelocationAllocation.deleteMany({ where: { reportId: id } }),
+    ];
+    if (replaceAllocations.length > 0) {
+      ops.push(
+        prisma.reportRelocationAllocation.createMany({
+          data: replaceAllocations.map((a) => ({ reportId: id, ...a })),
+        }),
+      );
+    }
+
+    try {
+      await prisma.$transaction(ops);
+    } catch (err) {
+      if (isRecordNotFoundError(err)) {
+        return null;
+      }
+      throw err;
+    }
+
+    return this.findDetailById(id);
+  },
+
+  async guardedValidateWithRelocationCommit(
+    params: ValidateWithCommitParams,
+  ): Promise<AtomicCommitResult> {
+    const prisma = getPrisma();
+    const sortedAllocations = [...params.allocations].sort((a, b) =>
+      a.relocationSiteId.localeCompare(b.relocationSiteId),
     );
+
+    const ops: Prisma.PrismaPromise<unknown>[] = [
+      ...sortedAllocations.map((alloc) =>
+        prisma.relocationSite.update({
+          where: {
+            id: alloc.relocationSiteId,
+            regionId: params.regionId,
+            isActive: true,
+            maxCapacity: alloc.expectedMaxCapacity,
+            occupiedCapacity: {
+              lte: alloc.expectedMaxCapacity - alloc.allocatedCount,
+            },
+          },
+          data: {
+            occupiedCapacity: { increment: alloc.allocatedCount },
+          },
+        }),
+      ),
+      prisma.reportRelocationAllocation.deleteMany({
+        where: { reportId: params.id },
+      }),
+      ...(params.allocations.length > 0
+        ? [
+            prisma.reportRelocationAllocation.createMany({
+              data: params.allocations.map((a) => ({
+                reportId: params.id,
+                relocationSiteId: a.relocationSiteId,
+                allocatedCount: a.allocatedCount,
+                rankOrder: a.rankOrder,
+                isRecommended: a.isRecommended,
+              })),
+            }),
+          ]
+        : []),
+      prisma.violationReport.update({
+        where: {
+          id: params.id,
+          status: 'PENDING_VALIDATION',
+          relocationCapacityCommitted: false,
+        },
+        data: {
+          status: 'VALIDATED',
+          validatedByUserId: params.validatedByUserId,
+          validatedAt: params.validatedAt,
+          revisionReason: null,
+          relocationSiteId: params.relocationSiteId,
+          relocationAssignedAt: params.validatedAt,
+          relocationMatchStatus: params.relocationMatchStatus,
+          unaccommodatedPklCount: params.unaccommodatedPklCount,
+          relocationCapacityCommitted: true,
+        },
+      }),
+      prisma.auditLog.create({
+        data: {
+          reportId: params.id,
+          ...buildAuditCreateFields(params.auditLogData),
+        },
+      }),
+    ];
+
+    try {
+      await prisma.$transaction(ops);
+    } catch (err) {
+      if (isRecordNotFoundError(err)) {
+        return { ok: false, reason: 'CONFLICT' };
+      }
+      throw err;
+    }
+
+    const detail = await this.findDetailById(params.id);
+    if (!detail) {
+      return { ok: false, reason: 'CONFLICT' };
+    }
+    return { ok: true, detail };
+  },
+
+  async guardedAssignRelocationWithCommit(
+    params: AssignRelocationWithCommitParams,
+  ): Promise<AtomicCommitResult> {
+    const prisma = getPrisma();
+    const sortedAllocations = [...params.allocations].sort((a, b) =>
+      a.relocationSiteId.localeCompare(b.relocationSiteId),
+    );
+
+    const ops: Prisma.PrismaPromise<unknown>[] = [
+      ...sortedAllocations.map((alloc) =>
+        prisma.relocationSite.update({
+          where: {
+            id: alloc.relocationSiteId,
+            regionId: params.regionId,
+            isActive: true,
+            maxCapacity: alloc.expectedMaxCapacity,
+            occupiedCapacity: {
+              lte: alloc.expectedMaxCapacity - alloc.allocatedCount,
+            },
+          },
+          data: {
+            occupiedCapacity: { increment: alloc.allocatedCount },
+          },
+        }),
+      ),
+      prisma.reportRelocationAllocation.deleteMany({
+        where: { reportId: params.id },
+      }),
+      ...(params.allocations.length > 0
+        ? [
+            prisma.reportRelocationAllocation.createMany({
+              data: params.allocations.map((a) => ({
+                reportId: params.id,
+                relocationSiteId: a.relocationSiteId,
+                allocatedCount: a.allocatedCount,
+                rankOrder: a.rankOrder,
+                isRecommended: a.isRecommended,
+              })),
+            }),
+          ]
+        : []),
+      prisma.violationReport.update({
+        where: {
+          id: params.id,
+          status: 'VALIDATED',
+          relocationRequested: true,
+          relocationCapacityCommitted: false,
+        },
+        data: {
+          relocationSiteId: params.relocationSiteId,
+          relocationAssignedAt: params.relocationAssignedAt,
+          relocationMatchStatus: params.relocationMatchStatus,
+          unaccommodatedPklCount: params.unaccommodatedPklCount,
+          relocationCapacityCommitted: true,
+        },
+      }),
+      prisma.auditLog.create({
+        data: {
+          reportId: params.id,
+          ...buildAuditCreateFields(params.auditLogData),
+        },
+      }),
+    ];
+
+    try {
+      await prisma.$transaction(ops);
+    } catch (err) {
+      if (isRecordNotFoundError(err)) {
+        return { ok: false, reason: 'CONFLICT' };
+      }
+      throw err;
+    }
+
+    const detail = await this.findDetailById(params.id);
+    if (!detail) {
+      return { ok: false, reason: 'CONFLICT' };
+    }
+    return { ok: true, detail };
   },
 
   async findRelocationSiteById(id: string): Promise<RelocationSiteLookupRecord | null> {

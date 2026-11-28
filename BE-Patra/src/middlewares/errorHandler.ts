@@ -7,12 +7,14 @@ export class AppError extends Error {
   status: number;
   code: string;
   details?: ApiErrorDetail[];
+  meta?: Record<string, unknown>;
 
   constructor(
     status: number,
     code: string,
     message: string,
     details?: ApiErrorDetail[],
+    meta?: Record<string, unknown>,
   ) {
     super(message);
     this.name = 'AppError';
@@ -20,6 +22,9 @@ export class AppError extends Error {
     this.code = code;
     if (details) {
       this.details = details;
+    }
+    if (meta) {
+      this.meta = meta;
     }
   }
 }
@@ -75,6 +80,7 @@ export default function errorHandler(
         code: err.code,
         message: err.message,
         ...(err.details ? { details: err.details } : {}),
+        ...(err.meta ? { meta: err.meta } : {}),
       },
     });
   }

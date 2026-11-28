@@ -7,6 +7,7 @@ import type {
   AutoDetectResponseData,
   JwtUserPayload,
   ListReportsQuery,
+  RelocationMatchStatus,
   ReportStatus,
   SubmitReportActionInput,
   ValidateReportInput,
@@ -21,7 +22,10 @@ import {
 } from '../middlewares/auth.js';
 import { AppError } from '../middlewares/errorHandler.js';
 import ReportRepository, {
+  type ActiveRelocationSiteRecord,
   type AuditLogRecord,
+  type CommitAllocationGuardItem,
+  type CreateReportAllocationData,
   type ReportDetailRecord,
   type ReportRecord,
   type ReportRepositoryPort,
@@ -31,6 +35,8 @@ import {
   findNearestRelocationSites,
   formatDistanceLabel,
   haversineDistanceMeters,
+  selectRecommendedRelocationPlan,
+  type RelocationPlanAllocation,
 } from './geo.service.js';
 import StorageService, { type StorageServicePort } from './storage.service.js';
 
@@ -129,6 +135,18 @@ function toAutoDetectSummary(record: ReportRecord): AutoDetectResponseData['repo
   };
 }
 
+function toCreateAllocations(
+  allocations: RelocationPlanAllocation[],
+  isRecommended: boolean,
+): CreateReportAllocationData[] {
+  return allocations.map((a) => ({
+    relocationSiteId: a.relocationSiteId,
+    allocatedCount: a.allocatedCount,
+    rankOrder: a.rankOrder,
+    isRecommended,
+  }));
+}
+
 export interface ReportServiceDeps {
   repo?: ReportRepositoryPort;
   storage?: StorageServicePort;
@@ -141,6 +159,152 @@ export function createReportService(deps: ReportServiceDeps = {}) {
   const storage = deps.storage ?? StorageService;
   const cooldownSec = deps.cooldownSec ?? config.cameraCooldownSec;
   const getNow = deps.now ?? (() => new Date());
+
+  async function validateAndBuildCommitGuards(opts: {
+    reportId: string;
+    regionId: string;
+    reportLat: number;
+    reportLng: number;
+    requiredCount: number;
+    rawAllocations: Array<{ relocationSiteId: string; allocatedCount: number }>;
+    isRecommended: boolean;
+  }): Promise<{
+    guardAllocations: CommitAllocationGuardItem[];
+    relocationSiteId: string;
+    relocationMatchStatus: RelocationMatchStatus;
+    unaccommodatedPklCount: number;
+  }> {
+    const seenIds = new Set<string>();
+    for (const item of opts.rawAllocations) {
+      if (seenIds.has(item.relocationSiteId)) {
+        throw new AppError(
+          400,
+          'DUPLICATE_RELOCATION_SITE',
+          'Lokasi binaan tidak boleh duplikat dalam satu daftar alokasi.',
+        );
+      }
+      seenIds.add(item.relocationSiteId);
+    }
+
+    const lookedUpSites = await Promise.all(
+      opts.rawAllocations.map((item) => repo.findRelocationSiteById(item.relocationSiteId)),
+    );
+
+    let hasCapacityShortage = false;
+    const guardAllocations: CommitAllocationGuardItem[] = [];
+
+    for (let i = 0; i < opts.rawAllocations.length; i++) {
+      const alloc = opts.rawAllocations[i]!;
+      const site = lookedUpSites[i];
+      if (!site) {
+        throw new AppError(404, 'RELOCATION_SITE_NOT_FOUND', 'Lokasi binaan tidak ditemukan.');
+      }
+      assertRegionAccess(
+        // Cek regionId lokasi menggunakan scope laporan agar tetap 403 lintas kota
+        {
+          sub: '',
+          role: 'DINAS_UMKM',
+          regionId: opts.regionId,
+          city: '',
+          email: '',
+          fullName: '',
+          teamId: null,
+          teamName: null,
+          assignedDistricts: [],
+        },
+        site.regionId,
+      );
+      if (!site.isActive) {
+        throw new AppError(
+          400,
+          'RELOCATION_SITE_INACTIVE',
+          'Lokasi binaan ini sudah diarsipkan dan tidak dapat dipilih.',
+        );
+      }
+
+      const availableOfficial = Math.max(0, site.maxCapacity - site.occupiedCapacity);
+      if (availableOfficial < alloc.allocatedCount) {
+        hasCapacityShortage = true;
+      }
+
+      guardAllocations.push({
+        relocationSiteId: site.id,
+        allocatedCount: alloc.allocatedCount,
+        rankOrder: i + 1,
+        isRecommended: opts.isRecommended,
+        expectedMaxCapacity: site.maxCapacity,
+      });
+    }
+
+    const activeSites = await repo.findActiveRelocationSitesByRegion(
+      opts.regionId,
+      opts.reportId,
+    );
+
+    if (hasCapacityShortage) {
+      const replan = selectRecommendedRelocationPlan(
+        opts.reportLat,
+        opts.reportLng,
+        opts.requiredCount,
+        activeSites,
+        { useOfficialAvailable: true },
+      );
+      throw new AppError(
+        409,
+        'CAPACITY_EXCEEDED',
+        'Kapasitas lokasi binaan terpilih tidak mencukupi karena telah terisi laporan lain. Gunakan saran alokasi terbaru.',
+        undefined,
+        { replan },
+      );
+    }
+
+    const totalAllocated = guardAllocations.reduce((sum, a) => sum + a.allocatedCount, 0);
+    const unaccommodatedPklCount = Math.max(0, opts.requiredCount - totalAllocated);
+    const sortedByDistance = [...activeSites].sort(
+      (a, b) =>
+        haversineDistanceMeters(opts.reportLat, opts.reportLng, a.lat, a.lng) -
+          haversineDistanceMeters(opts.reportLat, opts.reportLng, b.lat, b.lng) ||
+        a.name.localeCompare(b.name),
+    );
+    const nearestSiteId = sortedByDistance[0]?.id ?? null;
+
+    let relocationMatchStatus: RelocationMatchStatus;
+    if (unaccommodatedPklCount > 0) {
+      relocationMatchStatus = 'PARTIAL_UNACCOMMODATED';
+    } else if (guardAllocations.length > 1) {
+      relocationMatchStatus = 'SPLIT_FALLBACK';
+    } else if (guardAllocations[0]!.relocationSiteId === nearestSiteId) {
+      relocationMatchStatus = 'NEAREST_AVAILABLE';
+    } else {
+      relocationMatchStatus = 'FALLBACK_AVAILABLE';
+    }
+
+    return {
+      guardAllocations,
+      relocationSiteId: guardAllocations[0]!.relocationSiteId,
+      relocationMatchStatus,
+      unaccommodatedPklCount,
+    };
+  }
+
+  async function recomputeWaterfallForReport(
+    camera: { regionId: string; lat: number; lng: number },
+    violators: number,
+    excludeReportId?: string,
+  ) {
+    const activeSites: ActiveRelocationSiteRecord[] =
+      await repo.findActiveRelocationSitesByRegion(camera.regionId, excludeReportId);
+    const plan = selectRecommendedRelocationPlan(
+      camera.lat,
+      camera.lng,
+      violators,
+      activeSites,
+    );
+    return {
+      plan,
+      replaceAllocations: toCreateAllocations(plan.allocations, true),
+    };
+  }
 
   return {
     async autoDetect(
@@ -168,12 +332,30 @@ export function createReportService(deps: ReportServiceDeps = {}) {
           const newCount = Math.max(active.detectedCount, payload.currentActiveViolators);
           const newConf = Math.max(active.maxConfidence, payload.maxConfidence);
 
+          let replanData: {
+            recommendedRelocationSiteId?: string | null;
+            relocationMatchStatus?: RelocationMatchStatus | null;
+            unaccommodatedPklCount?: number;
+          } = {};
+          let replaceAllocations: CreateReportAllocationData[] | undefined;
+
+          if (newCount > active.detectedCount) {
+            const recomputed = await recomputeWaterfallForReport(camera, newCount, active.id);
+            replanData = {
+              recommendedRelocationSiteId: recomputed.plan.recommendedRelocationSiteId,
+              relocationMatchStatus: recomputed.plan.relocationMatchStatus,
+              unaccommodatedPklCount: recomputed.plan.unaccommodatedPklCount,
+            };
+            replaceAllocations = recomputed.replaceAllocations;
+          }
+
           const updated = await repo.updateReportAndAppendAudit(
             active.id,
             {
               detectedCount: newCount,
               maxConfidence: newConf,
               beforeImageUrl: newImageUrl,
+              ...replanData,
             },
             {
               actorId: user.sub,
@@ -189,6 +371,7 @@ export function createReportService(deps: ReportServiceDeps = {}) {
                 newCount,
               },
             },
+            replaceAllocations,
           );
 
           return {
@@ -210,6 +393,11 @@ export function createReportService(deps: ReportServiceDeps = {}) {
           }
           const newImageUrl = await storage.uploadEvidence('before', file);
           const newConf = Math.max(active.maxConfidence, payload.maxConfidence);
+          const recomputed = await recomputeWaterfallForReport(
+            camera,
+            payload.currentActiveViolators,
+            active.id,
+          );
 
           const updated = await repo.updateReportAndAppendAudit(
             active.id,
@@ -217,6 +405,9 @@ export function createReportService(deps: ReportServiceDeps = {}) {
               detectedCount: payload.currentActiveViolators,
               maxConfidence: newConf,
               beforeImageUrl: newImageUrl,
+              recommendedRelocationSiteId: recomputed.plan.recommendedRelocationSiteId,
+              relocationMatchStatus: recomputed.plan.relocationMatchStatus,
+              unaccommodatedPklCount: recomputed.plan.unaccommodatedPklCount,
             },
             {
               actorId: null,
@@ -232,6 +423,7 @@ export function createReportService(deps: ReportServiceDeps = {}) {
                 newCount: payload.currentActiveViolators,
               },
             },
+            recomputed.replaceAllocations,
           );
 
           return {
@@ -288,11 +480,21 @@ export function createReportService(deps: ReportServiceDeps = {}) {
         throw new AppError(400, 'SNAPSHOT_REQUIRED', 'Foto snapshot bukti wajib disertakan.');
       }
 
-      const [beforeImageUrl, zones] = await Promise.all([
+      const [beforeImageUrl, zones, activeSites, fallbackTeamId] = await Promise.all([
         storage.uploadEvidence('before', file),
         repo.findActiveZonesByRegion(camera.regionId),
+        repo.findActiveRelocationSitesByRegion(camera.regionId),
+        user.teamId
+          ? Promise.resolve<string | null>(null)
+          : repo.findPatrolTeamIdByDistrict(camera.regionId, camera.district),
       ]);
       const zoneId = findMatchingZoneId(camera.lat, camera.lng, zones);
+      const plan = selectRecommendedRelocationPlan(
+        camera.lat,
+        camera.lng,
+        payload.currentActiveViolators,
+        activeSites,
+      );
 
       const created = await repo.createReportWithAuditLog(
         {
@@ -300,7 +502,7 @@ export function createReportService(deps: ReportServiceDeps = {}) {
           regionId: camera.regionId,
           cameraId: camera.id,
           zoneId,
-          assignedTeamId: user.teamId ?? null,
+          assignedTeamId: user.teamId ?? fallbackTeamId ?? null,
           source: payload.source,
           status: 'NEED_ACTION',
           address: camera.regionLabel || camera.name,
@@ -311,6 +513,9 @@ export function createReportService(deps: ReportServiceDeps = {}) {
           beforeImageUrl,
           isSimulationMode: payload.isSimulationMode,
           relocationRequested: false,
+          recommendedRelocationSiteId: plan.recommendedRelocationSiteId,
+          relocationMatchStatus: plan.relocationMatchStatus,
+          unaccommodatedPklCount: plan.unaccommodatedPklCount,
         },
         {
           actorId: payload.source === 'MANUAL' ? user.sub : null,
@@ -332,6 +537,7 @@ export function createReportService(deps: ReportServiceDeps = {}) {
             isSimulationMode: payload.isSimulationMode,
           },
         },
+        toCreateAllocations(plan.allocations, true),
       );
 
       return {
@@ -388,7 +594,7 @@ export function createReportService(deps: ReportServiceDeps = {}) {
       assertRegionAccess(user, detail.regionId);
       assertDistrictAccess(user, detail.cameraDistrict, 'laporan pelanggaran');
 
-      const sites = await repo.findActiveRelocationSitesByRegion(detail.regionId);
+      const sites = await repo.findActiveRelocationSitesByRegion(detail.regionId, detail.id);
       return this.formatDetail(detail, sites);
     },
 
@@ -422,6 +628,48 @@ export function createReportService(deps: ReportServiceDeps = {}) {
         );
       }
 
+      let recommendedRelocationSiteId: string | null =
+        existing.recommendedRelocationSiteId ?? null;
+      let relocationMatchStatus: RelocationMatchStatus | null = null;
+      let unaccommodatedPklCount = 0;
+      let replaceAllocations: CreateReportAllocationData[] = [];
+
+      if (input.relocationRequested && input.actualPklCount > 0) {
+        if (input.allocations?.length) {
+          const checked = await validateAndBuildCommitGuards({
+            reportId: existing.id,
+            regionId: existing.regionId,
+            reportLat: existing.lat,
+            reportLng: existing.lng,
+            requiredCount: input.actualPklCount,
+            rawAllocations: input.allocations,
+            isRecommended: false,
+          });
+          recommendedRelocationSiteId =
+            existing.recommendedRelocationSiteId ?? checked.relocationSiteId;
+          relocationMatchStatus = checked.relocationMatchStatus;
+          unaccommodatedPklCount = checked.unaccommodatedPklCount;
+          replaceAllocations = checked.guardAllocations.map(
+            ({ expectedMaxCapacity: _expected, ...rest }) => rest,
+          );
+        } else {
+          const activeSites = await repo.findActiveRelocationSitesByRegion(
+            existing.regionId,
+            existing.id,
+          );
+          const plan = selectRecommendedRelocationPlan(
+            existing.lat,
+            existing.lng,
+            input.actualPklCount,
+            activeSites,
+          );
+          recommendedRelocationSiteId = plan.recommendedRelocationSiteId;
+          relocationMatchStatus = plan.relocationMatchStatus;
+          unaccommodatedPklCount = plan.unaccommodatedPklCount;
+          replaceAllocations = toCreateAllocations(plan.allocations, true);
+        }
+      }
+
       const afterImageUrl = await storage.uploadEvidence('after', file);
       const now = getNow();
       const isRevisionResubmit = existing.status === 'NEEDS_REVISION';
@@ -441,6 +689,9 @@ export function createReportService(deps: ReportServiceDeps = {}) {
           relocationRequested: input.relocationRequested,
           actionByUserId: user.sub,
           actionSubmittedAt,
+          recommendedRelocationSiteId,
+          relocationMatchStatus,
+          unaccommodatedPklCount,
         },
         {
           actorId: user.sub,
@@ -459,6 +710,7 @@ export function createReportService(deps: ReportServiceDeps = {}) {
               : {}),
           },
         },
+        replaceAllocations,
       );
 
       if (!updated) {
@@ -469,13 +721,17 @@ export function createReportService(deps: ReportServiceDeps = {}) {
         );
       }
 
-      const sites = await repo.findActiveRelocationSitesByRegion(updated.regionId);
+      const sites = await repo.findActiveRelocationSitesByRegion(
+        updated.regionId,
+        updated.id,
+      );
       return this.formatDetail(updated, sites);
     },
 
     /**
      * FEAT-UMK-02 / BR-006: Dinas UMKM memvalidasi (APPROVE) atau meminta revisi (REQUEST_REVISION).
-     * Hanya laporan PENDING_VALIDATION pada kota akun yang dapat diproses (guarded -> 409).
+     * Bila APPROVE dengan relokasi aktif & alokasi tersedia, kapasitas terisi (occupiedCapacity)
+     * di-commit secara atomik dalam batch transaksi yang sama.
      */
     async validate(
       user: JwtUserPayload,
@@ -493,65 +749,153 @@ export function createReportService(deps: ReportServiceDeps = {}) {
       }
 
       const now = getNow();
-      const updated =
-        input.decision === 'APPROVE'
-          ? await repo.guardedValidate(
-              id,
-              'PENDING_VALIDATION',
-              {
-                status: 'VALIDATED',
-                validatedByUserId: user.sub,
-                validatedAt: now,
-                revisionReason: null,
-              },
-              {
-                actorId: user.sub,
-                actorRole: 'DINAS_UMKM',
-                actorName: formatActorName(user),
-                action: 'REPORT_VALIDATED',
-                fromStatus: 'PENDING_VALIDATION',
-                toStatus: 'VALIDATED',
-                note: 'Bukti penindakan diverifikasi valid oleh Dinas UMKM.',
-                metadata: {
-                  afterImageUrl: existing.afterImageUrl,
-                  relocationRequested: existing.relocationRequested,
-                },
-              },
-            )
-          : await repo.guardedValidate(
-              id,
-              'PENDING_VALIDATION',
-              {
-                status: 'NEEDS_REVISION',
-                revisionReason: input.revisionReason.trim(),
-              },
-              {
-                actorId: user.sub,
-                actorRole: 'DINAS_UMKM',
-                actorName: formatActorName(user),
-                action: 'REVISION_REQUESTED',
-                fromStatus: 'PENDING_VALIDATION',
-                toStatus: 'NEEDS_REVISION',
-                note: input.revisionReason.trim(),
-                metadata: {
-                  revisionReason: input.revisionReason.trim(),
-                  // EC-007: arsipkan foto After yang ditolak agar jejak revisi lengkap
-                  rejectedAfterImageUrl: existing.afterImageUrl,
-                },
-              },
-            );
-
-      if (!updated) {
-        throw new AppError(409, 'REPORT_STATUS_CONFLICT', STATUS_CONFLICT_MESSAGE);
+      if (input.decision === 'REQUEST_REVISION') {
+        const updated = await repo.guardedValidate(
+          id,
+          'PENDING_VALIDATION',
+          {
+            status: 'NEEDS_REVISION',
+            revisionReason: input.revisionReason.trim(),
+          },
+          {
+            actorId: user.sub,
+            actorRole: 'DINAS_UMKM',
+            actorName: formatActorName(user),
+            action: 'REVISION_REQUESTED',
+            fromStatus: 'PENDING_VALIDATION',
+            toStatus: 'NEEDS_REVISION',
+            note: input.revisionReason.trim(),
+            metadata: {
+              revisionReason: input.revisionReason.trim(),
+              // EC-007: arsipkan foto After yang ditolak agar jejak revisi lengkap
+              rejectedAfterImageUrl: existing.afterImageUrl,
+            },
+          },
+        );
+        if (!updated) {
+          throw new AppError(409, 'REPORT_STATUS_CONFLICT', STATUS_CONFLICT_MESSAGE);
+        }
+        const sites = await repo.findActiveRelocationSitesByRegion(updated.regionId, updated.id);
+        return this.formatDetail(updated, sites);
       }
 
-      const sites = await repo.findActiveRelocationSitesByRegion(updated.regionId);
-      return this.formatDetail(updated, sites);
+      const requiredCount = existing.actualPklCount ?? existing.detectedCount;
+      const isOverridden = Boolean(input.overrideAllocations?.length);
+      const rawAllocations = isOverridden
+        ? input.overrideAllocations!
+        : existing.relocationAllocations.map((a) => ({
+            relocationSiteId: a.relocationSiteId,
+            allocatedCount: a.allocatedCount,
+          }));
+
+      if (!existing.relocationRequested || requiredCount === 0 || rawAllocations.length === 0) {
+        const updated = await repo.guardedValidate(
+          id,
+          'PENDING_VALIDATION',
+          {
+            status: 'VALIDATED',
+            validatedByUserId: user.sub,
+            validatedAt: now,
+            revisionReason: null,
+          },
+          {
+            actorId: user.sub,
+            actorRole: 'DINAS_UMKM',
+            actorName: formatActorName(user),
+            action: 'REPORT_VALIDATED',
+            fromStatus: 'PENDING_VALIDATION',
+            toStatus: 'VALIDATED',
+            note: 'Bukti penindakan diverifikasi valid oleh Dinas UMKM.',
+            metadata: {
+              afterImageUrl: existing.afterImageUrl,
+              relocationRequested: existing.relocationRequested,
+            },
+          },
+        );
+        if (!updated) {
+          throw new AppError(409, 'REPORT_STATUS_CONFLICT', STATUS_CONFLICT_MESSAGE);
+        }
+        const sites = await repo.findActiveRelocationSitesByRegion(updated.regionId, updated.id);
+        return this.formatDetail(updated, sites);
+      }
+
+      const built = await validateAndBuildCommitGuards({
+        reportId: existing.id,
+        regionId: existing.regionId,
+        reportLat: existing.lat,
+        reportLng: existing.lng,
+        requiredCount,
+        rawAllocations,
+        isRecommended: !isOverridden,
+      });
+
+      const commitResult = await repo.guardedValidateWithRelocationCommit({
+        id: existing.id,
+        regionId: existing.regionId,
+        validatedByUserId: user.sub,
+        validatedAt: now,
+        relocationSiteId: built.relocationSiteId,
+        relocationMatchStatus: built.relocationMatchStatus,
+        unaccommodatedPklCount: built.unaccommodatedPklCount,
+        allocations: built.guardAllocations,
+        auditLogData: {
+          actorId: user.sub,
+          actorRole: 'DINAS_UMKM',
+          actorName: formatActorName(user),
+          action: isOverridden ? 'RELOCATION_OVERRIDDEN' : 'REPORT_VALIDATED',
+          fromStatus: 'PENDING_VALIDATION',
+          toStatus: 'VALIDATED',
+          note: isOverridden
+            ? 'Bukti penindakan valid dan alokasi relokasi disesuaikan serta ditetapkan oleh Dinas UMKM.'
+            : 'Bukti penindakan valid dan alokasi relokasi resmi ditetapkan ke Lokasi Binaan.',
+          metadata: {
+            afterImageUrl: existing.afterImageUrl,
+            relocationRequested: existing.relocationRequested,
+            isOverridden,
+            finalAllocations: built.guardAllocations,
+          },
+        },
+      });
+
+      if (!commitResult.ok) {
+        const latest = await repo.findDetailById(id);
+        if (
+          !latest ||
+          latest.status !== 'PENDING_VALIDATION' ||
+          latest.relocationCapacityCommitted
+        ) {
+          throw new AppError(409, 'REPORT_STATUS_CONFLICT', STATUS_CONFLICT_MESSAGE);
+        }
+        const activeSites = await repo.findActiveRelocationSitesByRegion(
+          latest.regionId,
+          latest.id,
+        );
+        const replan = selectRecommendedRelocationPlan(
+          latest.lat,
+          latest.lng,
+          requiredCount,
+          activeSites,
+          { useOfficialAvailable: true },
+        );
+        throw new AppError(
+          409,
+          'CAPACITY_EXCEEDED',
+          'Kapasitas lokasi binaan terpilih tidak mencukupi karena telah terisi laporan lain. Gunakan saran alokasi terbaru.',
+          undefined,
+          { replan },
+        );
+      }
+
+      const sites = await repo.findActiveRelocationSitesByRegion(
+        commitResult.detail.regionId,
+        commitResult.detail.id,
+      );
+      return this.formatDetail(commitResult.detail, sites);
     },
 
     /**
-     * FEAT-UMK-02 / BR-006: Penetapan Lokasi Binaan 1-Klik (tanpa kuota).
-     * Syarat: laporan VALIDATED, relocationRequested = true, belum ditetapkan, lokasi aktif di kota yang sama.
+     * FEAT-UMK-02 / BR-006: Penetapan Lokasi Binaan susulan pada laporan VALIDATED
+     * yang kapasitasnya belum ter-commit (mis. sebelumnya ALL_SITES_FULL / PARTIAL).
      */
     async assignRelocation(
       user: JwtUserPayload,
@@ -578,7 +922,7 @@ export function createReportService(deps: ReportServiceDeps = {}) {
           'Laporan ini tidak memiliki pengajuan relokasi dari Satpol PP.',
         );
       }
-      if (existing.relocationSiteId) {
+      if (existing.relocationCapacityCommitted || existing.relocationSiteId !== null) {
         throw new AppError(
           409,
           'RELOCATION_ALREADY_ASSIGNED',
@@ -586,52 +930,90 @@ export function createReportService(deps: ReportServiceDeps = {}) {
         );
       }
 
-      const siteId = input.relocationSiteId ?? input.allocations?.[0]?.relocationSiteId ?? '';
-      const site = await repo.findRelocationSiteById(siteId);
-      if (!site) {
-        throw new AppError(404, 'RELOCATION_SITE_NOT_FOUND', 'Lokasi binaan tidak ditemukan.');
-      }
-      assertRegionAccess(user, site.regionId);
-      if (!site.isActive) {
-        throw new AppError(
-          400,
-          'RELOCATION_SITE_INACTIVE',
-          'Lokasi binaan ini sudah diarsipkan dan tidak dapat dipilih.',
-        );
-      }
+      const requiredCount = Math.max(1, existing.actualPklCount ?? existing.detectedCount);
+      const rawAllocations = input.allocations?.length
+        ? input.allocations
+        : [{ relocationSiteId: input.relocationSiteId!, allocatedCount: requiredCount }];
 
-      const distanceMeters = haversineDistanceMeters(
-        existing.lat,
-        existing.lng,
-        site.lat,
-        site.lng,
-      );
+      const built = await validateAndBuildCommitGuards({
+        reportId: existing.id,
+        regionId: existing.regionId,
+        reportLat: existing.lat,
+        reportLng: existing.lng,
+        requiredCount,
+        rawAllocations,
+        isRecommended: false,
+      });
 
-      const updated = await repo.guardedAssignRelocation(
-        id,
-        { relocationSiteId: site.id, relocationAssignedAt: getNow() },
-        {
+      const primarySite = await repo.findRelocationSiteById(built.relocationSiteId);
+      const distanceMeters = primarySite
+        ? haversineDistanceMeters(existing.lat, existing.lng, primarySite.lat, primarySite.lng)
+        : 0;
+
+      const commitResult = await repo.guardedAssignRelocationWithCommit({
+        id: existing.id,
+        regionId: existing.regionId,
+        relocationSiteId: built.relocationSiteId,
+        relocationAssignedAt: getNow(),
+        relocationMatchStatus: built.relocationMatchStatus,
+        unaccommodatedPklCount: built.unaccommodatedPklCount,
+        allocations: built.guardAllocations,
+        auditLogData: {
           actorId: user.sub,
           actorRole: 'DINAS_UMKM',
           actorName: formatActorName(user),
           action: 'RELOCATION_ASSIGNED',
           fromStatus: 'VALIDATED',
           toStatus: 'VALIDATED',
-          note: `PKL diarahkan ke ${site.name} (${formatDistanceLabel(distanceMeters)}).`,
+          note: primarySite
+            ? `PKL diarahkan ke ${primarySite.name} (${formatDistanceLabel(distanceMeters)}).`
+            : 'Arahan relokasi ditetapkan oleh Dinas UMKM.',
           metadata: {
-            relocationSiteId: site.id,
-            relocationSiteName: site.name,
+            relocationSiteId: built.relocationSiteId,
+            relocationSiteName: primarySite?.name ?? null,
             distanceMeters,
+            allocations: built.guardAllocations,
           },
         },
-      );
+      });
 
-      if (!updated) {
-        throw new AppError(409, 'REPORT_STATUS_CONFLICT', STATUS_CONFLICT_MESSAGE);
+      if (!commitResult.ok) {
+        const latest = await repo.findDetailById(id);
+        if (!latest || latest.status !== 'VALIDATED') {
+          throw new AppError(409, 'REPORT_STATUS_CONFLICT', STATUS_CONFLICT_MESSAGE);
+        }
+        if (latest.relocationCapacityCommitted || latest.relocationSiteId !== null) {
+          throw new AppError(
+            409,
+            'RELOCATION_ALREADY_ASSIGNED',
+            'Lokasi relokasi untuk laporan ini sudah ditetapkan sebelumnya.',
+          );
+        }
+        const activeSites = await repo.findActiveRelocationSitesByRegion(
+          latest.regionId,
+          latest.id,
+        );
+        const replan = selectRecommendedRelocationPlan(
+          latest.lat,
+          latest.lng,
+          requiredCount,
+          activeSites,
+          { useOfficialAvailable: true },
+        );
+        throw new AppError(
+          409,
+          'CAPACITY_EXCEEDED',
+          'Kapasitas lokasi binaan terpilih tidak mencukupi karena telah terisi laporan lain. Gunakan saran alokasi terbaru.',
+          undefined,
+          { replan },
+        );
       }
 
-      const sites = await repo.findActiveRelocationSitesByRegion(updated.regionId);
-      return this.formatDetail(updated, sites);
+      const sites = await repo.findActiveRelocationSitesByRegion(
+        commitResult.detail.regionId,
+        commitResult.detail.id,
+      );
+      return this.formatDetail(commitResult.detail, sites);
     },
 
     formatDetail(
