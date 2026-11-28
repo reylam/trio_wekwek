@@ -7,7 +7,11 @@ import type {
   RestrictedZoneDto,
   UpdateZoneInput,
 } from '../interface/index.js';
-import { assertRegionAccess } from '../middlewares/auth.js';
+import {
+  assertDistrictAccess,
+  assertRegionAccess,
+  hasDistrictLock,
+} from '../middlewares/auth.js';
 import { AppError } from '../middlewares/errorHandler.js';
 import ZoneRepository, {
   type RestrictedZoneRecord,
@@ -71,6 +75,7 @@ export function mapZoneToDto(record: RestrictedZoneRecord): RestrictedZoneDto {
   return {
     id: record.id,
     regionId: record.regionId,
+    district: record.district ?? null,
     name: record.name,
     description: record.description,
     points: record.points,
@@ -92,8 +97,19 @@ export function createZoneService(repo: ZoneRepositoryPort = ZoneRepository) {
       input: CreateZoneInput,
     ): Promise<RestrictedZoneDto> {
       const cleanPoints = validateZonePolygon(input.points);
+      let resolvedDistrict: string | null = input.district?.trim() || null;
+
+      if (hasDistrictLock(user)) {
+        if (resolvedDistrict) {
+          assertDistrictAccess(user, resolvedDistrict, 'zona terlarang');
+        } else {
+          resolvedDistrict = user.assignedDistricts[0] ?? null;
+        }
+      }
+
       const created = await repo.create({
         regionId: user.regionId,
+        district: resolvedDistrict,
         name: input.name.trim(),
         description: input.description?.trim() ? input.description.trim() : null,
         points: cleanPoints,
@@ -111,12 +127,21 @@ export function createZoneService(repo: ZoneRepositoryPort = ZoneRepository) {
         throw new AppError(404, 'ZONE_NOT_FOUND', 'Zona terlarang tidak ditemukan.');
       }
       assertRegionAccess(user, existing.regionId);
+      assertDistrictAccess(user, existing.district, 'zona terlarang');
 
       const updateData: {
+        district?: string | null;
         name?: string;
         description?: string | null;
         points?: GeoLngLat[];
       } = {};
+      if (input.district !== undefined) {
+        const nextDistrict = input.district?.trim() || null;
+        if (hasDistrictLock(user)) {
+          assertDistrictAccess(user, nextDistrict, 'zona terlarang');
+        }
+        updateData.district = nextDistrict;
+      }
       if (input.name !== undefined) {
         updateData.name = input.name.trim();
       }
@@ -142,6 +167,7 @@ export function createZoneService(repo: ZoneRepositoryPort = ZoneRepository) {
         throw new AppError(404, 'ZONE_NOT_FOUND', 'Zona terlarang tidak ditemukan.');
       }
       assertRegionAccess(user, existing.regionId);
+      assertDistrictAccess(user, existing.district, 'zona terlarang');
       await repo.delete(id);
       return { deletedId: id };
     },

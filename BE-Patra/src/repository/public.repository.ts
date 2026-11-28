@@ -1,5 +1,6 @@
 import { getPrisma } from '../config/prisma.js';
 import type { GeoLngLat, ReportStatus } from '../interface/index.js';
+import { aggregatePendingCapacity } from '../service/geo.service.js';
 
 export interface PublicRegionRecord {
   id: string;
@@ -46,6 +47,9 @@ export interface PublicRelocationSiteRecord {
   lng: number;
   tradeCategories: string[];
   facilities: string[];
+  maxCapacity: number;
+  occupiedCapacity: number;
+  pendingCapacity: number;
 }
 
 export interface PublicAuditFeedRecord {
@@ -131,7 +135,7 @@ export const PublicRepository = {
     const prisma = getPrisma();
     const regionFilter = regionId ? { regionId } : {};
 
-    const [zonesRaw, hotspotsRaw, sitesRaw] = await prisma.$transaction([
+    const [zonesRaw, hotspotsRaw, sitesRaw, pendingRows] = await prisma.$transaction([
       prisma.restrictedZone.findMany({
         where: { ...regionFilter, isActive: true },
         orderBy: { createdAt: 'desc' },
@@ -168,9 +172,27 @@ export const PublicRepository = {
           lng: true,
           tradeCategories: true,
           facilities: true,
+          maxCapacity: true,
+          occupiedCapacity: true,
+        },
+      }),
+      prisma.reportRelocationAllocation.findMany({
+        where: {
+          report: {
+            ...regionFilter,
+            status: 'PENDING_VALIDATION',
+            relocationRequested: true,
+            relocationCapacityCommitted: false,
+          },
+        },
+        select: {
+          relocationSiteId: true,
+          allocatedCount: true,
         },
       }),
     ]);
+
+    const pendingMap = aggregatePendingCapacity(pendingRows);
 
     return {
       zones: zonesRaw.map((z) => ({
@@ -198,6 +220,9 @@ export const PublicRepository = {
           ? (s.tradeCategories as string[])
           : [],
         facilities: Array.isArray(s.facilities) ? (s.facilities as string[]) : [],
+        maxCapacity: s.maxCapacity,
+        occupiedCapacity: s.occupiedCapacity,
+        pendingCapacity: pendingMap.get(s.id) ?? 0,
       })),
     };
   },

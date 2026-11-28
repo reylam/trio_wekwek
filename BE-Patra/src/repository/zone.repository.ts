@@ -5,6 +5,7 @@ import type { GeoLngLat } from '../interface/index.js';
 export interface RestrictedZoneRecord {
   id: string;
   regionId: string;
+  district: string | null;
   name: string;
   description: string | null;
   points: GeoLngLat[];
@@ -19,6 +20,7 @@ function mapPrismaZone(
   return {
     id: row.id,
     regionId: row.regionId,
+    district: row.district,
     name: row.name,
     description: row.description,
     points: row.points as unknown as GeoLngLat[],
@@ -46,6 +48,7 @@ export const ZoneRepository = {
 
   async create(data: {
     regionId: string;
+    district: string | null;
     name: string;
     description: string | null;
     points: GeoLngLat[];
@@ -54,6 +57,7 @@ export const ZoneRepository = {
     const row = await prisma.restrictedZone.create({
       data: {
         regionId: data.regionId,
+        district: data.district,
         name: data.name,
         description: data.description,
         points: data.points as unknown as Prisma.InputJsonValue,
@@ -66,6 +70,7 @@ export const ZoneRepository = {
   async update(
     id: string,
     data: {
+      district?: string | null;
       name?: string;
       description?: string | null;
       points?: GeoLngLat[];
@@ -73,6 +78,7 @@ export const ZoneRepository = {
   ): Promise<RestrictedZoneRecord> {
     const prisma = getPrisma();
     const updateData: Prisma.RestrictedZoneUpdateInput = {};
+    if (data.district !== undefined) updateData.district = data.district;
     if (data.name !== undefined) updateData.name = data.name;
     if (data.description !== undefined) updateData.description = data.description;
     if (data.points !== undefined) {

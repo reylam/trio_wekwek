@@ -26,12 +26,33 @@ function resolveSecret(secretOverride?: string): string {
   return secret;
 }
 
+export type SignAuthTokenPayload = Omit<
+  JwtUserPayload,
+  'fullName' | 'teamId' | 'teamName' | 'assignedDistricts'
+> &
+  Partial<
+    Pick<JwtUserPayload, 'fullName' | 'teamId' | 'teamName' | 'assignedDistricts'>
+  >;
+
 export function signAuthToken(
-  payload: JwtUserPayload,
+  payload: SignAuthTokenPayload,
   secretOverride?: string,
 ): string {
   const secret = resolveSecret(secretOverride);
-  return jwt.sign(payload, secret, {
+  const normalized: JwtUserPayload = {
+    sub: payload.sub,
+    role: payload.role,
+    regionId: payload.regionId,
+    city: payload.city,
+    email: payload.email,
+    fullName: payload.fullName?.trim() || payload.email,
+    teamId: payload.teamId ?? null,
+    teamName: payload.teamName ?? null,
+    assignedDistricts: Array.isArray(payload.assignedDistricts)
+      ? payload.assignedDistricts.filter((d): d is string => typeof d === 'string' && d.trim().length > 0)
+      : [],
+  };
+  return jwt.sign(normalized, secret, {
     algorithm: 'HS256',
     expiresIn: config.jwtExpiresIn as jwt.SignOptions['expiresIn'],
   });
@@ -68,6 +89,18 @@ export function verifyAuthToken(
       regionId: decoded.regionId,
       city: decoded.city,
       email: decoded.email,
+      fullName:
+        typeof decoded.fullName === 'string' && decoded.fullName.trim().length > 0
+          ? decoded.fullName
+          : decoded.email,
+      teamId: typeof decoded.teamId === 'string' && decoded.teamId ? decoded.teamId : null,
+      teamName:
+        typeof decoded.teamName === 'string' && decoded.teamName ? decoded.teamName : null,
+      assignedDistricts: Array.isArray(decoded.assignedDistricts)
+        ? decoded.assignedDistricts.filter(
+            (d): d is string => typeof d === 'string' && d.trim().length > 0,
+          )
+        : [],
     };
   } catch (err) {
     if (err instanceof AppError) {
@@ -147,6 +180,48 @@ export function assertRegionAccess(
       'Anda tidak memiliki akses ke data di luar wilayah tugas Anda.',
     );
   }
+}
+
+export function hasDistrictLock(user: JwtUserPayload): boolean {
+  return user.role === 'SATPOL_PP' && user.assignedDistricts.length > 0;
+}
+
+export function isDistrictAllowed(
+  user: JwtUserPayload,
+  district: string | null | undefined,
+): boolean {
+  if (!hasDistrictLock(user)) {
+    return true;
+  }
+  const normalizedTarget = district?.trim().toLowerCase();
+  if (!normalizedTarget) {
+    return false;
+  }
+  return user.assignedDistricts.some(
+    (allowed) => allowed.trim().toLowerCase() === normalizedTarget,
+  );
+}
+
+export function assertDistrictAccess(
+  user: JwtUserPayload,
+  district: string | null | undefined,
+  resourceLabel = 'data',
+): void {
+  if (!isDistrictAllowed(user, district)) {
+    throw new AppError(
+      403,
+      'DISTRICT_ACCESS_DENIED',
+      `Anda tidak memiliki akses ke ${resourceLabel} di luar wilayah kecamatan tugas tim Anda.`,
+    );
+  }
+}
+
+export function formatActorName(user: JwtUserPayload): string {
+  const baseName = user.fullName?.trim() || user.email;
+  if (user.teamName?.trim()) {
+    return `${baseName} (${user.teamName.trim()})`;
+  }
+  return baseName;
 }
 
 export function enforceRegionScope(

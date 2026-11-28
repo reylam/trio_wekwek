@@ -27,6 +27,21 @@ const SATPOL_JKT_TOKEN = signAuthToken(
   TEST_JWT_SECRET,
 );
 
+const SATPOL_TANAH_ABANG_TOKEN = signAuthToken(
+  {
+    sub: 'u-satpol-jkp-ta',
+    role: 'SATPOL_PP',
+    regionId: 'reg-jkp',
+    city: 'Kota Jakarta Pusat',
+    email: 'satpol.ta@patra.demo',
+    fullName: 'Regu Tanah Abang',
+    teamId: 'team-jkp-1',
+    teamName: 'Tim 1 Jakarta Pusat — Tanah Abang',
+    assignedDistricts: ['Tanah Abang'],
+  },
+  TEST_JWT_SECRET,
+);
+
 const DINAS_JKT_TOKEN = signAuthToken(
   {
     sub: 'u-dinas-jkp',
@@ -134,6 +149,7 @@ function makeInitialZones(): RestrictedZoneRecord[] {
     {
       id: 'zone-jkp-1',
       regionId: 'reg-jkp',
+      district: 'Tanah Abang',
       name: 'Trotoar Thamrin',
       description: 'Area pedestrian utama',
       points: [
@@ -149,6 +165,7 @@ function makeInitialZones(): RestrictedZoneRecord[] {
     {
       id: 'zone-smg-1',
       regionId: 'reg-smg',
+      district: 'Semarang Tengah',
       name: 'Pedestrian Simpang Lima',
       description: null,
       points: [
@@ -169,9 +186,22 @@ async function withCctvAndZoneServer(fn: (baseUrl: string) => Promise<void>) {
   let zoneCounter = 1;
 
   const cctvRepo: CctvRepositoryPort = {
-    async findManyByRegion(regionId: string, filters: CctvQueryParams = {}) {
+    async findManyByRegion(
+      regionId: string,
+      filters: CctvQueryParams = {},
+      allowedDistricts?: string[],
+    ) {
       return cameras.filter((c) => {
         if (!c.isActive || c.regionId !== regionId) return false;
+        if (allowedDistricts && allowedDistricts.length > 0) {
+          const camDistrict = (c.district || '').trim().toLowerCase();
+          if (
+            !camDistrict ||
+            !allowedDistricts.some((d) => d.trim().toLowerCase() === camDistrict)
+          ) {
+            return false;
+          }
+        }
         if (filters.district && (c.district || '').toLowerCase() !== filters.district.toLowerCase()) {
           return false;
         }
@@ -214,6 +244,7 @@ async function withCctvAndZoneServer(fn: (baseUrl: string) => Promise<void>) {
       const rec: RestrictedZoneRecord = {
         id: `zone-new-${++zoneCounter}`,
         regionId: data.regionId,
+        district: data.district,
         name: data.name,
         description: data.description,
         points: data.points,
@@ -226,6 +257,7 @@ async function withCctvAndZoneServer(fn: (baseUrl: string) => Promise<void>) {
     },
     async update(id, data) {
       const z = zones.find((item) => item.id === id)!;
+      if (data.district !== undefined) z.district = data.district;
       if (data.name !== undefined) z.name = data.name;
       if (data.description !== undefined) z.description = data.description;
       if (data.points !== undefined) z.points = data.points;
@@ -497,5 +529,87 @@ test('Zone endpoints & Turf.js validation handle CRUD, bowtie polygons, RBAC, an
     });
     assert.equal(missingDel.status, 404);
     assert.equal(((await missingDel.json()) as any).error.code, 'ZONE_NOT_FOUND');
+  });
+});
+
+test('CCTV and Zone district hard-lock restricts Satpol PP team to assignedDistricts while unscoped fallback stays city-wide', async () => {
+  await withCctvAndZoneServer(async (baseUrl) => {
+    // 1. Tanah Abang team only sees Tanah Abang camera (1/2)
+    const scopedListRes = await fetch(`${baseUrl}/api/cctv`, {
+      headers: { Authorization: `Bearer ${SATPOL_TANAH_ABANG_TOKEN}` },
+    });
+    assert.equal(scopedListRes.status, 200);
+    const scopedListJson = (await scopedListRes.json()) as any;
+    assert.equal(scopedListJson.data.cameras.length, 1);
+    assert.equal(scopedListJson.data.cameras[0].id, 'jkt_035_JKP_POLRI_UOB_PLAZA_C01');
+
+    // 2. Querying outside district yields empty list, and accessing Gambir detail/ROI yields 403 DISTRICT_ACCESS_DENIED
+    const gambirFilterRes = await fetch(`${baseUrl}/api/cctv?district=Gambir`, {
+      headers: { Authorization: `Bearer ${SATPOL_TANAH_ABANG_TOKEN}` },
+    });
+    assert.equal(gambirFilterRes.status, 200);
+    assert.equal(((await gambirFilterRes.json()) as any).data.cameras.length, 0);
+
+    const gambirDetailRes = await fetch(`${baseUrl}/api/cctv/jkt_052_JKP_STASIUN_GAMBIR_C01`, {
+      headers: { Authorization: `Bearer ${SATPOL_TANAH_ABANG_TOKEN}` },
+    });
+    assert.equal(gambirDetailRes.status, 403);
+    assert.equal(((await gambirDetailRes.json()) as any).error.code, 'DISTRICT_ACCESS_DENIED');
+
+    const gambirRoiRes = await fetch(`${baseUrl}/api/cctv/jkt_052_JKP_STASIUN_GAMBIR_C01/roi`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${SATPOL_TANAH_ABANG_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ roiPolygon: null }),
+    });
+    assert.equal(gambirRoiRes.status, 403);
+    assert.equal(((await gambirRoiRes.json()) as any).error.code, 'DISTRICT_ACCESS_DENIED');
+
+    // 3. Unscoped fallback token (assignedDistricts: []) continues to see both Jakarta cameras
+    const fallbackListRes = await fetch(`${baseUrl}/api/cctv`, {
+      headers: { Authorization: `Bearer ${SATPOL_JKT_TOKEN}` },
+    });
+    assert.equal(fallbackListRes.status, 200);
+    assert.equal(((await fallbackListRes.json()) as any).data.cameras.length, 2);
+
+    // 4. RestrictedZone district hard-lock: creating for Gambir denied, omitting district auto-assigns Tanah Abang
+    const badZoneRes = await fetch(`${baseUrl}/api/zones`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${SATPOL_TANAH_ABANG_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: 'Zona Gambir Terlarang',
+        district: 'Gambir',
+        points: [
+          [106.828, -6.175],
+          [106.832, -6.175],
+          [106.832, -6.179],
+        ],
+      }),
+    });
+    assert.equal(badZoneRes.status, 403);
+    assert.equal(((await badZoneRes.json()) as any).error.code, 'DISTRICT_ACCESS_DENIED');
+
+    const okZoneRes = await fetch(`${baseUrl}/api/zones`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${SATPOL_TANAH_ABANG_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: 'Zona Auto Tanah Abang',
+        points: [
+          [106.814, -6.188],
+          [106.818, -6.188],
+          [106.818, -6.192],
+        ],
+      }),
+    });
+    assert.equal(okZoneRes.status, 201);
+    assert.equal(((await okZoneRes.json()) as any).data.zone.district, 'Tanah Abang');
   });
 });

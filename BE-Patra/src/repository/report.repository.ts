@@ -5,15 +5,20 @@ import type {
   EnforcementActionType,
   GeoLngLat,
   ListReportsQuery,
+  PatrolTeamDto,
+  RelocationAllocationDto,
+  RelocationMatchStatus,
   ReportSource,
   ReportStatus,
 } from '../interface/index.js';
+import { aggregatePendingCapacity } from '../service/geo.service.js';
 
 export interface CameraLookupRecord {
   id: string;
   regionId: string;
   name: string;
   regionLabel: string;
+  district: string | null;
   lat: number;
   lng: number;
   isActive: boolean;
@@ -32,6 +37,9 @@ export interface ActiveRelocationSiteRecord {
   lng: number;
   tradeCategories: string[];
   facilities: string[];
+  maxCapacity: number;
+  occupiedCapacity: number;
+  pendingCapacity: number;
 }
 
 export interface AuditLogRecord {
@@ -54,6 +62,7 @@ export interface ReportRecord {
   regionId: string;
   cameraId: string;
   zoneId: string | null;
+  assignedTeamId: string | null;
   source: ReportSource;
   status: ReportStatus;
   address: string;
@@ -73,7 +82,11 @@ export interface ReportRecord {
   validatedByUserId: string | null;
   validatedAt: Date | null;
   revisionReason: string | null;
+  recommendedRelocationSiteId: string | null;
   relocationSiteId: string | null;
+  relocationMatchStatus: RelocationMatchStatus | null;
+  unaccommodatedPklCount: number;
+  relocationCapacityCommitted: boolean;
   relocationAssignedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -81,9 +94,18 @@ export interface ReportRecord {
 
 export interface ReportDetailRecord extends ReportRecord {
   cameraName?: string;
+  cameraDistrict?: string | null;
   zoneName?: string | null;
+  assignedTeam?: PatrolTeamDto | null;
+  recommendedRelocationSiteName?: string | null;
   relocationSiteName?: string | null;
+  relocationAllocations: RelocationAllocationDto[];
   auditLogs: AuditLogRecord[];
+}
+
+export interface ReportQueryScope {
+  teamId?: string | null;
+  allowedDistricts?: string[];
 }
 
 export interface CreateReportInputData {
@@ -91,6 +113,7 @@ export interface CreateReportInputData {
   regionId: string;
   cameraId: string;
   zoneId: string | null;
+  assignedTeamId: string | null;
   source: ReportSource;
   status: ReportStatus;
   address: string;
@@ -101,6 +124,9 @@ export interface CreateReportInputData {
   beforeImageUrl: string;
   isSimulationMode: boolean;
   relocationRequested: boolean;
+  recommendedRelocationSiteId?: string | null;
+  relocationMatchStatus?: RelocationMatchStatus | null;
+  unaccommodatedPklCount?: number;
 }
 
 export interface UpdateReportBeforeData {
@@ -141,6 +167,8 @@ export interface RelocationSiteLookupRecord {
   lng: number;
   tradeCategories: string[];
   facilities: string[];
+  maxCapacity: number;
+  occupiedCapacity: number;
   isActive: boolean;
 }
 
@@ -166,6 +194,12 @@ export interface CreateAuditLogInputData {
   metadata: Record<string, unknown> | null;
 }
 
+function toStringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((v): v is string => typeof v === 'string')
+    : [];
+}
+
 function mapPrismaReport(row: Prisma.ViolationReportGetPayload<object>): ReportRecord {
   return {
     id: row.id,
@@ -173,6 +207,7 @@ function mapPrismaReport(row: Prisma.ViolationReportGetPayload<object>): ReportR
     regionId: row.regionId,
     cameraId: row.cameraId,
     zoneId: row.zoneId,
+    assignedTeamId: row.assignedTeamId,
     source: row.source as ReportSource,
     status: row.status as ReportStatus,
     address: row.address,
@@ -192,7 +227,12 @@ function mapPrismaReport(row: Prisma.ViolationReportGetPayload<object>): ReportR
     validatedByUserId: row.validatedByUserId,
     validatedAt: row.validatedAt,
     revisionReason: row.revisionReason,
+    recommendedRelocationSiteId: row.recommendedRelocationSiteId,
     relocationSiteId: row.relocationSiteId,
+    relocationMatchStatus:
+      (row.relocationMatchStatus as RelocationMatchStatus | null) ?? null,
+    unaccommodatedPklCount: row.unaccommodatedPklCount,
+    relocationCapacityCommitted: row.relocationCapacityCommitted,
     relocationAssignedAt: row.relocationAssignedAt,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -216,9 +256,17 @@ function mapPrismaAuditLog(row: Prisma.AuditLogGetPayload<object>): AuditLogReco
 }
 
 const detailInclude = {
-  camera: { select: { name: true } },
+  camera: { select: { name: true, district: true } },
   zone: { select: { name: true } },
+  assignedTeam: {
+    select: { id: true, code: true, name: true, assignedDistricts: true },
+  },
+  recommendedRelocationSite: { select: { name: true } },
   relocationSite: { select: { name: true } },
+  relocationAllocations: {
+    include: { relocationSite: { select: { name: true } } },
+    orderBy: { rankOrder: 'asc' as const },
+  },
   auditLogs: { orderBy: { createdAt: 'asc' as const } },
 };
 
@@ -230,8 +278,26 @@ function mapPrismaDetail(row: DetailPayload): ReportDetailRecord {
   return {
     ...mapPrismaReport(row),
     cameraName: row.camera?.name,
+    cameraDistrict: row.camera?.district ?? null,
     zoneName: row.zone?.name ?? null,
+    assignedTeam: row.assignedTeam
+      ? {
+          id: row.assignedTeam.id,
+          code: row.assignedTeam.code,
+          name: row.assignedTeam.name,
+          assignedDistricts: toStringArray(row.assignedTeam.assignedDistricts),
+        }
+      : null,
+    recommendedRelocationSiteName: row.recommendedRelocationSite?.name ?? null,
     relocationSiteName: row.relocationSite?.name ?? null,
+    relocationAllocations: row.relocationAllocations.map((a) => ({
+      id: a.id,
+      relocationSiteId: a.relocationSiteId,
+      relocationSiteName: a.relocationSite.name,
+      allocatedCount: a.allocatedCount,
+      rankOrder: a.rankOrder,
+      isRecommended: a.isRecommended,
+    })),
     auditLogs: row.auditLogs.map(mapPrismaAuditLog),
   };
 }
@@ -249,10 +315,6 @@ function buildAuditCreateFields(data: CreateAuditLogInputData) {
       ? { metadata: data.metadata as Prisma.InputJsonValue }
       : {}),
   };
-}
-
-function toStringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
 }
 
 function isRecordNotFoundError(err: unknown): boolean {
@@ -300,6 +362,8 @@ const relocationSiteLookupSelect = {
   lng: true,
   tradeCategories: true,
   facilities: true,
+  maxCapacity: true,
+  occupiedCapacity: true,
   isActive: true,
 } as const;
 
@@ -315,6 +379,8 @@ function mapRelocationSiteLookup(
     lng: row.lng,
     tradeCategories: toStringArray(row.tradeCategories),
     facilities: toStringArray(row.facilities),
+    maxCapacity: row.maxCapacity,
+    occupiedCapacity: row.occupiedCapacity,
     isActive: row.isActive,
   };
 }
@@ -329,6 +395,7 @@ export const ReportRepository = {
         regionId: true,
         name: true,
         regionLabel: true,
+        district: true,
         lat: true,
         lng: true,
         isActive: true,
@@ -371,28 +438,50 @@ export const ReportRepository = {
     regionId: string,
   ): Promise<ActiveRelocationSiteRecord[]> {
     const prisma = getPrisma();
-    const rows = await prisma.relocationSite.findMany({
-      where: { regionId, isActive: true },
-      select: {
-        id: true,
-        name: true,
-        address: true,
-        lat: true,
-        lng: true,
-        tradeCategories: true,
-        facilities: true,
-      },
-    });
+    const [rows, pendingRows] = await prisma.$transaction([
+      prisma.relocationSite.findMany({
+        where: { regionId, isActive: true },
+        select: {
+          id: true,
+          name: true,
+          address: true,
+          lat: true,
+          lng: true,
+          tradeCategories: true,
+          facilities: true,
+          maxCapacity: true,
+          occupiedCapacity: true,
+        },
+      }),
+      prisma.reportRelocationAllocation.findMany({
+        where: {
+          report: {
+            regionId,
+            status: 'PENDING_VALIDATION',
+            relocationRequested: true,
+            relocationCapacityCommitted: false,
+          },
+        },
+        select: {
+          relocationSiteId: true,
+          allocatedCount: true,
+        },
+      }),
+    ]);
+
+    const pendingMap = aggregatePendingCapacity(pendingRows);
+
     return rows.map((r) => ({
       id: r.id,
       name: r.name,
       address: r.address,
       lat: r.lat,
       lng: r.lng,
-      tradeCategories: Array.isArray(r.tradeCategories)
-        ? (r.tradeCategories as string[])
-        : [],
-      facilities: Array.isArray(r.facilities) ? (r.facilities as string[]) : [],
+      tradeCategories: toStringArray(r.tradeCategories),
+      facilities: toStringArray(r.facilities),
+      maxCapacity: r.maxCapacity,
+      occupiedCapacity: r.occupiedCapacity,
+      pendingCapacity: pendingMap.get(r.id) ?? 0,
     }));
   },
 
@@ -436,23 +525,55 @@ export const ReportRepository = {
   async findManyByRegion(
     regionId: string,
     query: ListReportsQuery,
+    scope?: ReportQueryScope,
   ): Promise<{ reports: ReportRecord[]; totalItems: number }> {
     const prisma = getPrisma();
-    const where: Prisma.ViolationReportWhereInput = { regionId };
+    const andConditions: Prisma.ViolationReportWhereInput[] = [];
+
+    if (scope?.allowedDistricts && scope.allowedDistricts.length > 0) {
+      const districtConditions = scope.allowedDistricts.map((d) => ({
+        district: { equals: d, mode: 'insensitive' as const },
+      }));
+      andConditions.push({
+        OR: [
+          ...(scope.teamId ? [{ assignedTeamId: scope.teamId }] : []),
+          {
+            assignedTeamId: null,
+            camera: { OR: districtConditions },
+          },
+        ],
+      });
+    } else {
+      if (query.teamId) {
+        andConditions.push({ assignedTeamId: query.teamId });
+      }
+      if (query.district) {
+        andConditions.push({
+          camera: { district: { equals: query.district, mode: 'insensitive' } },
+        });
+      }
+    }
 
     if (query.status && query.status.length > 0) {
-      where.status = { in: query.status };
+      andConditions.push({ status: { in: query.status } });
     }
     if (query.relocationRequested !== undefined) {
-      where.relocationRequested = query.relocationRequested;
+      andConditions.push({ relocationRequested: query.relocationRequested });
     }
     if (query.search) {
-      where.OR = [
-        { reportCode: { contains: query.search, mode: 'insensitive' } },
-        { address: { contains: query.search, mode: 'insensitive' } },
-        { camera: { name: { contains: query.search, mode: 'insensitive' } } },
-      ];
+      andConditions.push({
+        OR: [
+          { reportCode: { contains: query.search, mode: 'insensitive' } },
+          { address: { contains: query.search, mode: 'insensitive' } },
+          { camera: { name: { contains: query.search, mode: 'insensitive' } } },
+        ],
+      });
     }
+
+    const where: Prisma.ViolationReportWhereInput = {
+      regionId,
+      ...(andConditions.length > 0 ? { AND: andConditions } : {}),
+    };
 
     const skip = (query.page - 1) * query.pageSize;
     const [rows, totalItems] = await prisma.$transaction([
@@ -547,11 +668,7 @@ export const ReportRepository = {
     });
     if (!row) return null;
     return {
-      ...mapPrismaReport(row),
-      cameraName: row.camera?.name,
-      zoneName: row.zone?.name ?? null,
-      relocationSiteName: row.relocationSite?.name ?? null,
-      auditLogs: row.auditLogs.map(mapPrismaAuditLog),
+      ...mapPrismaDetail(row),
       region: row.region,
       relocationSite: row.relocationSite ? mapRelocationSiteLookup(row.relocationSite) : null,
       actionByUserName: row.actionByUser?.fullName ?? null,

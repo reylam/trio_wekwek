@@ -40,6 +40,14 @@ enum EnforcementActionType {
   RELOCATION_ASSISTANCE
 }
 
+enum RelocationMatchStatus {
+  NEAREST_AVAILABLE
+  FALLBACK_AVAILABLE
+  SPLIT_FALLBACK
+  PARTIAL_UNACCOMMODATED
+  ALL_SITES_FULL
+}
+
 enum AuditAction {
   REPORT_CREATED
   INCIDENT_ESCALATED
@@ -49,6 +57,7 @@ enum AuditAction {
   REVISION_SUBMITTED
   REPORT_VALIDATED
   RELOCATION_ASSIGNED
+  RELOCATION_OVERRIDDEN
 }
 
 model Region {
@@ -64,6 +73,7 @@ model Region {
   defaultZoom      Int               @default(13)
   createdAt        DateTime          @default(now())
 
+  patrolTeams      PatrolTeam[]
   users            User[]
   cameras          CctvCamera[]
   zones            RestrictedZone[]
@@ -73,24 +83,44 @@ model Region {
   @@index([province])
 }
 
+model PatrolTeam {
+  id                String            @id @default(uuid())
+  regionId          String
+  region            Region            @relation(fields: [regionId], references: [id], onDelete: Restrict)
+  code              String            @unique // mis. "jkp-tanah-abang"
+  name              String            // mis. "Tim Alpha — Kec. Tanah Abang"
+  // Array string nama kecamatan sesuai CctvCamera.district, mis. ["Tanah Abang"]
+  assignedDistricts Json
+  isActive          Boolean           @default(true)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  users             User[]
+  reports           ViolationReport[]
+
+  @@index([regionId, isActive])
+}
+
 model User {
   id               String            @id @default(uuid())
   regionId         String
   region           Region            @relation(fields: [regionId], references: [id], onDelete: Restrict)
+  teamId           String?
+  team             PatrolTeam?       @relation(fields: [teamId], references: [id], onDelete: SetNull)
   email            String            @unique
   passwordHash     String
   fullName         String
   noTelp           String?           @map("no_telp")
   role             UserRole
   isDemo           Boolean           @default(false)
-  demoKey          String?           @unique // mis. "satpol-jkt-pusat", "dinas-jkt-pusat"
+  demoKey          String?           @unique // mis. "satpol-jkp-tanah-abang", "dinas-jkt-pusat"
   createdAt        DateTime          @default(now())
 
   actionedReports  ViolationReport[] @relation("ReportActionedBy")
   validatedReports ViolationReport[] @relation("ReportValidatedBy")
   auditLogs        AuditLog[]
 
-  @@index([regionId, role])
+  @@index([regionId, role, teamId])
 }
 
 model CctvCamera {
@@ -132,6 +162,7 @@ model RestrictedZone {
   id          String            @id @default(uuid())
   regionId    String
   region      Region            @relation(fields: [regionId], references: [id], onDelete: Restrict)
+  district    String?
   name        String
   description String?
   // GeoJSON ring terbuka [[lng, lat], ...] minimal 3 titik (divalidasi Turf.js anti self-intersecting)
@@ -142,82 +173,111 @@ model RestrictedZone {
 
   reports     ViolationReport[]
 
-  @@index([regionId, isActive])
+  @@index([regionId, district, isActive])
 }
 
 model RelocationSite {
-  id              String            @id @default(uuid())
-  regionId        String
-  region          Region            @relation(fields: [regionId], references: [id], onDelete: Restrict)
-  name            String
-  address         String
-  lat             Float
-  lng             Float
+  id                 String                       @id @default(uuid())
+  regionId           String
+  region             Region                       @relation(fields: [regionId], references: [id], onDelete: Restrict)
+  name               String
+  address            String
+  lat                Float
+  lng                Float
   // Array string kategori dagangan, mis. ["Kuliner", "Minuman", "Kerajinan"]
-  tradeCategories Json
-  // Array string fasilitas, mis. ["Listrik", "Air Bersih", "Toilet", "Parkir"] — TANPA KUOTA
-  facilities      Json
-  isActive        Boolean           @default(true)
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  tradeCategories    Json
+  // Array string fasilitas, mis. ["Listrik", "Air Bersih", "Toilet", "Parkir"]
+  facilities         Json
+  maxCapacity        Int                          @default(20)
+  occupiedCapacity   Int                          @default(0)
+  isActive           Boolean                      @default(true)
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
 
-  reports         ViolationReport[]
+  recommendedReports ViolationReport[]            @relation("ReportRecommendedSite")
+  reports            ViolationReport[]            @relation("ReportPrimarySite")
+  allocations        ReportRelocationAllocation[]
 
   @@index([regionId, isActive])
 }
 
 model ViolationReport {
-  id                   String                 @id @default(uuid())
-  reportCode           String                 @unique // mis. "PTR-202611-0001"
-  regionId             String
-  region               Region                 @relation(fields: [regionId], references: [id], onDelete: Restrict)
-  cameraId             String
-  camera               CctvCamera             @relation(fields: [cameraId], references: [id], onDelete: Restrict)
-  zoneId               String?
-  zone                 RestrictedZone?        @relation(fields: [zoneId], references: [id], onDelete: SetNull)
+  id                          String                       @id @default(uuid())
+  reportCode                  String                       @unique // mis. "PTR-202611-0001"
+  regionId                    String
+  region                      Region                       @relation(fields: [regionId], references: [id], onDelete: Restrict)
+  cameraId                    String
+  camera                      CctvCamera                   @relation(fields: [cameraId], references: [id], onDelete: Restrict)
+  zoneId                      String?
+  zone                        RestrictedZone?              @relation(fields: [zoneId], references: [id], onDelete: SetNull)
+  assignedTeamId              String?
+  assignedTeam                PatrolTeam?                  @relation(fields: [assignedTeamId], references: [id], onDelete: SetNull)
 
-  source               ReportSource           @default(AUTO_AI)
-  status               ReportStatus           @default(NEED_ACTION)
-  address              String
-  lat                  Float
-  lng                  Float
+  source                      ReportSource                 @default(AUTO_AI)
+  status                      ReportStatus                 @default(NEED_ACTION)
+  address                     String
+  lat                         Float
+  lng                         Float
 
   // Data deteksi (Before) — menerapkan Peak Active Count saat Incident Merging
-  detectedCount        Int                    @default(1)
-  maxConfidence        Float                  @default(0.0)
-  beforeImageUrl       String
-  isSimulationMode     Boolean                @default(false)
+  detectedCount               Int                          @default(1)
+  maxConfidence               Float                        @default(0.0)
+  beforeImageUrl              String
+  isSimulationMode            Boolean                      @default(false)
 
   // Data penindakan Satpol PP (After)
-  afterImageUrl        String?
-  actionType           EnforcementActionType?
-  actualPklCount       Int?
-  educationNotes       String?
-  relocationRequested  Boolean                @default(false)
-  actionByUserId       String?
-  actionByUser         User?                  @relation("ReportActionedBy", fields: [actionByUserId], references: [id], onDelete: SetNull)
-  actionSubmittedAt    DateTime?
+  afterImageUrl               String?
+  actionType                  EnforcementActionType?
+  actualPklCount              Int?
+  educationNotes              String?
+  relocationRequested         Boolean                      @default(false)
+  actionByUserId              String?
+  actionByUser                User?                        @relation("ReportActionedBy", fields: [actionByUserId], references: [id], onDelete: SetNull)
+  actionSubmittedAt           DateTime?
 
-  // Data validasi & relokasi Dinas UMKM
-  validatedByUserId    String?
-  validatedByUser      User?                  @relation("ReportValidatedBy", fields: [validatedByUserId], references: [id], onDelete: SetNull)
-  validatedAt          DateTime?
-  revisionReason       String?
-  relocationSiteId     String?
-  relocationSite       RelocationSite?        @relation(fields: [relocationSiteId], references: [id], onDelete: SetNull)
-  relocationAssignedAt DateTime?
+  // Data validasi & relokasi (Rekomendasi Awal + Commit Kapasitas Atomik saat VALIDATED)
+  validatedByUserId           String?
+  validatedByUser             User?                        @relation("ReportValidatedBy", fields: [validatedByUserId], references: [id], onDelete: SetNull)
+  validatedAt                 DateTime?
+  revisionReason              String?
+  recommendedRelocationSiteId String?
+  recommendedRelocationSite   RelocationSite?              @relation("ReportRecommendedSite", fields: [recommendedRelocationSiteId], references: [id], onDelete: SetNull)
+  relocationSiteId            String?
+  relocationSite              RelocationSite?              @relation("ReportPrimarySite", fields: [relocationSiteId], references: [id], onDelete: SetNull)
+  relocationMatchStatus       RelocationMatchStatus?
+  unaccommodatedPklCount      Int                          @default(0)
+  relocationCapacityCommitted Boolean                      @default(false)
+  relocationAssignedAt        DateTime?
 
-  createdAt            DateTime               @default(now())
-  updatedAt            DateTime               @updatedAt
+  createdAt                   DateTime                     @default(now())
+  updatedAt                   DateTime                     @updatedAt
 
-  auditLogs            AuditLog[]
+  relocationAllocations       ReportRelocationAllocation[]
+  auditLogs                   AuditLog[]
 
   // Optimasi Incident Merging & Cooldown lookup
   @@index([cameraId, status, createdAt(sort: Desc)])
   @@index([cameraId, actionSubmittedAt(sort: Desc)])
-  // Optimasi Dashboard, Portal Publik & Filter Laporan per Kota
+  // Optimasi Dashboard, Portal Publik, Monitoring Tim & Filter Laporan per Kota
   @@index([regionId, status, createdAt(sort: Desc)])
+  @@index([regionId, assignedTeamId, status])
   @@index([regionId, relocationRequested, status])
+}
+
+model ReportRelocationAllocation {
+  id               String          @id @default(uuid())
+  reportId         String
+  report           ViolationReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  relocationSiteId String
+  relocationSite   RelocationSite  @relation(fields: [relocationSiteId], references: [id], onDelete: Restrict)
+  allocatedCount   Int
+  rankOrder        Int             @default(1)
+  isRecommended    Boolean         @default(true)
+  createdAt        DateTime        @default(now())
+
+  @@unique([reportId, relocationSiteId])
+  @@index([relocationSiteId])
+  @@index([reportId, rankOrder])
 }
 
 // APPEND-ONLY IMMUTABLE AUDIT TRAIL (SDG 16)

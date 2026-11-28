@@ -1,7 +1,12 @@
-import type { DinasAnalyticsData, JwtUserPayload } from '../interface/index.js';
+import type {
+  DinasAnalyticsData,
+  DinasTeamPerformanceDto,
+  JwtUserPayload,
+} from '../interface/index.js';
 import DinasRepository, {
   type DinasRepositoryPort,
 } from '../repository/dinas.repository.js';
+import { computeSiteCapacityMetrics } from './geo.service.js';
 
 const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -32,7 +37,7 @@ export function createDinasService(deps: DinasServiceDeps = {}) {
 
   return {
     async getAnalytics(user: JwtUserPayload): Promise<DinasAnalyticsData> {
-      const { reports, relocationSites } =
+      const { reports, relocationSites, patrolTeams } =
         await repo.getAnalyticsInputsByRegion(user.regionId);
 
       const totalIncomingReports = reports.length;
@@ -40,6 +45,8 @@ export function createDinasService(deps: DinasServiceDeps = {}) {
       let totalRelocationDirected = 0;
       let slaSumMinutes = 0;
       let slaCount = 0;
+      let splitRelocationReportsCount = 0;
+      let unaccommodatedPklTotal = 0;
 
       // Inisialisasi bucket 30 hari terakhir (WIB) urutan menaik
       const now = getNow();
@@ -62,6 +69,33 @@ export function createDinasService(deps: DinasServiceDeps = {}) {
       const validatedPoints: DinasAnalyticsData['planningMap']['validatedPoints'] =
         [];
 
+      // Agregasi monitoring per PatrolTeam
+      const teamAcc = new Map<
+        string,
+        {
+          totalReports: number;
+          needActionCount: number;
+          pendingValidationCount: number;
+          needsRevisionCount: number;
+          validatedCount: number;
+          slaSumMinutes: number;
+          slaCount: number;
+          revisionHitCount: number;
+        }
+      >();
+      for (const t of patrolTeams) {
+        teamAcc.set(t.id, {
+          totalReports: 0,
+          needActionCount: 0,
+          pendingValidationCount: 0,
+          needsRevisionCount: 0,
+          validatedCount: 0,
+          slaSumMinutes: 0,
+          slaCount: 0,
+          revisionHitCount: 0,
+        });
+      }
+
       for (const r of reports) {
         const isValidated = r.status === 'VALIDATED';
         if (isValidated) {
@@ -78,13 +112,38 @@ export function createDinasService(deps: DinasServiceDeps = {}) {
           });
         }
 
+        if (r.relocationMatchStatus === 'SPLIT_FALLBACK') {
+          splitRelocationReportsCount++;
+        }
+        if (r.unaccommodatedPklCount > 0) {
+          unaccommodatedPklTotal += r.unaccommodatedPklCount;
+        }
+
+        let reportSlaMin: number | null = null;
         if (r.actionSubmittedAt) {
-          const slaMinutes = Math.max(
+          reportSlaMin = Math.max(
             0,
             (r.actionSubmittedAt.getTime() - r.createdAt.getTime()) / 60000,
           );
-          slaSumMinutes += slaMinutes;
+          slaSumMinutes += reportSlaMin;
           slaCount++;
+        }
+
+        if (r.assignedTeamId && teamAcc.has(r.assignedTeamId)) {
+          const acc = teamAcc.get(r.assignedTeamId)!;
+          acc.totalReports++;
+          if (r.status === 'NEED_ACTION') acc.needActionCount++;
+          else if (r.status === 'PENDING_VALIDATION') acc.pendingValidationCount++;
+          else if (r.status === 'NEEDS_REVISION') acc.needsRevisionCount++;
+          else if (r.status === 'VALIDATED') acc.validatedCount++;
+
+          if (r.hasRevision ?? r.status === 'NEEDS_REVISION') {
+            acc.revisionHitCount++;
+          }
+          if (reportSlaMin !== null) {
+            acc.slaSumMinutes += reportSlaMin;
+            acc.slaCount++;
+          }
         }
 
         const dayKey = toWibDateKey(r.createdAt);
@@ -137,6 +196,58 @@ export function createDinasService(deps: DinasServiceDeps = {}) {
         })
         .slice(0, 5);
 
+      let totalMaxCapacity = 0;
+      let totalOccupiedCapacity = 0;
+      let totalPendingCapacity = 0;
+      let totalAvailableCapacity = 0;
+      let nearFullSitesCount = 0;
+      let fullSitesCount = 0;
+
+      const mappedSites = relocationSites.map((s) => {
+        const metrics = computeSiteCapacityMetrics(
+          s.maxCapacity,
+          s.occupiedCapacity,
+          s.pendingCapacity,
+        );
+        totalMaxCapacity += metrics.maxCapacity;
+        totalOccupiedCapacity += metrics.occupiedCapacity;
+        totalPendingCapacity += metrics.pendingCapacity;
+        totalAvailableCapacity += metrics.availableCapacity;
+        if (metrics.capacityStatus === 'FULL') fullSitesCount++;
+        else if (metrics.capacityStatus === 'NEAR_FULL') nearFullSitesCount++;
+
+        return {
+          id: s.id,
+          name: s.name,
+          lat: s.lat,
+          lng: s.lng,
+          address: s.address,
+          facilities: s.facilities,
+          ...metrics,
+        };
+      });
+
+      const teamPerformance: DinasTeamPerformanceDto[] = patrolTeams.map((t) => {
+        const acc = teamAcc.get(t.id)!;
+        return {
+          teamId: t.id,
+          teamCode: t.code,
+          teamName: t.name,
+          assignedDistricts: t.assignedDistricts,
+          totalReports: acc.totalReports,
+          needActionCount: acc.needActionCount,
+          pendingValidationCount: acc.pendingValidationCount,
+          needsRevisionCount: acc.needsRevisionCount,
+          validatedCount: acc.validatedCount,
+          avgResponseSlaMinutes:
+            acc.slaCount === 0 ? null : Math.round(acc.slaSumMinutes / acc.slaCount),
+          revisionRatePercent:
+            acc.totalReports === 0
+              ? 0
+              : Math.round((acc.revisionHitCount / acc.totalReports) * 1000) / 10,
+        };
+      });
+
       return {
         kpi: {
           totalIncomingReports,
@@ -144,20 +255,25 @@ export function createDinasService(deps: DinasServiceDeps = {}) {
           avgResponseSlaMinutes,
           totalRelocationDirected,
         },
+        capacityOverview: {
+          totalSites: mappedSites.length,
+          totalMaxCapacity,
+          totalOccupiedCapacity,
+          totalPendingCapacity,
+          totalAvailableCapacity,
+          nearFullSitesCount,
+          fullSitesCount,
+          splitRelocationReportsCount,
+          unaccommodatedPklTotal,
+        },
+        teamPerformance,
         dailyTrend,
         peakHoursWib,
         topHotspotStreets,
         // LOCKED DECISION: planningMap tidak pernah menyertakan pin kamera CCTV (`cameras`)
         planningMap: {
           validatedPoints,
-          relocationSites: relocationSites.map((s) => ({
-            id: s.id,
-            name: s.name,
-            lat: s.lat,
-            lng: s.lng,
-            address: s.address,
-            facilities: s.facilities,
-          })),
+          relocationSites: mappedSites,
         },
       };
     },

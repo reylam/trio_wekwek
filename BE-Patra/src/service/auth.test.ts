@@ -5,9 +5,13 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import multer from 'multer';
 import {
+  assertDistrictAccess,
   assertRegionAccess,
   createAuthenticateMiddleware,
   enforceRegionScope,
+  formatActorName,
+  hasDistrictLock,
+  isDistrictAllowed,
   requireRole,
   signAuthToken,
 } from '../middlewares/auth.js';
@@ -51,12 +55,30 @@ const MOCK_USERS: UserWithRegionRecord[] = [
     id: 'u-satpol-jkp',
     email: 'satpol.jakpus@patra.demo',
     passwordHash: TEST_PASSWORD_HASH,
-    fullName: 'Petugas Satpol PP Jakarta Pusat',
+    fullName: 'Petugas Tim 1 Tanah Abang — Jakarta Pusat',
     noTelp: '+62 812 3456 7890',
     role: 'SATPOL_PP',
     isDemo: true,
-    demoKey: 'satpol-jkt-pusat',
+    demoKey: 'satpol-jkp-tanah-abang',
     region: REGION_JKT,
+    team: {
+      id: 'team-jkp-1',
+      code: 'jkp-tim-1-tanah-abang',
+      name: 'Tim 1 Jakarta Pusat — Tanah Abang',
+      assignedDistricts: ['Tanah Abang', 'Menteng'],
+    },
+  },
+  {
+    id: 'u-satpol-fallback',
+    email: 'satpol.kota@patra.demo',
+    passwordHash: TEST_PASSWORD_HASH,
+    fullName: 'Petugas Satpol PP Lintas Kecamatan',
+    noTelp: null,
+    role: 'SATPOL_PP',
+    isDemo: true,
+    demoKey: 'satpol-fallback-kota',
+    region: REGION_JKT,
+    team: null,
   },
   {
     id: 'u-dinas-smg',
@@ -68,6 +90,7 @@ const MOCK_USERS: UserWithRegionRecord[] = [
     isDemo: true,
     demoKey: 'dinas-semarang',
     region: REGION_SMG,
+    team: null,
   },
 ];
 
@@ -158,7 +181,20 @@ test('Auth endpoints: login, demo-login, /me, and /logout succeed with expected 
     assert.ok(typeof loginJson.data.token === 'string' && loginJson.data.token.length > 20);
     assert.equal(loginJson.data.user.role, 'SATPOL_PP');
     assert.equal(loginJson.data.user.region.city, 'Kota Jakarta Pusat');
+    assert.equal(loginJson.data.user.team.name, 'Tim 1 Jakarta Pusat — Tanah Abang');
+    assert.deepEqual(loginJson.data.user.team.assignedDistricts, ['Tanah Abang', 'Menteng']);
     assert.equal('passwordHash' in loginJson.data.user, false);
+
+    // 1b. Legacy demoKey alias resolves to new Tanah Abang team key
+    const aliasDemoRes = await fetch(`${baseUrl}/api/auth/demo-login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ demoKey: 'satpol-jkt-pusat' }),
+    });
+    assert.equal(aliasDemoRes.status, 200);
+    const aliasDemoJson = (await aliasDemoRes.json()) as any;
+    assert.equal(aliasDemoJson.data.user.id, 'u-satpol-jkp');
+    assert.equal(aliasDemoJson.data.user.team.code, 'jkp-tim-1-tanah-abang');
 
     // 2. 1-Click Demo Login
     const demoRes = await fetch(`${baseUrl}/api/auth/demo-login`, {
@@ -347,11 +383,69 @@ test('RBAC, Region-Lock, and Multer upload error mappings', async () => {
             regionId: 'reg-jkp',
             city: 'Kota Jakarta Pusat',
             email: 'satpol.jakpus@patra.demo',
+            fullName: 'Petugas Tim 1 Tanah Abang — Jakarta Pusat',
+            teamId: 'team-jkp-1',
+            teamName: 'Tim 1 Jakarta Pusat — Tanah Abang',
+            assignedDistricts: ['Tanah Abang', 'Menteng'],
           },
           'reg-smg',
         ),
       (err: any) => err?.status === 403 && err?.code === 'REGION_ACCESS_DENIED',
     );
+
+    // District lock helpers & actor name formatting
+    const lockedUser = {
+      sub: 'u-satpol-jkp',
+      role: 'SATPOL_PP' as const,
+      regionId: 'reg-jkp',
+      city: 'Kota Jakarta Pusat',
+      email: 'satpol.jakpus@patra.demo',
+      fullName: 'Petugas Tim 1',
+      teamId: 'team-jkp-1',
+      teamName: 'Tim 1 Tanah Abang',
+      assignedDistricts: ['Tanah Abang', 'Menteng'],
+    };
+    const fallbackUser = {
+      ...lockedUser,
+      sub: 'u-satpol-fallback',
+      fullName: 'Petugas Kota',
+      teamId: null,
+      teamName: null,
+      assignedDistricts: [],
+    };
+    const dinasUser = {
+      ...lockedUser,
+      sub: 'u-dinas-jkp',
+      role: 'DINAS_UMKM' as const,
+      fullName: 'Admin Sudin',
+      teamId: null,
+      teamName: null,
+      assignedDistricts: [],
+    };
+
+    assert.equal(hasDistrictLock(lockedUser), true);
+    assert.equal(hasDistrictLock(fallbackUser), false);
+    assert.equal(hasDistrictLock(dinasUser), false);
+
+    assert.equal(isDistrictAllowed(lockedUser, 'tanah abang'), true);
+    assert.equal(isDistrictAllowed(lockedUser, 'Gambir'), false);
+    assert.equal(isDistrictAllowed(lockedUser, null), false);
+    assert.equal(isDistrictAllowed(fallbackUser, 'Gambir'), true);
+    assert.equal(isDistrictAllowed(dinasUser, null), true);
+
+    assert.doesNotThrow(() => assertDistrictAccess(lockedUser, 'Menteng', 'CCTV'));
+    assert.throws(
+      () => assertDistrictAccess(lockedUser, 'Gambir', 'CCTV'),
+      (err: any) => err?.status === 403 && err?.code === 'DISTRICT_ACCESS_DENIED',
+    );
+    assert.throws(
+      () => assertDistrictAccess(lockedUser, null, 'CCTV'),
+      (err: any) => err?.status === 403 && err?.code === 'DISTRICT_ACCESS_DENIED',
+    );
+
+    assert.equal(formatActorName(lockedUser), 'Petugas Tim 1 (Tim 1 Tanah Abang)');
+    assert.equal(formatActorName(fallbackUser), 'Petugas Kota');
+    assert.equal(formatActorName({ ...fallbackUser, fullName: '' }), 'satpol.jakpus@patra.demo');
 
     // Multer invalid MIME type -> 400 INVALID_FILE_TYPE
     const badMimeForm = new FormData();

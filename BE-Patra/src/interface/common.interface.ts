@@ -29,6 +29,20 @@ export const ENFORCEMENT_ACTION_TYPES = [
 export type EnforcementActionType = (typeof ENFORCEMENT_ACTION_TYPES)[number];
 export const enforcementActionTypeSchema = z.enum(ENFORCEMENT_ACTION_TYPES);
 
+export const RELOCATION_MATCH_STATUSES = [
+  'NEAREST_AVAILABLE',
+  'FALLBACK_AVAILABLE',
+  'SPLIT_FALLBACK',
+  'PARTIAL_UNACCOMMODATED',
+  'ALL_SITES_FULL',
+] as const;
+export type RelocationMatchStatus = (typeof RELOCATION_MATCH_STATUSES)[number];
+export const relocationMatchStatusSchema = z.enum(RELOCATION_MATCH_STATUSES);
+
+export const CAPACITY_STATUSES = ['AVAILABLE', 'NEAR_FULL', 'FULL'] as const;
+export type CapacityStatus = (typeof CAPACITY_STATUSES)[number];
+export const capacityStatusSchema = z.enum(CAPACITY_STATUSES);
+
 export const AUDIT_ACTIONS = [
   'REPORT_CREATED',
   'INCIDENT_ESCALATED',
@@ -38,9 +52,27 @@ export const AUDIT_ACTIONS = [
   'REVISION_SUBMITTED',
   'REPORT_VALIDATED',
   'RELOCATION_ASSIGNED',
+  'RELOCATION_OVERRIDDEN',
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 export const auditActionSchema = z.enum(AUDIT_ACTIONS);
+
+export interface PatrolTeamDto {
+  id: string;
+  code: string;
+  name: string;
+  assignedDistricts: string[];
+}
+
+export interface SiteCapacityMetrics {
+  maxCapacity: number;
+  occupiedCapacity: number;
+  pendingCapacity: number;
+  availableCapacity: number;
+  effectiveAvailableCapacity: number;
+  occupancyPercent: number;
+  capacityStatus: CapacityStatus;
+}
 
 export type NormalizedPoint = [number, number];
 export type NormalizedPolygon = NormalizedPoint[];

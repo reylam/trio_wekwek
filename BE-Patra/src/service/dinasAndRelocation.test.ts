@@ -68,6 +68,8 @@ function makeRelocationHarness() {
       lng: 106.8195,
       tradeCategories: ['Kuliner', 'Minuman'],
       facilities: ['Listrik', 'Air Bersih'],
+      maxCapacity: 25,
+      occupiedCapacity: 10,
       isActive: true,
       createdAt: now,
       updatedAt: now,
@@ -81,6 +83,8 @@ function makeRelocationHarness() {
       lng: 106.8178,
       tradeCategories: ['Kuliner'],
       facilities: ['Parkir'],
+      maxCapacity: 15,
+      occupiedCapacity: 15,
       isActive: true,
       createdAt: now,
       updatedAt: now,
@@ -94,6 +98,8 @@ function makeRelocationHarness() {
       lng: 110.4234,
       tradeCategories: ['Kuliner'],
       facilities: ['Listrik'],
+      maxCapacity: 20,
+      occupiedCapacity: 5,
       isActive: true,
       createdAt: now,
       updatedAt: now,
@@ -104,6 +110,12 @@ function makeRelocationHarness() {
   const repo: RelocationSiteRepositoryPort = {
     async findActiveByRegion(regionId) {
       return sites.filter((s) => s.regionId === regionId && s.isActive);
+    },
+    async findPendingCapacityMapByRegion(regionId) {
+      if (regionId === 'reg-jkp') {
+        return new Map([['site-jkp-ref', 2]]);
+      }
+      return new Map();
     },
     async findById(id) {
       return sites.find((s) => s.id === id) ?? null;
@@ -118,6 +130,8 @@ function makeRelocationHarness() {
         lng: data.lng,
         tradeCategories: data.tradeCategories,
         facilities: data.facilities,
+        maxCapacity: data.maxCapacity,
+        occupiedCapacity: data.occupiedCapacity,
         isActive: true,
         createdAt: new Date(now.getTime() + seq * 1000),
         updatedAt: new Date(now.getTime() + seq * 1000),
@@ -135,6 +149,8 @@ function makeRelocationHarness() {
         rec.tradeCategories = data.tradeCategories;
       }
       if (data.facilities !== undefined) rec.facilities = data.facilities;
+      if (data.maxCapacity !== undefined) rec.maxCapacity = data.maxCapacity;
+      if (data.occupiedCapacity !== undefined) rec.occupiedCapacity = data.occupiedCapacity;
       rec.updatedAt = new Date(now.getTime() + 5000);
       return rec;
     },
@@ -182,6 +198,16 @@ test('CRUD /api/relocation-sites enforces RBAC, region-lock, no-quota, and soft-
     const satpolJson = (await satpolList.json()) as any;
     assert.equal(satpolJson.data.relocationSites.length, 2);
     assert.equal('quota' in satpolJson.data.relocationSites[0], false);
+    const refSite = satpolJson.data.relocationSites.find((s: any) => s.id === 'site-jkp-ref');
+    const unrefSite = satpolJson.data.relocationSites.find((s: any) => s.id === 'site-jkp-unref');
+    assert.equal(refSite.maxCapacity, 25);
+    assert.equal(refSite.occupiedCapacity, 10);
+    assert.equal(refSite.pendingCapacity, 2);
+    assert.equal(refSite.availableCapacity, 15);
+    assert.equal(refSite.effectiveAvailableCapacity, 13);
+    assert.equal(refSite.capacityStatus, 'AVAILABLE');
+    assert.equal(unrefSite.capacityStatus, 'FULL');
+    assert.equal(unrefSite.availableCapacity, 0);
 
     // 2. SATPOL_PP ditolak saat POST/PATCH/DELETE (403 FORBIDDEN_ROLE)
     const satpolCreate = await fetch(`${baseUrl}/api/relocation-sites`, {
@@ -216,13 +242,30 @@ test('CRUD /api/relocation-sites enforces RBAC, region-lock, no-quota, and soft-
         lng: 106.8342,
         tradeCategories: ['Kuliner', 'Kerajinan'],
         facilities: ['Listrik', 'Toilet'],
+        maxCapacity: 30,
+        occupiedCapacity: 5,
       }),
     });
     assert.equal(createdRes.status, 201);
     const createdJson = (await createdRes.json()) as any;
     const newId = createdJson.data.relocationSite.id as string;
     assert.equal(createdJson.data.relocationSite.regionId, 'reg-jkp');
+    assert.equal(createdJson.data.relocationSite.maxCapacity, 30);
+    assert.equal(createdJson.data.relocationSite.occupiedCapacity, 5);
+    assert.equal(createdJson.data.relocationSite.availableCapacity, 25);
     assert.equal('quota' in createdJson.data.relocationSite, false);
+
+    // 3b. Menurunkan maxCapacity < occupiedCapacity -> 400 INVALID_CAPACITY_RANGE
+    const badCapPatch = await fetch(`${baseUrl}/api/relocation-sites/${newId}`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${DINAS_JKT_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ maxCapacity: 3 }),
+    });
+    assert.equal(badCapPatch.status, 400);
+    assert.equal(((await badCapPatch.json()) as any).error.code, 'INVALID_CAPACITY_RANGE');
 
     // 4. PATCH & DELETE lintas kota -> 403 REGION_ACCESS_DENIED
     const crossPatch = await fetch(`${baseUrl}/api/relocation-sites/${newId}`, {
@@ -318,10 +361,14 @@ test('GET /api/dinas/analytics computes KPIs, WIB 30d trend, 24 peak hours, top 
         lng: 106.8229,
         detectedCount: 2,
         actualPklCount: 3,
+        assignedTeamId: 'team-jkp-1',
         // created 2026-11-22T18:00:00Z -> 2026-11-23 01:00 WIB (+45 menit SLA)
         createdAt: new Date('2026-11-22T18:00:00.000Z'),
         actionSubmittedAt: new Date('2026-11-22T18:45:00.000Z'),
         relocationSiteId: 'site-1',
+        relocationMatchStatus: 'NEAREST_AVAILABLE',
+        unaccommodatedPklCount: 0,
+        hasRevision: false,
       },
       {
         id: 'rep-2',
@@ -331,10 +378,14 @@ test('GET /api/dinas/analytics computes KPIs, WIB 30d trend, 24 peak hours, top 
         lng: 106.823,
         detectedCount: 1,
         actualPklCount: null,
+        assignedTeamId: 'team-jkp-1',
         // created 2026-11-21T10:00:00Z -> 2026-11-21 17:00 WIB (+15 menit SLA)
         createdAt: new Date('2026-11-21T10:00:00.000Z'),
         actionSubmittedAt: new Date('2026-11-21T10:15:00.000Z'),
         relocationSiteId: null,
+        relocationMatchStatus: null,
+        unaccommodatedPklCount: 0,
+        hasRevision: true,
       },
       {
         id: 'rep-3',
@@ -344,10 +395,14 @@ test('GET /api/dinas/analytics computes KPIs, WIB 30d trend, 24 peak hours, top 
         lng: 106.83,
         detectedCount: 4,
         actualPklCount: 4,
+        assignedTeamId: 'team-jkp-2',
         // created 2026-11-21T10:30:00Z -> 2026-11-21 17:30 WIB (+30 menit SLA)
         createdAt: new Date('2026-11-21T10:30:00.000Z'),
         actionSubmittedAt: new Date('2026-11-21T11:00:00.000Z'),
         relocationSiteId: null,
+        relocationMatchStatus: 'SPLIT_FALLBACK',
+        unaccommodatedPklCount: 1,
+        hasRevision: false,
       },
       {
         id: 'rep-4',
@@ -357,9 +412,13 @@ test('GET /api/dinas/analytics computes KPIs, WIB 30d trend, 24 peak hours, top 
         lng: 106.814,
         detectedCount: 2,
         actualPklCount: null,
+        assignedTeamId: 'team-jkp-1',
         createdAt: new Date('2026-11-20T01:00:00.000Z'), // 08:00 WIB
         actionSubmittedAt: null,
         relocationSiteId: null,
+        relocationMatchStatus: null,
+        unaccommodatedPklCount: 0,
+        hasRevision: false,
       },
       {
         id: 'rep-5',
@@ -369,9 +428,13 @@ test('GET /api/dinas/analytics computes KPIs, WIB 30d trend, 24 peak hours, top 
         lng: 106.828,
         detectedCount: 1,
         actualPklCount: 1,
+        assignedTeamId: 'team-jkp-2',
         createdAt: new Date('2026-11-19T01:00:00.000Z'), // 08:00 WIB
         actionSubmittedAt: new Date('2026-11-19T01:30:00.000Z'), // +30m
         relocationSiteId: null,
+        relocationMatchStatus: null,
+        unaccommodatedPklCount: 0,
+        hasRevision: true,
       },
       {
         id: 'rep-6',
@@ -381,9 +444,13 @@ test('GET /api/dinas/analytics computes KPIs, WIB 30d trend, 24 peak hours, top 
         lng: 106.824,
         detectedCount: 1,
         actualPklCount: null,
+        assignedTeamId: 'team-jkp-2',
         createdAt: new Date('2026-11-18T02:00:00.000Z'), // 09:00 WIB
         actionSubmittedAt: null,
         relocationSiteId: null,
+        relocationMatchStatus: null,
+        unaccommodatedPklCount: 0,
+        hasRevision: false,
       },
       {
         id: 'rep-7',
@@ -393,9 +460,13 @@ test('GET /api/dinas/analytics computes KPIs, WIB 30d trend, 24 peak hours, top 
         lng: 106.84,
         detectedCount: 1,
         actualPklCount: null,
+        assignedTeamId: null,
         createdAt: new Date('2026-11-17T02:00:00.000Z'), // 09:00 WIB
         actionSubmittedAt: null,
         relocationSiteId: null,
+        relocationMatchStatus: null,
+        unaccommodatedPklCount: 0,
+        hasRevision: false,
       },
     ],
     'reg-smg': [
@@ -407,9 +478,13 @@ test('GET /api/dinas/analytics computes KPIs, WIB 30d trend, 24 peak hours, top 
         lng: 110.42,
         detectedCount: 5,
         actualPklCount: 5,
+        assignedTeamId: null,
         createdAt: new Date('2026-11-22T01:00:00.000Z'),
         actionSubmittedAt: new Date('2026-11-22T01:20:00.000Z'),
         relocationSiteId: 'site-smg',
+        relocationMatchStatus: 'NEAREST_AVAILABLE',
+        unaccommodatedPklCount: 0,
+        hasRevision: false,
       },
     ],
   };
@@ -423,6 +498,9 @@ test('GET /api/dinas/analytics computes KPIs, WIB 30d trend, 24 peak hours, top 
         lng: 106.8195,
         address: 'Jl. Thamrin Boulevard',
         facilities: ['Listrik', 'Toilet'],
+        maxCapacity: 25,
+        occupiedCapacity: 20,
+        pendingCapacity: 2,
       },
     ],
     'reg-smg': [
@@ -433,6 +511,26 @@ test('GET /api/dinas/analytics computes KPIs, WIB 30d trend, 24 peak hours, top 
         lng: 110.423,
         address: 'Simpang Lima',
         facilities: ['Listrik'],
+        maxCapacity: 20,
+        occupiedCapacity: 5,
+        pendingCapacity: 0,
+      },
+    ],
+  };
+
+  const patrolTeamsByRegion = {
+    'reg-jkp': [
+      {
+        id: 'team-jkp-1',
+        code: 'jkp-tim-1-tanah-abang',
+        name: 'Tim 1 Jakarta Pusat — Tanah Abang',
+        assignedDistricts: ['Tanah Abang', 'Menteng'],
+      },
+      {
+        id: 'team-jkp-2',
+        code: 'jkp-tim-2-gambir',
+        name: 'Tim 2 Jakarta Pusat — Gambir',
+        assignedDistricts: ['Gambir', 'Sawah Besar'],
       },
     ],
   };
@@ -442,6 +540,7 @@ test('GET /api/dinas/analytics computes KPIs, WIB 30d trend, 24 peak hours, top 
       return {
         reports: reportsByRegion[regionId] ?? [],
         relocationSites: sitesByRegion[regionId] ?? [],
+        patrolTeams: patrolTeamsByRegion[regionId as keyof typeof patrolTeamsByRegion] ?? [],
       };
     },
   };
@@ -511,7 +610,31 @@ test('GET /api/dinas/analytics computes KPIs, WIB 30d trend, 24 peak hours, top 
     assert.equal(d.planningMap.validatedPoints[0].weight, 3);
     assert.equal(d.planningMap.relocationSites.length, 1);
     assert.equal(d.planningMap.relocationSites[0].name, 'Thamrin City JP 37');
+    assert.equal(d.planningMap.relocationSites[0].capacityStatus, 'NEAR_FULL');
     assert.equal('quota' in d.planningMap.relocationSites[0], false);
+
+    // Capacity overview & team performance breakdown
+    assert.deepEqual(d.capacityOverview, {
+      totalSites: 1,
+      totalMaxCapacity: 25,
+      totalOccupiedCapacity: 20,
+      totalPendingCapacity: 2,
+      totalAvailableCapacity: 5,
+      nearFullSitesCount: 1,
+      fullSitesCount: 0,
+      splitRelocationReportsCount: 1,
+      unaccommodatedPklTotal: 1,
+    });
+    assert.equal(d.teamPerformance.length, 2);
+    const team1 = d.teamPerformance.find((t: any) => t.teamId === 'team-jkp-1');
+    const team2 = d.teamPerformance.find((t: any) => t.teamId === 'team-jkp-2');
+    assert.equal(team1.totalReports, 3);
+    assert.equal(team1.validatedCount, 2);
+    assert.equal(team1.avgResponseSlaMinutes, 30);
+    assert.equal(team1.revisionRatePercent, 33.3);
+    assert.equal(team2.totalReports, 3);
+    assert.equal(team2.needsRevisionCount, 1);
+    assert.equal(team2.revisionRatePercent, 33.3);
   } finally {
     await new Promise<void>((resolve, reject) =>
       server.close((e) => (e ? reject(e) : resolve())),

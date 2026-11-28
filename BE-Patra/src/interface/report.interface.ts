@@ -5,6 +5,8 @@ import {
   reportSourceSchema,
   type AuditAction,
   type EnforcementActionType,
+  type PatrolTeamDto,
+  type RelocationMatchStatus,
   type ReportSource,
   type ReportStatus,
 } from './common.interface.js';
@@ -59,12 +61,25 @@ export const listReportsQuerySchema = z.object({
     .enum(['true', 'false'])
     .optional()
     .transform((val) => (val === undefined ? undefined : val === 'true')),
+  teamId: z.string().trim().min(1).max(120).optional(),
+  district: z.string().trim().min(1).max(120).optional(),
   search: z.string().trim().max(120).optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(50).default(10),
 });
 
 export type ListReportsQuery = z.infer<typeof listReportsQuerySchema>;
+
+export const relocationAllocationInputSchema = z.object({
+  relocationSiteId: z.string().trim().min(1, 'relocationSiteId wajib diisi.'),
+  allocatedCount: z
+    .number()
+    .int('Jumlah PKL alokasi harus bilangan bulat.')
+    .min(1, 'Jumlah PKL alokasi minimal 1.')
+    .max(5000),
+});
+
+export type RelocationAllocationInput = z.infer<typeof relocationAllocationInputSchema>;
 
 export const submitReportActionSchema = z.object({
   actionType: enforcementActionTypeSchema,
@@ -78,6 +93,7 @@ export const submitReportActionSchema = z.object({
     .min(5, 'Catatan edukasi minimal 5 karakter.')
     .max(1000),
   relocationRequested: z.boolean().default(false),
+  allocations: z.array(relocationAllocationInputSchema).min(1).optional(),
 });
 
 export type SubmitReportActionInput = z.infer<typeof submitReportActionSchema>;
@@ -85,6 +101,7 @@ export type SubmitReportActionInput = z.infer<typeof submitReportActionSchema>;
 export const validateReportSchema = z.discriminatedUnion('decision', [
   z.object({
     decision: z.literal('APPROVE'),
+    overrideAllocations: z.array(relocationAllocationInputSchema).min(1).optional(),
   }),
   z.object({
     decision: z.literal('REQUEST_REVISION'),
@@ -98,11 +115,28 @@ export const validateReportSchema = z.discriminatedUnion('decision', [
 
 export type ValidateReportInput = z.infer<typeof validateReportSchema>;
 
-export const assignRelocationSchema = z.object({
-  relocationSiteId: z.string().trim().min(1, 'relocationSiteId wajib diisi.'),
-});
+export const assignRelocationSchema = z
+  .object({
+    relocationSiteId: z.string().trim().min(1, 'relocationSiteId wajib diisi.').optional(),
+    allocations: z.array(relocationAllocationInputSchema).min(1).optional(),
+  })
+  .refine(
+    (data) => Boolean(data.relocationSiteId) || Boolean(data.allocations?.length),
+    {
+      message: 'Minimal relocationSiteId atau allocations wajib diisi.',
+    },
+  );
 
 export type AssignRelocationInput = z.infer<typeof assignRelocationSchema>;
+
+export interface RelocationAllocationDto {
+  id: string;
+  relocationSiteId: string;
+  relocationSiteName: string;
+  allocatedCount: number;
+  rankOrder: number;
+  isRecommended: boolean;
+}
 
 export interface AuditLogDto {
   id: string;
@@ -124,6 +158,7 @@ export interface ViolationReportDto {
   regionId: string;
   cameraId: string;
   zoneId: string | null;
+  assignedTeamId: string | null;
   source: ReportSource;
   status: ReportStatus;
   address: string;
@@ -143,7 +178,11 @@ export interface ViolationReportDto {
   validatedByUserId: string | null;
   validatedAt: string | null;
   revisionReason: string | null;
+  recommendedRelocationSiteId: string | null;
   relocationSiteId: string | null;
+  relocationMatchStatus: RelocationMatchStatus | null;
+  unaccommodatedPklCount: number;
+  relocationCapacityCommitted: boolean;
   relocationAssignedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -152,7 +191,10 @@ export interface ViolationReportDto {
 export interface ViolationReportDetailDto extends ViolationReportDto {
   cameraName?: string;
   zoneName?: string | null;
+  assignedTeam?: PatrolTeamDto | null;
+  recommendedRelocationSiteName?: string | null;
   relocationSiteName?: string | null;
+  relocationAllocations: RelocationAllocationDto[];
   auditLogs: AuditLogDto[];
   nearestRelocationSites: NearestRelocationSiteDto[];
 }
@@ -167,9 +209,13 @@ export interface AutoDetectResponseData {
     id: string;
     reportCode: string;
     cameraId: string;
+    assignedTeamId: string | null;
     status: ReportStatus;
     detectedCount: number;
     beforeImageUrl: string;
+    recommendedRelocationSiteId: string | null;
+    relocationMatchStatus: RelocationMatchStatus | null;
+    unaccommodatedPklCount: number;
     createdAt: string;
   };
 }

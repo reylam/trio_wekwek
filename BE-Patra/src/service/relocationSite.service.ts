@@ -10,6 +10,7 @@ import RelocationSiteRepository, {
   type RelocationSiteRecord,
   type RelocationSiteRepositoryPort,
 } from '../repository/relocationSite.repository.js';
+import { computeSiteCapacityMetrics } from './geo.service.js';
 
 function cleanStringList(items: string[]): string[] {
   return items.map((s) => s.trim()).filter(Boolean);
@@ -17,7 +18,13 @@ function cleanStringList(items: string[]): string[] {
 
 export function mapRelocationSiteToDto(
   record: RelocationSiteRecord,
+  pendingCapacity = 0,
 ): RelocationSiteDto {
+  const metrics = computeSiteCapacityMetrics(
+    record.maxCapacity,
+    record.occupiedCapacity,
+    pendingCapacity,
+  );
   return {
     id: record.id,
     regionId: record.regionId,
@@ -27,6 +34,7 @@ export function mapRelocationSiteToDto(
     lng: record.lng,
     tradeCategories: record.tradeCategories,
     facilities: record.facilities,
+    ...metrics,
     isActive: record.isActive,
     createdAt: record.createdAt.toISOString(),
     updatedAt: record.updatedAt.toISOString(),
@@ -38,8 +46,13 @@ export function createRelocationSiteService(
 ) {
   return {
     async listByRegion(user: JwtUserPayload): Promise<RelocationSiteDto[]> {
-      const records = await repo.findActiveByRegion(user.regionId);
-      return records.map(mapRelocationSiteToDto);
+      const [records, pendingMap] = await Promise.all([
+        repo.findActiveByRegion(user.regionId),
+        repo.findPendingCapacityMapByRegion(user.regionId),
+      ]);
+      return records.map((r) =>
+        mapRelocationSiteToDto(r, pendingMap.get(r.id) ?? 0),
+      );
     },
 
     async create(
@@ -54,8 +67,10 @@ export function createRelocationSiteService(
         lng: input.lng,
         tradeCategories: cleanStringList(input.tradeCategories),
         facilities: cleanStringList(input.facilities),
+        maxCapacity: input.maxCapacity,
+        occupiedCapacity: input.occupiedCapacity,
       });
-      return mapRelocationSiteToDto(created);
+      return mapRelocationSiteToDto(created, 0);
     },
 
     async update(
@@ -81,6 +96,16 @@ export function createRelocationSiteService(
         );
       }
 
+      const nextMax = input.maxCapacity ?? existing.maxCapacity;
+      const nextOccupied = input.occupiedCapacity ?? existing.occupiedCapacity;
+      if (nextOccupied > nextMax) {
+        throw new AppError(
+          400,
+          'INVALID_CAPACITY_RANGE',
+          'Jumlah terisi tidak boleh melebihi kapasitas maksimal.',
+        );
+      }
+
       const updateData: {
         name?: string;
         address?: string;
@@ -88,6 +113,8 @@ export function createRelocationSiteService(
         lng?: number;
         tradeCategories?: string[];
         facilities?: string[];
+        maxCapacity?: number;
+        occupiedCapacity?: number;
       } = {};
 
       if (input.name !== undefined) updateData.name = input.name.trim();
@@ -100,13 +127,22 @@ export function createRelocationSiteService(
       if (input.facilities !== undefined) {
         updateData.facilities = cleanStringList(input.facilities);
       }
+      if (input.maxCapacity !== undefined) {
+        updateData.maxCapacity = input.maxCapacity;
+      }
+      if (input.occupiedCapacity !== undefined) {
+        updateData.occupiedCapacity = input.occupiedCapacity;
+      }
 
-      const updated = await repo.update(id, updateData);
-      return mapRelocationSiteToDto(updated);
+      const [updated, pendingMap] = await Promise.all([
+        repo.update(id, updateData),
+        repo.findPendingCapacityMapByRegion(existing.regionId),
+      ]);
+      return mapRelocationSiteToDto(updated, pendingMap.get(updated.id) ?? 0);
     },
 
     /**
-     * BR-008: Jika lokasi binaan sudah direferensikan laporan, lakukan soft-archive (isActive = false)
+     * BR-008: Jika lokasi binaan sudah direferensikan laporan/alokasi, lakukan soft-archive (isActive = false)
      * agar arsip laporan & Berita Acara PDF tetap utuh. Jika belum, hard delete.
      */
     async remove(

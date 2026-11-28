@@ -4,6 +4,7 @@ import {
   type CctvCatalogRawItem,
   type EnforcementActionType,
   type GeoLngLat,
+  type RelocationMatchStatus,
   type ReportSource,
   type ReportStatus,
   type UserRole,
@@ -21,8 +22,16 @@ export interface SeedRegionDef {
   defaultZoom: number;
 }
 
+export interface SeedPatrolTeamDef {
+  regionCode: string;
+  code: string;
+  name: string;
+  assignedDistricts: string[];
+}
+
 export interface SeedUserDef {
   regionCode: string;
+  teamCode: string | null;
   email: string;
   fullName: string;
   role: UserRole;
@@ -32,6 +41,7 @@ export interface SeedUserDef {
 
 export interface SeedZoneDef {
   regionCode: string;
+  district: string | null;
   name: string;
   description: string;
   points: GeoLngLat[];
@@ -45,6 +55,8 @@ export interface SeedRelocationSiteDef {
   lng: number;
   tradeCategories: string[];
   facilities: string[];
+  maxCapacity: number;
+  occupiedCapacity: number;
 }
 
 export interface SeedAuditLogDef {
@@ -64,6 +76,7 @@ export interface SeedReportDef {
   regionCode: string;
   cameraId: string;
   zoneName: string;
+  assignedTeamCode?: string;
   source: ReportSource;
   status: ReportStatus;
   address: string;
@@ -83,7 +96,10 @@ export interface SeedReportDef {
   validatedByDemoKey?: string;
   validatedOffsetMinutes?: number;
   revisionReason?: string;
+  recommendedSiteName?: string;
   relocationSiteName?: string;
+  relocationMatchStatus?: RelocationMatchStatus;
+  relocationCapacityCommitted?: boolean;
   relocationOffsetMinutes?: number;
   createdHoursAgo: number;
   auditLogs: SeedAuditLogDef[];
@@ -115,18 +131,67 @@ export const SEED_REGIONS: SeedRegionDef[] = [
   },
 ];
 
-// Section 6.2 .agent/rules/data_contract.md
-export const SEED_USERS: SeedUserDef[] = [
+// Section 6.2 .agent/rules/data_contract.md — PatrolTeam & User Multi-Tim Kecamatan
+export const SEED_PATROL_TEAMS: SeedPatrolTeamDef[] = [
   {
     regionCode: 'jkt-pusat',
-    email: 'satpol.jakpus@patra.demo',
-    fullName: 'Petugas Satpol PP Jakarta Pusat',
-    role: 'SATPOL_PP',
-    isDemo: true,
-    demoKey: 'satpol-jkt-pusat',
+    code: 'jkp-tanah-abang',
+    name: 'Tim Alpha — Kec. Tanah Abang',
+    assignedDistricts: ['Tanah Abang'],
   },
   {
     regionCode: 'jkt-pusat',
+    code: 'jkp-menteng-gambir',
+    name: 'Tim Bravo — Kec. Menteng & Gambir',
+    assignedDistricts: ['Menteng', 'Gambir'],
+  },
+  {
+    regionCode: 'semarang',
+    code: 'smg-tengah',
+    name: 'Tim Tengah — Kec. Semarang Tengah',
+    assignedDistricts: ['Semarang Tengah'],
+  },
+  {
+    regionCode: 'semarang',
+    code: 'smg-selatan-barat',
+    name: 'Tim Selatan & Barat — Koridor Kota',
+    assignedDistricts: [
+      'Semarang Selatan',
+      'Semarang Barat',
+      'Candisari',
+      'Gajah Mungkur',
+      'Banyumanik',
+      'Semarang Utara',
+      'Semarang Timur',
+      'Pedurungan',
+      'Ngaliyan',
+      'Tugu',
+    ],
+  },
+];
+
+export const SEED_USERS: SeedUserDef[] = [
+  {
+    regionCode: 'jkt-pusat',
+    teamCode: 'jkp-tanah-abang',
+    email: 'satpol.tanahabang@patra.demo',
+    fullName: 'Regu Patroli Alpha (Tanah Abang)',
+    role: 'SATPOL_PP',
+    isDemo: true,
+    demoKey: 'satpol-jkp-tanah-abang',
+  },
+  {
+    regionCode: 'jkt-pusat',
+    teamCode: 'jkp-menteng-gambir',
+    email: 'satpol.mentenggambir@patra.demo',
+    fullName: 'Regu Patroli Bravo (Menteng & Gambir)',
+    role: 'SATPOL_PP',
+    isDemo: true,
+    demoKey: 'satpol-jkp-menteng-gambir',
+  },
+  {
+    regionCode: 'jkt-pusat',
+    teamCode: null,
     email: 'sudin.jakpus@patra.demo',
     fullName: 'Admin Sudin PPKUKM Jakarta Pusat',
     role: 'DINAS_UMKM',
@@ -135,14 +200,25 @@ export const SEED_USERS: SeedUserDef[] = [
   },
   {
     regionCode: 'semarang',
-    email: 'satpol.semarang@patra.demo',
-    fullName: 'Petugas Satpol PP Kota Semarang',
+    teamCode: 'smg-tengah',
+    email: 'satpol.smgtengah@patra.demo',
+    fullName: 'Regu Patroli Tengah (Semarang Tengah)',
     role: 'SATPOL_PP',
     isDemo: true,
-    demoKey: 'satpol-semarang',
+    demoKey: 'satpol-smg-tengah',
   },
   {
     regionCode: 'semarang',
+    teamCode: 'smg-selatan-barat',
+    email: 'satpol.smgselbar@patra.demo',
+    fullName: 'Regu Patroli Selatan & Barat Semarang',
+    role: 'SATPOL_PP',
+    isDemo: true,
+    demoKey: 'satpol-smg-selatan-barat',
+  },
+  {
+    regionCode: 'semarang',
+    teamCode: null,
     email: 'dinas.semarang@patra.demo',
     fullName: 'Admin Dinas Koperasi & UKM Semarang',
     role: 'DINAS_UMKM',
@@ -150,6 +226,18 @@ export const SEED_USERS: SeedUserDef[] = [
     demoKey: 'dinas-semarang',
   },
 ];
+
+// Normalisasi 8 kamera Kota Semarang pada cctv_snapshot.json yang bernilai district=null
+export const SEMARANG_NULL_DISTRICT_OVERRIDES: Record<string, string> = {
+  smg_8857_ARAH_PANDANARAN: 'Semarang Selatan',
+  smg_7645_ARAH_TUGU_TUNAS: 'Semarang Selatan',
+  smg_8872_Bundaran_Madukoro: 'Semarang Barat',
+  smg_8713_PAHLAWAN_180: 'Semarang Selatan',
+  smg_7642_PAHLAWAN_PTZ_2: 'Semarang Selatan',
+  smg_8871_SIMPANG_WAGISAN_TAMAN_KASMAR: 'Semarang Selatan',
+  smg_8868_SRIWIJAYA_01: 'Semarang Selatan',
+  smg_8869_SRIWIJAYA_02: 'Semarang Selatan',
+};
 
 // Section 6.3 .agent/rules/data_contract.md (6 kamera pilot: 3 Jakarta Pusat + 3 Semarang)
 export const SEED_CAMERAS: CctvCatalogRawItem[] = [
@@ -313,10 +401,11 @@ export const SEED_CAMERAS: CctvCatalogRawItem[] = [
   },
 ];
 
-// Section 6.5 — 2 RestrictedZone per kota (4 total)
+// Section 6.5 — 2 RestrictedZone per kota (4 total, dengan district untuk hard-lock kecamatan)
 export const SEED_ZONES: SeedZoneDef[] = [
   {
     regionCode: 'jkt-pusat',
+    district: 'Tanah Abang',
     name: 'Trotoar Koridor Thamrin - UOB Plaza',
     description: 'Zona larangan berjualan pada jalur pedestrian utama Jl. M.H. Thamrin.',
     points: [
@@ -328,6 +417,7 @@ export const SEED_ZONES: SeedZoneDef[] = [
   },
   {
     regionCode: 'jkt-pusat',
+    district: 'Tanah Abang',
     name: 'Bahu Jalan Pasar Tanah Abang Blok A',
     description: 'Area bebas hambatan lalu lintas sekitar Pasar Tanah Abang.',
     points: [
@@ -339,6 +429,7 @@ export const SEED_ZONES: SeedZoneDef[] = [
   },
   {
     regionCode: 'semarang',
+    district: 'Semarang Tengah',
     name: 'Pedestrian Kawasan Simpang Lima',
     description: 'Trotoar lingkar luar Lapangan Pancasila Simpang Lima.',
     points: [
@@ -350,6 +441,7 @@ export const SEED_ZONES: SeedZoneDef[] = [
   },
   {
     regionCode: 'semarang',
+    district: 'Semarang Tengah',
     name: 'Koridor Pasar Johar - Aloon-Aloon',
     description: 'Zona penataan trotoar & akses masuk Pasar Johar Semarang.',
     points: [
@@ -361,7 +453,7 @@ export const SEED_ZONES: SeedZoneDef[] = [
   },
 ];
 
-// Section 6.4 — 3 RelocationSite per kota (6 total, TANPA KUOTA)
+// Section 6.4 — 3 RelocationSite per kota pilot (dengan kapasitas demo termasuk 1 FULL per kota)
 export const SEED_RELOCATION_SITES: SeedRelocationSiteDef[] = [
   {
     regionCode: 'jkt-pusat',
@@ -371,6 +463,8 @@ export const SEED_RELOCATION_SITES: SeedRelocationSiteDef[] = [
     lng: 106.8195,
     tradeCategories: ['Kuliner', 'Minuman', 'Pakaian'],
     facilities: ['Listrik', 'Air Bersih', 'Toilet', 'Area Teduh'],
+    maxCapacity: 25,
+    occupiedCapacity: 25,
   },
   {
     regionCode: 'jkt-pusat',
@@ -380,6 +474,8 @@ export const SEED_RELOCATION_SITES: SeedRelocationSiteDef[] = [
     lng: 106.8178,
     tradeCategories: ['Kuliner', 'Jajanan'],
     facilities: ['Listrik', 'Parkir', 'Kebersihan'],
+    maxCapacity: 30,
+    occupiedCapacity: 22,
   },
   {
     regionCode: 'jkt-pusat',
@@ -389,6 +485,8 @@ export const SEED_RELOCATION_SITES: SeedRelocationSiteDef[] = [
     lng: 106.8342,
     tradeCategories: ['Kuliner', 'Kerajinan', 'Aksesori'],
     facilities: ['Listrik', 'Air Bersih', 'Toilet'],
+    maxCapacity: 40,
+    occupiedCapacity: 15,
   },
   {
     regionCode: 'semarang',
@@ -398,6 +496,8 @@ export const SEED_RELOCATION_SITES: SeedRelocationSiteDef[] = [
     lng: 110.4234,
     tradeCategories: ['Kuliner', 'Minuman'],
     facilities: ['Listrik', 'Air Bersih', 'Toilet', 'Parkir'],
+    maxCapacity: 30,
+    occupiedCapacity: 30,
   },
   {
     regionCode: 'semarang',
@@ -407,6 +507,8 @@ export const SEED_RELOCATION_SITES: SeedRelocationSiteDef[] = [
     lng: 110.4258,
     tradeCategories: ['Kuliner', 'Sembako', 'Kerajinan'],
     facilities: ['Listrik', 'Area Teduh', 'Kebersihan'],
+    maxCapacity: 35,
+    occupiedCapacity: 28,
   },
   {
     regionCode: 'semarang',
@@ -416,11 +518,15 @@ export const SEED_RELOCATION_SITES: SeedRelocationSiteDef[] = [
     lng: 110.4198,
     tradeCategories: ['Kuliner', 'Jajanan'],
     facilities: ['Listrik', 'Toilet', 'Lampu Penerangan'],
+    maxCapacity: 25,
+    occupiedCapacity: 10,
   },
 ];
 
-// 30 Lokasi Binaan (Zona Hijau UMKM) untuk 15 kota publik tambahan (2 per kota, TANPA KUOTA)
-export const EXTRA_PUBLIC_RELOCATION_SITES: SeedRelocationSiteDef[] = [
+// 30 Lokasi Binaan (Zona Hijau UMKM) untuk 15 kota publik tambahan (2 per kota, dengan kapasitas default)
+const EXTRA_PUBLIC_RELOCATION_SITES_RAW: Array<
+  Omit<SeedRelocationSiteDef, 'maxCapacity' | 'occupiedCapacity'>
+> = [
   // Kota Yogyakarta
   {
     regionCode: 'yogyakarta',
@@ -708,6 +814,13 @@ export const EXTRA_PUBLIC_RELOCATION_SITES: SeedRelocationSiteDef[] = [
   },
 ];
 
+export const EXTRA_PUBLIC_RELOCATION_SITES: SeedRelocationSiteDef[] =
+  EXTRA_PUBLIC_RELOCATION_SITES_RAW.map((site) => ({
+    ...site,
+    maxCapacity: 30,
+    occupiedCapacity: 10,
+  }));
+
 // Placeholder bukti visual publik aman (diganti otomatis saat upload foto aktual di demo)
 const DEMO_BEFORE_IMG = 'https://placehold.co/800x450/0B132B/FFFFFF?text=CCTV+Before+Snapshot';
 const DEMO_AFTER_IMG = 'https://placehold.co/800x450/043FA5/FFFFFF?text=Satpol+PP+After+Evidence';
@@ -720,6 +833,7 @@ export const SEED_REPORTS: SeedReportDef[] = [
     regionCode: 'jkt-pusat',
     cameraId: 'jkt_035_JKP_POLRI_UOB_PLAZA_C01',
     zoneName: 'Trotoar Koridor Thamrin - UOB Plaza',
+    assignedTeamCode: 'jkp-tanah-abang',
     source: 'AUTO_AI',
     status: 'NEED_ACTION',
     address: 'Jl. M.H. Thamrin (UOB Plaza), Kebon Melati, Tanah Abang',
@@ -730,6 +844,8 @@ export const SEED_REPORTS: SeedReportDef[] = [
     beforeImageUrl: DEMO_BEFORE_IMG,
     isSimulationMode: false,
     relocationRequested: false,
+    recommendedSiteName: 'Sentra Binaan Kebon Kacang Raya',
+    relocationMatchStatus: 'FALLBACK_AVAILABLE',
     createdHoursAgo: 1,
     auditLogs: [
       {
@@ -739,7 +855,11 @@ export const SEED_REPORTS: SeedReportDef[] = [
         fromStatus: null,
         toStatus: 'NEED_ACTION',
         note: 'Terdeteksi 2 gerobak PKL menetap di dalam ROI trotoar melewati ambang batas.',
-        metadata: { detectedCount: 2, maxConfidence: 0.89 },
+        metadata: {
+          detectedCount: 2,
+          maxConfidence: 0.89,
+          recommendedSiteName: 'Sentra Binaan Kebon Kacang Raya',
+        },
         offsetMinutesFromCreated: 0,
       },
     ],
@@ -749,6 +869,7 @@ export const SEED_REPORTS: SeedReportDef[] = [
     regionCode: 'jkt-pusat',
     cameraId: 'jkt_041_JKP_PASAR_TANAH_ABANG_C02',
     zoneName: 'Bahu Jalan Pasar Tanah Abang Blok A',
+    assignedTeamCode: 'jkp-tanah-abang',
     source: 'AUTO_AI',
     status: 'PENDING_VALIDATION',
     address: 'Jl. K.H. Mas Mansyur (Pasar Tanah Abang Blok A), Tanah Abang',
@@ -761,10 +882,12 @@ export const SEED_REPORTS: SeedReportDef[] = [
     afterImageUrl: DEMO_AFTER_IMG,
     actionType: 'RELOCATION_ASSISTANCE',
     actualPklCount: 3,
-    educationNotes: 'Pedagang telah diberikan edukasi persuasif dan bersedia diarahkan ke Lokasi Binaan terdekat.',
+    educationNotes: 'Pedagang telah diberikan edukasi persuasif dan bersedia diarahkan ke Sentra Binaan Kebon Kacang Raya.',
     relocationRequested: true,
-    actionByDemoKey: 'satpol-jkt-pusat',
+    actionByDemoKey: 'satpol-jkp-tanah-abang',
     actionOffsetMinutes: 35,
+    recommendedSiteName: 'Sentra Binaan Kebon Kacang Raya',
+    relocationMatchStatus: 'FALLBACK_AVAILABLE',
     createdHoursAgo: 6,
     auditLogs: [
       {
@@ -778,8 +901,8 @@ export const SEED_REPORTS: SeedReportDef[] = [
       },
       {
         actorRole: 'SATPOL_PP',
-        actorDemoKey: 'satpol-jkt-pusat',
-        actorName: 'Petugas Satpol PP Jakarta Pusat',
+        actorDemoKey: 'satpol-jkp-tanah-abang',
+        actorName: 'Regu Patroli Alpha (Tanah Abang) (Tim Alpha — Kec. Tanah Abang)',
         action: 'ACTION_SUBMITTED',
         fromStatus: 'NEED_ACTION',
         toStatus: 'PENDING_VALIDATION',
@@ -794,6 +917,7 @@ export const SEED_REPORTS: SeedReportDef[] = [
     regionCode: 'jkt-pusat',
     cameraId: 'jkt_052_JKP_STASIUN_GAMBIR_C01',
     zoneName: 'Trotoar Koridor Thamrin - UOB Plaza',
+    assignedTeamCode: 'jkp-menteng-gambir',
     source: 'MANUAL',
     status: 'NEEDS_REVISION',
     address: 'Jl. Medan Merdeka Timur (Stasiun Gambir Selatan), Gambir',
@@ -808,7 +932,7 @@ export const SEED_REPORTS: SeedReportDef[] = [
     actualPklCount: 1,
     educationNotes: 'Dilakukan himbauan lisan kepada pedagang minuman keliling.',
     relocationRequested: false,
-    actionByDemoKey: 'satpol-jkt-pusat',
+    actionByDemoKey: 'satpol-jkp-menteng-gambir',
     actionOffsetMinutes: 48,
     validatedByDemoKey: 'dinas-jkt-pusat',
     revisionReason: 'Foto bukti After belum memperlihatkan sudut trotoar yang sama dengan foto Before; mohon unggah ulang bukti yang lebih jelas.',
@@ -816,8 +940,8 @@ export const SEED_REPORTS: SeedReportDef[] = [
     auditLogs: [
       {
         actorRole: 'SATPOL_PP',
-        actorDemoKey: 'satpol-jkt-pusat',
-        actorName: 'Petugas Satpol PP Jakarta Pusat',
+        actorDemoKey: 'satpol-jkp-menteng-gambir',
+        actorName: 'Regu Patroli Bravo (Menteng & Gambir) (Tim Bravo — Kec. Menteng & Gambir)',
         action: 'REPORT_CREATED',
         fromStatus: null,
         toStatus: 'NEED_ACTION',
@@ -826,8 +950,8 @@ export const SEED_REPORTS: SeedReportDef[] = [
       },
       {
         actorRole: 'SATPOL_PP',
-        actorDemoKey: 'satpol-jkt-pusat',
-        actorName: 'Petugas Satpol PP Jakarta Pusat',
+        actorDemoKey: 'satpol-jkp-menteng-gambir',
+        actorName: 'Regu Patroli Bravo (Menteng & Gambir) (Tim Bravo — Kec. Menteng & Gambir)',
         action: 'ACTION_SUBMITTED',
         fromStatus: 'NEED_ACTION',
         toStatus: 'PENDING_VALIDATION',
@@ -851,6 +975,7 @@ export const SEED_REPORTS: SeedReportDef[] = [
     regionCode: 'jkt-pusat',
     cameraId: 'jkt_035_JKP_POLRI_UOB_PLAZA_C01',
     zoneName: 'Trotoar Koridor Thamrin - UOB Plaza',
+    assignedTeamCode: 'jkp-tanah-abang',
     source: 'AUTO_AI',
     status: 'VALIDATED',
     address: 'Jl. M.H. Thamrin (UOB Plaza), Kebon Melati, Tanah Abang',
@@ -865,11 +990,14 @@ export const SEED_REPORTS: SeedReportDef[] = [
     actualPklCount: 2,
     educationNotes: 'Dua pedagang kuliner telah didampingi menuju Lokasi Binaan JP 37 Thamrin City.',
     relocationRequested: true,
-    actionByDemoKey: 'satpol-jkt-pusat',
+    actionByDemoKey: 'satpol-jkp-tanah-abang',
     actionOffsetMinutes: 28,
     validatedByDemoKey: 'dinas-jkt-pusat',
     validatedOffsetMinutes: 72,
+    recommendedSiteName: 'Lokasi Binaan JP 37 Thamrin City',
     relocationSiteName: 'Lokasi Binaan JP 37 Thamrin City',
+    relocationMatchStatus: 'NEAREST_AVAILABLE',
+    relocationCapacityCommitted: true,
     relocationOffsetMinutes: 75,
     createdHoursAgo: 48,
     auditLogs: [
@@ -884,8 +1012,8 @@ export const SEED_REPORTS: SeedReportDef[] = [
       },
       {
         actorRole: 'SATPOL_PP',
-        actorDemoKey: 'satpol-jkt-pusat',
-        actorName: 'Petugas Satpol PP Jakarta Pusat',
+        actorDemoKey: 'satpol-jkp-tanah-abang',
+        actorName: 'Regu Patroli Alpha (Tanah Abang) (Tim Alpha — Kec. Tanah Abang)',
         action: 'ACTION_SUBMITTED',
         fromStatus: 'NEED_ACTION',
         toStatus: 'PENDING_VALIDATION',
@@ -922,6 +1050,7 @@ export const SEED_REPORTS: SeedReportDef[] = [
     regionCode: 'semarang',
     cameraId: 'smg_001_SIMPANG_LIMA_UTARA',
     zoneName: 'Pedestrian Kawasan Simpang Lima',
+    assignedTeamCode: 'smg-tengah',
     source: 'AUTO_AI',
     status: 'NEED_ACTION',
     address: 'Jl. Pandanaran / Simpang Lima Sisi Utara, Semarang Tengah',
@@ -932,6 +1061,8 @@ export const SEED_REPORTS: SeedReportDef[] = [
     beforeImageUrl: DEMO_BEFORE_IMG,
     isSimulationMode: false,
     relocationRequested: false,
+    recommendedSiteName: 'Selter PKL Taman Menteri Supeno',
+    relocationMatchStatus: 'FALLBACK_AVAILABLE',
     createdHoursAgo: 2,
     auditLogs: [
       {
@@ -950,6 +1081,7 @@ export const SEED_REPORTS: SeedReportDef[] = [
     regionCode: 'semarang',
     cameraId: 'smg_008_PASAR_JOHAR_TIMUR',
     zoneName: 'Koridor Pasar Johar - Aloon-Aloon',
+    assignedTeamCode: 'smg-tengah',
     source: 'AUTO_AI',
     status: 'PENDING_VALIDATION',
     address: 'Koridor Pasar Johar Timur, Kauman, Semarang Tengah',
@@ -964,8 +1096,10 @@ export const SEED_REPORTS: SeedReportDef[] = [
     actualPklCount: 4,
     educationNotes: 'Keempat pedagang diedukasi dan bersedia pindah ke Selter PKL Kawasan Johar Baru.',
     relocationRequested: true,
-    actionByDemoKey: 'satpol-semarang',
+    actionByDemoKey: 'satpol-smg-tengah',
     actionOffsetMinutes: 40,
+    recommendedSiteName: 'Selter PKL Kawasan Johar Baru',
+    relocationMatchStatus: 'NEAREST_AVAILABLE',
     createdHoursAgo: 8,
     auditLogs: [
       {
@@ -979,8 +1113,8 @@ export const SEED_REPORTS: SeedReportDef[] = [
       },
       {
         actorRole: 'SATPOL_PP',
-        actorDemoKey: 'satpol-semarang',
-        actorName: 'Petugas Satpol PP Kota Semarang',
+        actorDemoKey: 'satpol-smg-tengah',
+        actorName: 'Regu Patroli Tengah (Semarang Tengah) (Tim Tengah — Kec. Semarang Tengah)',
         action: 'ACTION_SUBMITTED',
         fromStatus: 'NEED_ACTION',
         toStatus: 'PENDING_VALIDATION',
@@ -994,6 +1128,7 @@ export const SEED_REPORTS: SeedReportDef[] = [
     regionCode: 'semarang',
     cameraId: 'smg_014_KOTA_LAMA_LETJEN_SUPRAPTO',
     zoneName: 'Koridor Pasar Johar - Aloon-Aloon',
+    assignedTeamCode: 'smg-selatan-barat',
     source: 'MANUAL',
     status: 'NEEDS_REVISION',
     address: 'Jl. Letjen Suprapto (Kawasan Kota Lama), Semarang Utara',
@@ -1008,7 +1143,7 @@ export const SEED_REPORTS: SeedReportDef[] = [
     actualPklCount: 1,
     educationNotes: 'Diberikan teguran tertulis dan sosialisasi kawasan cagar budaya.',
     relocationRequested: false,
-    actionByDemoKey: 'satpol-semarang',
+    actionByDemoKey: 'satpol-smg-selatan-barat',
     actionOffsetMinutes: 55,
     validatedByDemoKey: 'dinas-semarang',
     revisionReason: 'Catatan edukasi belum mencantumkan komitmen pemindahan gerobak; mohon lengkapi foto kondisi trotoar bersih.',
@@ -1016,8 +1151,8 @@ export const SEED_REPORTS: SeedReportDef[] = [
     auditLogs: [
       {
         actorRole: 'SATPOL_PP',
-        actorDemoKey: 'satpol-semarang',
-        actorName: 'Petugas Satpol PP Kota Semarang',
+        actorDemoKey: 'satpol-smg-selatan-barat',
+        actorName: 'Regu Patroli Selatan & Barat Semarang (Tim Selatan & Barat — Koridor Kota)',
         action: 'REPORT_CREATED',
         fromStatus: null,
         toStatus: 'NEED_ACTION',
@@ -1026,8 +1161,8 @@ export const SEED_REPORTS: SeedReportDef[] = [
       },
       {
         actorRole: 'SATPOL_PP',
-        actorDemoKey: 'satpol-semarang',
-        actorName: 'Petugas Satpol PP Kota Semarang',
+        actorDemoKey: 'satpol-smg-selatan-barat',
+        actorName: 'Regu Patroli Selatan & Barat Semarang (Tim Selatan & Barat — Koridor Kota)',
         action: 'ACTION_SUBMITTED',
         fromStatus: 'NEED_ACTION',
         toStatus: 'PENDING_VALIDATION',
@@ -1051,6 +1186,7 @@ export const SEED_REPORTS: SeedReportDef[] = [
     regionCode: 'semarang',
     cameraId: 'smg_001_SIMPANG_LIMA_UTARA',
     zoneName: 'Pedestrian Kawasan Simpang Lima',
+    assignedTeamCode: 'smg-tengah',
     source: 'AUTO_AI',
     status: 'VALIDATED',
     address: 'Jl. Pandanaran / Simpang Lima Sisi Utara, Semarang Tengah',
@@ -1065,11 +1201,14 @@ export const SEED_REPORTS: SeedReportDef[] = [
     actualPklCount: 3,
     educationNotes: 'Tiga pedagang kuliner diarahkan dan difasilitasi ke Sentra Kuliner PKL Simpang Lima.',
     relocationRequested: true,
-    actionByDemoKey: 'satpol-semarang',
+    actionByDemoKey: 'satpol-smg-tengah',
     actionOffsetMinutes: 30,
     validatedByDemoKey: 'dinas-semarang',
     validatedOffsetMinutes: 65,
+    recommendedSiteName: 'Sentra Kuliner PKL Simpang Lima (Pujasera)',
     relocationSiteName: 'Sentra Kuliner PKL Simpang Lima (Pujasera)',
+    relocationMatchStatus: 'NEAREST_AVAILABLE',
+    relocationCapacityCommitted: true,
     relocationOffsetMinutes: 68,
     createdHoursAgo: 36,
     auditLogs: [
@@ -1084,8 +1223,8 @@ export const SEED_REPORTS: SeedReportDef[] = [
       },
       {
         actorRole: 'SATPOL_PP',
-        actorDemoKey: 'satpol-semarang',
-        actorName: 'Petugas Satpol PP Kota Semarang',
+        actorDemoKey: 'satpol-smg-tengah',
+        actorName: 'Regu Patroli Tengah (Semarang Tengah) (Tim Tengah — Kec. Semarang Tengah)',
         action: 'ACTION_SUBMITTED',
         fromStatus: 'NEED_ACTION',
         toStatus: 'PENDING_VALIDATION',
@@ -1119,7 +1258,7 @@ export const SEED_REPORTS: SeedReportDef[] = [
 
 /**
  * Mem-parse array JSON mentah hasil `AI-Patra/cctv_catalog/cctv_snapshot.json`.
- * Baris tidak valid dilewati dengan aman dan dilaporkan agar proses sync tidak crash total.
+ * Sekaligus menerapkan normalisasi district untuk 8 kamera Semarang yang bernilai null.
  */
 export function parseCctvSnapshotItems(rawList: unknown): {
   valid: CctvCatalogRawItem[];
@@ -1134,7 +1273,15 @@ export function parseCctvSnapshotItems(rawList: unknown): {
   for (const item of rawList) {
     const parsed = cctvCatalogRawItemSchema.safeParse(item);
     if (parsed.success) {
-      valid.push(parsed.data);
+      const cam = parsed.data;
+      const normalizedDistrict =
+        cam.district && cam.district.trim().length > 0
+          ? cam.district.trim()
+          : (SEMARANG_NULL_DISTRICT_OVERRIDES[cam.id] ?? cam.district ?? null);
+      valid.push({
+        ...cam,
+        district: normalizedDistrict,
+      });
     } else {
       skippedCount++;
     }

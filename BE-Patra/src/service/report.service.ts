@@ -13,7 +13,12 @@ import type {
   ViolationReportDetailDto,
   ViolationReportDto,
 } from '../interface/index.js';
-import { assertRegionAccess } from '../middlewares/auth.js';
+import {
+  assertDistrictAccess,
+  assertRegionAccess,
+  formatActorName,
+  hasDistrictLock,
+} from '../middlewares/auth.js';
 import { AppError } from '../middlewares/errorHandler.js';
 import ReportRepository, {
   type AuditLogRecord,
@@ -73,6 +78,7 @@ export function mapReportToDto(record: ReportRecord): ViolationReportDto {
     regionId: record.regionId,
     cameraId: record.cameraId,
     zoneId: record.zoneId,
+    assignedTeamId: record.assignedTeamId ?? null,
     source: record.source,
     status: record.status,
     address: record.address,
@@ -94,7 +100,11 @@ export function mapReportToDto(record: ReportRecord): ViolationReportDto {
     validatedByUserId: record.validatedByUserId,
     validatedAt: record.validatedAt ? record.validatedAt.toISOString() : null,
     revisionReason: record.revisionReason,
+    recommendedRelocationSiteId: record.recommendedRelocationSiteId ?? null,
     relocationSiteId: record.relocationSiteId,
+    relocationMatchStatus: record.relocationMatchStatus ?? null,
+    unaccommodatedPklCount: record.unaccommodatedPklCount ?? 0,
+    relocationCapacityCommitted: record.relocationCapacityCommitted ?? false,
     relocationAssignedAt: record.relocationAssignedAt
       ? record.relocationAssignedAt.toISOString()
       : null,
@@ -108,9 +118,13 @@ function toAutoDetectSummary(record: ReportRecord): AutoDetectResponseData['repo
     id: record.id,
     reportCode: record.reportCode,
     cameraId: record.cameraId,
+    assignedTeamId: record.assignedTeamId ?? null,
     status: record.status,
     detectedCount: record.detectedCount,
     beforeImageUrl: record.beforeImageUrl,
+    recommendedRelocationSiteId: record.recommendedRelocationSiteId ?? null,
+    relocationMatchStatus: record.relocationMatchStatus ?? null,
+    unaccommodatedPklCount: record.unaccommodatedPklCount ?? 0,
     createdAt: record.createdAt.toISOString(),
   };
 }
@@ -139,6 +153,7 @@ export function createReportService(deps: ReportServiceDeps = {}) {
         throw new AppError(404, 'CCTV_NOT_FOUND', 'Kamera CCTV tidak ditemukan.');
       }
       assertRegionAccess(user, camera.regionId);
+      assertDistrictAccess(user, camera.district, 'kamera CCTV');
 
       const now = getNow();
       const active = await repo.findActiveNeedActionByCamera(camera.id);
@@ -163,7 +178,7 @@ export function createReportService(deps: ReportServiceDeps = {}) {
             {
               actorId: user.sub,
               actorRole: 'SATPOL_PP',
-              actorName: user.email,
+              actorName: formatActorName(user),
               action: 'MANUAL_EVIDENCE_UPDATED',
               fromStatus: 'NEED_ACTION',
               toStatus: 'NEED_ACTION',
@@ -285,6 +300,7 @@ export function createReportService(deps: ReportServiceDeps = {}) {
           regionId: camera.regionId,
           cameraId: camera.id,
           zoneId,
+          assignedTeamId: user.teamId ?? null,
           source: payload.source,
           status: 'NEED_ACTION',
           address: camera.regionLabel || camera.name,
@@ -300,7 +316,9 @@ export function createReportService(deps: ReportServiceDeps = {}) {
           actorId: payload.source === 'MANUAL' ? user.sub : null,
           actorRole: payload.source === 'MANUAL' ? 'SATPOL_PP' : 'SYSTEM_AI',
           actorName:
-            payload.source === 'MANUAL' ? user.email : 'PATRA Vision AI (1 FPS)',
+            payload.source === 'MANUAL'
+              ? formatActorName(user)
+              : 'PATRA Vision AI (1 FPS)',
           action: 'REPORT_CREATED',
           fromStatus: null,
           toStatus: 'NEED_ACTION',
@@ -340,7 +358,14 @@ export function createReportService(deps: ReportServiceDeps = {}) {
         totalPages: number;
       };
     }> {
-      const { reports, totalItems } = await repo.findManyByRegion(user.regionId, query);
+      const scope = hasDistrictLock(user)
+        ? { teamId: user.teamId, allowedDistricts: user.assignedDistricts }
+        : undefined;
+      const { reports, totalItems } = await repo.findManyByRegion(
+        user.regionId,
+        query,
+        scope,
+      );
       return {
         reports: reports.map(mapReportToDto),
         pagination: {
@@ -361,6 +386,7 @@ export function createReportService(deps: ReportServiceDeps = {}) {
         throw new AppError(404, 'REPORT_NOT_FOUND', 'Laporan pelanggaran tidak ditemukan.');
       }
       assertRegionAccess(user, detail.regionId);
+      assertDistrictAccess(user, detail.cameraDistrict, 'laporan pelanggaran');
 
       const sites = await repo.findActiveRelocationSitesByRegion(detail.regionId);
       return this.formatDetail(detail, sites);
@@ -385,6 +411,7 @@ export function createReportService(deps: ReportServiceDeps = {}) {
         throw new AppError(404, 'REPORT_NOT_FOUND', 'Laporan pelanggaran tidak ditemukan.');
       }
       assertRegionAccess(user, existing.regionId);
+      assertDistrictAccess(user, existing.cameraDistrict, 'laporan pelanggaran');
 
       const allowedStatuses: ReportStatus[] = ['NEED_ACTION', 'NEEDS_REVISION'];
       if (!allowedStatuses.includes(existing.status)) {
@@ -418,7 +445,7 @@ export function createReportService(deps: ReportServiceDeps = {}) {
         {
           actorId: user.sub,
           actorRole: 'SATPOL_PP',
-          actorName: user.email,
+          actorName: formatActorName(user),
           action: isRevisionResubmit ? 'REVISION_SUBMITTED' : 'ACTION_SUBMITTED',
           fromStatus: existing.status,
           toStatus: 'PENDING_VALIDATION',
@@ -480,7 +507,7 @@ export function createReportService(deps: ReportServiceDeps = {}) {
               {
                 actorId: user.sub,
                 actorRole: 'DINAS_UMKM',
-                actorName: user.email,
+                actorName: formatActorName(user),
                 action: 'REPORT_VALIDATED',
                 fromStatus: 'PENDING_VALIDATION',
                 toStatus: 'VALIDATED',
@@ -501,7 +528,7 @@ export function createReportService(deps: ReportServiceDeps = {}) {
               {
                 actorId: user.sub,
                 actorRole: 'DINAS_UMKM',
-                actorName: user.email,
+                actorName: formatActorName(user),
                 action: 'REVISION_REQUESTED',
                 fromStatus: 'PENDING_VALIDATION',
                 toStatus: 'NEEDS_REVISION',
@@ -559,7 +586,8 @@ export function createReportService(deps: ReportServiceDeps = {}) {
         );
       }
 
-      const site = await repo.findRelocationSiteById(input.relocationSiteId);
+      const siteId = input.relocationSiteId ?? input.allocations?.[0]?.relocationSiteId ?? '';
+      const site = await repo.findRelocationSiteById(siteId);
       if (!site) {
         throw new AppError(404, 'RELOCATION_SITE_NOT_FOUND', 'Lokasi binaan tidak ditemukan.');
       }
@@ -585,7 +613,7 @@ export function createReportService(deps: ReportServiceDeps = {}) {
         {
           actorId: user.sub,
           actorRole: 'DINAS_UMKM',
-          actorName: user.email,
+          actorName: formatActorName(user),
           action: 'RELOCATION_ASSIGNED',
           fromStatus: 'VALIDATED',
           toStatus: 'VALIDATED',
@@ -614,7 +642,10 @@ export function createReportService(deps: ReportServiceDeps = {}) {
         ...mapReportToDto(detail),
         cameraName: detail.cameraName,
         zoneName: detail.zoneName ?? null,
+        assignedTeam: detail.assignedTeam ?? null,
+        recommendedRelocationSiteName: detail.recommendedRelocationSiteName ?? null,
         relocationSiteName: detail.relocationSiteName ?? null,
+        relocationAllocations: detail.relocationAllocations ?? [],
         auditLogs: detail.auditLogs.map(mapAuditLogToDto),
         nearestRelocationSites: findNearestRelocationSites(
           detail.lat,

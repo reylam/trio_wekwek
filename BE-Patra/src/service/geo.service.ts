@@ -1,6 +1,11 @@
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 import { point as turfPoint, polygon as turfPolygon } from '@turf/helpers';
-import type { GeoLngLat, NearestRelocationSiteDto } from '../interface/index.js';
+import type {
+  CapacityStatus,
+  GeoLngLat,
+  NearestRelocationSiteDto,
+  SiteCapacityMetrics,
+} from '../interface/index.js';
 
 const EARTH_RADIUS_METERS = 6_371_000;
 
@@ -42,9 +47,54 @@ export interface RelocationSiteGeoCandidate {
   lng: number;
   tradeCategories: string[];
   facilities: string[];
+  maxCapacity?: number;
+  occupiedCapacity?: number;
+  pendingCapacity?: number;
 }
 
-// STRICT OUT-OF-SCOPE: Hanya mengembalikan nama, alamat, jarak, kategori, dan fasilitas (TANPA kuota).
+export function aggregatePendingCapacity(
+  rows: Array<{ relocationSiteId: string; allocatedCount: number }>,
+): Map<string, number> {
+  const map = new Map<string, number>();
+  for (const row of rows) {
+    if (row.allocatedCount <= 0) continue;
+    map.set(
+      row.relocationSiteId,
+      (map.get(row.relocationSiteId) ?? 0) + row.allocatedCount,
+    );
+  }
+  return map;
+}
+
+export function computeSiteCapacityMetrics(
+  maxCapacity: number,
+  occupiedCapacity: number,
+  pendingCapacity = 0,
+): SiteCapacityMetrics {
+  const safeMax = Math.max(1, Math.trunc(maxCapacity));
+  const safeOcc = Math.max(0, Math.trunc(occupiedCapacity));
+  const safePending = Math.max(0, Math.trunc(pendingCapacity));
+  const availableCapacity = Math.max(0, safeMax - safeOcc);
+  const effectiveAvailableCapacity = Math.max(0, safeMax - safeOcc - safePending);
+  const occupancyPercent = Math.min(100, Math.round((safeOcc / safeMax) * 100));
+  const capacityStatus: CapacityStatus =
+    availableCapacity === 0
+      ? 'FULL'
+      : occupancyPercent >= 80
+        ? 'NEAR_FULL'
+        : 'AVAILABLE';
+
+  return {
+    maxCapacity: safeMax,
+    occupiedCapacity: safeOcc,
+    pendingCapacity: safePending,
+    availableCapacity,
+    effectiveAvailableCapacity,
+    occupancyPercent,
+    capacityStatus,
+  };
+}
+
 export function findNearestRelocationSites(
   lat: number,
   lng: number,
@@ -54,6 +104,11 @@ export function findNearestRelocationSites(
   return sites
     .map((site) => {
       const distanceMeters = haversineDistanceMeters(lat, lng, site.lat, site.lng);
+      const metrics = computeSiteCapacityMetrics(
+        site.maxCapacity ?? 20,
+        site.occupiedCapacity ?? 0,
+        site.pendingCapacity ?? 0,
+      );
       return {
         id: site.id,
         name: site.name,
@@ -62,6 +117,7 @@ export function findNearestRelocationSites(
         lng: site.lng,
         tradeCategories: site.tradeCategories,
         facilities: site.facilities,
+        ...metrics,
         distanceMeters,
         distanceLabel: formatDistanceLabel(distanceMeters),
       };

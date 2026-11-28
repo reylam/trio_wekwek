@@ -1,10 +1,10 @@
 > **Aturan Agen AI:** Dilarang menambah, mengganti nama, atau menghapus field, enum, dan endpoint di luar dokumen ini tanpa persetujuan eksplisit user. Jika fitur butuh perubahan kontrak, berhenti dan tanyakan dulu.
 
-# PHASE 3B — DATA CONTRACT & SINGLE SOURCE OF TRUTH (`PATRA`)
+# PHASE 3B (REVISED PHASE 5) — DATA CONTRACT & SINGLE SOURCE OF TRUTH (`PATRA`)
 
 > **Produk:** `PATRA (Pantauan Transparan Ruang Publik)`  
 > **Fungsi Dokumen:** _Single Source of Truth_ mutlak bagi Dev 1 (Fullstack), Dev 2 (AI & CCTV), Dev 3 (UI/UX & QA), dan AI Coding Agent untuk **Skema Prisma PostgreSQL**, **Kontrak REST API Express**, **Skema JSON Katalog CCTV Publik**, **Interface `<CctvPlayerWithAI />`**, dan **Sample Seed Data**.  
-> **Status Dokumen:** Draft Phase 3 — Menunggu Tinjauan & Persetujuan (_Stop-Gate_)
+> **Status Dokumen:** `Phase 5 Revised — Approved by User` (PatrolTeam Hard-Lock Kecamatan, Kapasitas + Sisa Efektif, & 4-Tier Relocation Waterfall; lihat [docs/system_flow_redesign.md](../../docs/system_flow_redesign.md))
 
 ---
 
@@ -12,15 +12,21 @@
 
 ```mermaid
 erDiagram
+    Region ||--o{ PatrolTeam : "memiliki tim patroli kecamatan"
     Region ||--o{ User : "memiliki akun instansi"
     Region ||--o{ CctvCamera : "memiliki kamera publik"
     Region ||--o{ RestrictedZone : "memiliki zona terlarang"
     Region ||--o{ RelocationSite : "memiliki lokasi binaan"
     Region ||--o{ ViolationReport : "mencatat laporan kota"
 
+    PatrolTeam ||--o{ User : "menaungi petugas Satpol PP"
+    PatrolTeam ||--o{ ViolationReport : "ditugaskan ke laporan"
+
     CctvCamera ||--o{ ViolationReport : "mendeteksi pelanggaran"
     RestrictedZone ||--o{ ViolationReport : "mencocokkan zona (opsional)"
-    RelocationSite ||--o{ ViolationReport : "menjadi arahan relokasi (opsional)"
+    RelocationSite ||--o{ ViolationReport : "rekomendasi / lokasi utama (opsional)"
+    RelocationSite ||--o{ ReportRelocationAllocation : "menerima alokasi slot"
+    ViolationReport ||--o{ ReportRelocationAllocation : "memiliki 1..N alokasi relokasi"
 
     User ||--o{ ViolationReport : "ditindak oleh (actionByUserId)"
     User ||--o{ ViolationReport : "divalidasi oleh (validatedByUserId)"
@@ -42,9 +48,21 @@ erDiagram
         datetime createdAt
     }
 
+    PatrolTeam {
+        string id PK
+        string regionId FK
+        string code UK
+        string name
+        json assignedDistricts
+        boolean isActive
+        datetime createdAt
+        datetime updatedAt
+    }
+
     User {
         string id PK
         string regionId FK
+        string teamId FK
         string email UK
         string passwordHash
         string fullName
@@ -85,6 +103,7 @@ erDiagram
     RestrictedZone {
         string id PK
         string regionId FK
+        string district
         string name
         string description
         json points
@@ -102,6 +121,8 @@ erDiagram
         float lng
         json tradeCategories
         json facilities
+        int maxCapacity
+        int occupiedCapacity
         boolean isActive
         datetime createdAt
         datetime updatedAt
@@ -113,6 +134,7 @@ erDiagram
         string regionId FK
         string cameraId FK
         string zoneId FK
+        string assignedTeamId FK
         ReportSource source
         ReportStatus status
         string address
@@ -132,10 +154,24 @@ erDiagram
         string validatedByUserId FK
         datetime validatedAt
         string revisionReason
+        string recommendedRelocationSiteId FK
         string relocationSiteId FK
+        RelocationMatchStatus relocationMatchStatus
+        int unaccommodatedPklCount
+        boolean relocationCapacityCommitted
         datetime relocationAssignedAt
         datetime createdAt
         datetime updatedAt
+    }
+
+    ReportRelocationAllocation {
+        string id PK
+        string reportId FK
+        string relocationSiteId FK
+        int allocatedCount
+        int rankOrder
+        boolean isRecommended
+        datetime createdAt
     }
 
     AuditLog {
@@ -153,15 +189,17 @@ erDiagram
     }
 ```
 
-### Penjelasan Ringkas 7 Entitas Inti
+### Penjelasan Ringkas 9 Entitas Inti
 
 1. **`Region`:** Master kabupaten/kota (kunci _Region-Locked_ `city`), koordinat pusat peta, dan nama instansi dinamis (`umkmAgencyName`, mis. _Suku Dinas PPKUKM Jakarta Pusat_ vs _Dinas Koperasi dan UKM Kota Semarang_).
-2. **`User`:** Akun pemerintah (`SATPOL_PP` / `DINAS_UMKM`) terikat ke 1 `regionId`, mendukung login standar (`passwordHash`) dan 1-Click Demo (`isDemo`, `demoKey`).
-3. **`CctvCamera`:** Katalog kamera publik _pre-synced_ dari `indonesia_sources.py` (ID mengikuti format sumber, mis. `jkt_035_JKP_POLRI_UOB_PLAZA_C01`), lengkap dengan `roiPolygon` ternormalisasi opsional (`0..1`) dan `fallbackVideoUrl`.
-4. **`RestrictedZone`:** Poligon zona terlarang per kota (GeoJSON `[lng, lat][]`) yang dikelola Satpol PP dan ditampilkan di Peta Publik & Operasional.
-5. **`RelocationSite`:** Lokasi Binaan resmi yang dikelola Dinas UMKM (**tanpa kolom kuota/kapasitas** sesuai _Strict Out-of-Scope_), mendukung _soft-archive_ (`isActive = false`).
-6. **`ViolationReport`:** Entitas insiden pelanggaran tunggal (`1 laporan NEED_ACTION aktif per cameraId`) dari deteksi hingga validasi, relokasi, dan Berita Acara PDF.
-7. **`AuditLog`:** Jejak audit **append-only** (tidak memiliki kolom `updatedAt` dan tidak memiliki endpoint ubah/hapus) untuk mencatat seluruh transisi status, alasan revisi, dan pengarsipan URL snapshot _Before_ sebelumnya saat terjadi _Incident Escalation_.
+2. **`PatrolTeam`:** Unit tim patroli Satpol PP di bawah 1 `Region` dengan daftar kecamatan tugas (`assignedDistricts`). Menjadi dasar *Hard-Lock* per kecamatan bagi akun `SATPOL_PP` bertim dan agregasi performa di Dashboard Monitoring Sudin.
+3. **`User`:** Akun pemerintah (`SATPOL_PP` / `DINAS_UMKM`) terikat ke 1 `regionId` dan (untuk `SATPOL_PP` berkecamatan) ke 1 `teamId`, mendukung login standar (`passwordHash`) dan 1-Click Demo (`isDemo`, `demoKey`).
+4. **`CctvCamera`:** Katalog kamera publik _pre-synced_ dari `indonesia_sources.py` (ID mengikuti format sumber, mis. `jkt_035_JKP_POLRI_UOB_PLAZA_C01`), lengkap dengan `district`, `roiPolygon` ternormalisasi opsional (`0..1`), dan `fallbackVideoUrl`.
+5. **`RestrictedZone`:** Poligon zona terlarang per kota/kecamatan (`district` opsional, GeoJSON `[lng, lat][]`) yang dikelola tim Satpol PP dan ditampilkan di Peta Publik & Operasional.
+6. **`RelocationSite`:** Lokasi Binaan resmi yang dikelola Dinas UMKM / Sudin lengkap dengan kapasitas agregat (`maxCapacity`, `occupiedCapacity`), mendukung _soft-archive_ (`isActive = false`).
+7. **`ViolationReport`:** Entitas insiden pelanggaran tunggal (`1 laporan NEED_ACTION aktif per cameraId`) dari deteksi hingga validasi, alokasi relokasi otomatis sejak awal (`recommendedRelocationSiteId`, `relocationMatchStatus`, `unaccommodatedPklCount`, `relocationCapacityCommitted`), dan Berita Acara PDF.
+8. **`ReportRelocationAllocation`:** Tabel alokasi relokasi per laporan untuk mendukung 1 tujuan utama maupun *Split Darurat* multi-lokasi (`allocatedCount` PKL per `relocationSiteId`) serta menghitung `pendingCapacity` secara dinamis.
+9. **`AuditLog`:** Jejak audit **append-only** (tidak memiliki kolom `updatedAt` dan tidak memiliki endpoint ubah/hapus) untuk mencatat seluruh transisi status, alasan revisi, *override* relokasi, dan pengarsipan URL snapshot _Before_ sebelumnya saat terjadi _Incident Escalation_.
 
 ---
 
@@ -211,6 +249,14 @@ enum EnforcementActionType {
   RELOCATION_ASSISTANCE
 }
 
+enum RelocationMatchStatus {
+  NEAREST_AVAILABLE
+  FALLBACK_AVAILABLE
+  SPLIT_FALLBACK
+  PARTIAL_UNACCOMMODATED
+  ALL_SITES_FULL
+}
+
 enum AuditAction {
   REPORT_CREATED
   INCIDENT_ESCALATED
@@ -220,6 +266,7 @@ enum AuditAction {
   REVISION_SUBMITTED
   REPORT_VALIDATED
   RELOCATION_ASSIGNED
+  RELOCATION_OVERRIDDEN
 }
 
 model Region {
@@ -235,6 +282,7 @@ model Region {
   defaultZoom      Int               @default(13)
   createdAt        DateTime          @default(now())
 
+  patrolTeams      PatrolTeam[]
   users            User[]
   cameras          CctvCamera[]
   zones            RestrictedZone[]
@@ -244,24 +292,44 @@ model Region {
   @@index([province])
 }
 
+model PatrolTeam {
+  id                String            @id @default(uuid())
+  regionId          String
+  region            Region            @relation(fields: [regionId], references: [id], onDelete: Restrict)
+  code              String            @unique // mis. "jkp-tanah-abang"
+  name              String            // mis. "Tim Alpha — Kec. Tanah Abang"
+  // Array string nama kecamatan sesuai CctvCamera.district, mis. ["Tanah Abang"]
+  assignedDistricts Json
+  isActive          Boolean           @default(true)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  users             User[]
+  reports           ViolationReport[]
+
+  @@index([regionId, isActive])
+}
+
 model User {
   id               String            @id @default(uuid())
   regionId         String
   region           Region            @relation(fields: [regionId], references: [id], onDelete: Restrict)
+  teamId           String?
+  team             PatrolTeam?       @relation(fields: [teamId], references: [id], onDelete: SetNull)
   email            String            @unique
   passwordHash     String
   fullName         String
   noTelp           String?           @map("no_telp")
   role             UserRole
   isDemo           Boolean           @default(false)
-  demoKey          String?           @unique // mis. "satpol-jkt-pusat", "dinas-jkt-pusat"
+  demoKey          String?           @unique // mis. "satpol-jkp-tanah-abang", "dinas-jkt-pusat"
   createdAt        DateTime          @default(now())
 
   actionedReports  ViolationReport[] @relation("ReportActionedBy")
   validatedReports ViolationReport[] @relation("ReportValidatedBy")
   auditLogs        AuditLog[]
 
-  @@index([regionId, role])
+  @@index([regionId, role, teamId])
 }
 
 model CctvCamera {
@@ -303,6 +371,7 @@ model RestrictedZone {
   id          String            @id @default(uuid())
   regionId    String
   region      Region            @relation(fields: [regionId], references: [id], onDelete: Restrict)
+  district    String?
   name        String
   description String?
   // GeoJSON ring terbuka [[lng, lat], ...] minimal 3 titik (divalidasi Turf.js anti self-intersecting)
@@ -313,82 +382,111 @@ model RestrictedZone {
 
   reports     ViolationReport[]
 
-  @@index([regionId, isActive])
+  @@index([regionId, district, isActive])
 }
 
 model RelocationSite {
-  id              String            @id @default(uuid())
-  regionId        String
-  region          Region            @relation(fields: [regionId], references: [id], onDelete: Restrict)
-  name            String
-  address         String
-  lat             Float
-  lng             Float
+  id                 String                       @id @default(uuid())
+  regionId           String
+  region             Region                       @relation(fields: [regionId], references: [id], onDelete: Restrict)
+  name               String
+  address            String
+  lat                Float
+  lng                Float
   // Array string kategori dagangan, mis. ["Kuliner", "Minuman", "Kerajinan"]
-  tradeCategories Json
-  // Array string fasilitas, mis. ["Listrik", "Air Bersih", "Toilet", "Parkir"] — TANPA KUOTA
-  facilities      Json
-  isActive        Boolean           @default(true)
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  tradeCategories    Json
+  // Array string fasilitas, mis. ["Listrik", "Air Bersih", "Toilet", "Parkir"]
+  facilities         Json
+  maxCapacity        Int                          @default(20)
+  occupiedCapacity   Int                          @default(0)
+  isActive           Boolean                      @default(true)
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
 
-  reports         ViolationReport[]
+  recommendedReports ViolationReport[]            @relation("ReportRecommendedSite")
+  reports            ViolationReport[]            @relation("ReportPrimarySite")
+  allocations        ReportRelocationAllocation[]
 
   @@index([regionId, isActive])
 }
 
 model ViolationReport {
-  id                   String                 @id @default(uuid())
-  reportCode           String                 @unique // mis. "PTR-202611-0001"
-  regionId             String
-  region               Region                 @relation(fields: [regionId], references: [id], onDelete: Restrict)
-  cameraId             String
-  camera               CctvCamera             @relation(fields: [cameraId], references: [id], onDelete: Restrict)
-  zoneId               String?
-  zone                 RestrictedZone?        @relation(fields: [zoneId], references: [id], onDelete: SetNull)
+  id                          String                       @id @default(uuid())
+  reportCode                  String                       @unique // mis. "PTR-202611-0001"
+  regionId                    String
+  region                      Region                       @relation(fields: [regionId], references: [id], onDelete: Restrict)
+  cameraId                    String
+  camera                      CctvCamera                   @relation(fields: [cameraId], references: [id], onDelete: Restrict)
+  zoneId                      String?
+  zone                        RestrictedZone?              @relation(fields: [zoneId], references: [id], onDelete: SetNull)
+  assignedTeamId              String?
+  assignedTeam                PatrolTeam?                  @relation(fields: [assignedTeamId], references: [id], onDelete: SetNull)
 
-  source               ReportSource           @default(AUTO_AI)
-  status               ReportStatus           @default(NEED_ACTION)
-  address              String
-  lat                  Float
-  lng                  Float
+  source                      ReportSource                 @default(AUTO_AI)
+  status                      ReportStatus                 @default(NEED_ACTION)
+  address                     String
+  lat                         Float
+  lng                         Float
 
   // Data deteksi (Before) — menerapkan Peak Active Count saat Incident Merging
-  detectedCount        Int                    @default(1)
-  maxConfidence        Float                  @default(0.0)
-  beforeImageUrl       String
-  isSimulationMode     Boolean                @default(false)
+  detectedCount               Int                          @default(1)
+  maxConfidence               Float                        @default(0.0)
+  beforeImageUrl              String
+  isSimulationMode            Boolean                      @default(false)
 
   // Data penindakan Satpol PP (After)
-  afterImageUrl        String?
-  actionType           EnforcementActionType?
-  actualPklCount       Int?
-  educationNotes       String?
-  relocationRequested  Boolean                @default(false)
-  actionByUserId       String?
-  actionByUser         User?                  @relation("ReportActionedBy", fields: [actionByUserId], references: [id], onDelete: SetNull)
-  actionSubmittedAt    DateTime?
+  afterImageUrl               String?
+  actionType                  EnforcementActionType?
+  actualPklCount              Int?
+  educationNotes              String?
+  relocationRequested         Boolean                      @default(false)
+  actionByUserId              String?
+  actionByUser                User?                        @relation("ReportActionedBy", fields: [actionByUserId], references: [id], onDelete: SetNull)
+  actionSubmittedAt           DateTime?
 
-  // Data validasi & relokasi Dinas UMKM
-  validatedByUserId    String?
-  validatedByUser      User?                  @relation("ReportValidatedBy", fields: [validatedByUserId], references: [id], onDelete: SetNull)
-  validatedAt          DateTime?
-  revisionReason       String?
-  relocationSiteId     String?
-  relocationSite       RelocationSite?        @relation(fields: [relocationSiteId], references: [id], onDelete: SetNull)
-  relocationAssignedAt DateTime?
+  // Data validasi & relokasi (Rekomendasi Awal + Commit Kapasitas Atomik saat VALIDATED)
+  validatedByUserId           String?
+  validatedByUser             User?                        @relation("ReportValidatedBy", fields: [validatedByUserId], references: [id], onDelete: SetNull)
+  validatedAt                 DateTime?
+  revisionReason              String?
+  recommendedRelocationSiteId String?
+  recommendedRelocationSite   RelocationSite?              @relation("ReportRecommendedSite", fields: [recommendedRelocationSiteId], references: [id], onDelete: SetNull)
+  relocationSiteId            String?
+  relocationSite              RelocationSite?              @relation("ReportPrimarySite", fields: [relocationSiteId], references: [id], onDelete: SetNull)
+  relocationMatchStatus       RelocationMatchStatus?
+  unaccommodatedPklCount      Int                          @default(0)
+  relocationCapacityCommitted Boolean                      @default(false)
+  relocationAssignedAt        DateTime?
 
-  createdAt            DateTime               @default(now())
-  updatedAt            DateTime               @updatedAt
+  createdAt                   DateTime                     @default(now())
+  updatedAt                   DateTime                     @updatedAt
 
-  auditLogs            AuditLog[]
+  relocationAllocations       ReportRelocationAllocation[]
+  auditLogs                   AuditLog[]
 
   // Optimasi Incident Merging & Cooldown lookup
   @@index([cameraId, status, createdAt(sort: Desc)])
   @@index([cameraId, actionSubmittedAt(sort: Desc)])
-  // Optimasi Dashboard, Portal Publik & Filter Laporan per Kota
+  // Optimasi Dashboard, Portal Publik, Monitoring Tim & Filter Laporan per Kota
   @@index([regionId, status, createdAt(sort: Desc)])
+  @@index([regionId, assignedTeamId, status])
   @@index([regionId, relocationRequested, status])
+}
+
+model ReportRelocationAllocation {
+  id               String          @id @default(uuid())
+  reportId         String
+  report           ViolationReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  relocationSiteId String
+  relocationSite   RelocationSite  @relation(fields: [relocationSiteId], references: [id], onDelete: Restrict)
+  allocatedCount   Int
+  rankOrder        Int             @default(1)
+  isRecommended    Boolean         @default(true)
+  createdAt        DateTime        @default(now())
+
+  @@unique([reportId, relocationSiteId])
+  @@index([relocationSiteId])
+  @@index([reportId, rankOrder])
 }
 
 // APPEND-ONLY IMMUTABLE AUDIT TRAIL (SDG 16)
@@ -424,7 +522,7 @@ model AuditLog {
 - **Format Sukses:** `{ "ok": true, "data": { ... }, "meta": { ... } }`
 - **Format Error:** `{ "ok": false, "error": { "code": "ERROR_CODE", "message": "Pesan bahasa Indonesia yang jelas", "details": [] } }`
 - **Header Auth (Endpoint Terproteksi):** `Authorization: Bearer <jwt_token>`.
-- **Kode HTTP Standar:** `200 OK`, `201 Created`, `400 Bad Request` (Zod/validasi), `401 Unauthorized`, `403 Forbidden` (Role/Region-Lock), `404 Not Found`, `409 Conflict` (_race condition_ status), `413 Payload Too Large` (> 4 MB), `500 Internal Server Error`.
+- **Kode HTTP Standar:** `200 OK`, `201 Created`, `400 Bad Request` (Zod/validasi), `401 Unauthorized`, `403 Forbidden` (`REGION_ACCESS_DENIED`, `DISTRICT_ACCESS_DENIED`, `FORBIDDEN_ROLE`), `404 Not Found`, `409 Conflict` (`REPORT_STATUS_CONFLICT`, `CAPACITY_EXCEEDED`), `413 Payload Too Large` (> 4 MB), `500 Internal Server Error`.
 
 ### 3.2 Ringkasan Seluruh Endpoint
 
@@ -433,28 +531,28 @@ model AuditLog {
 | **Health**   | `GET /health`, `GET /health/db`                                    | Publik                    | Diagnostik Vercel & Supabase Pooler                                                             |
 | **Auth**     | `POST /api/auth/login`                                             | Publik                    | Login email + password                                                                          |
 | **Auth**     | `POST /api/auth/demo-login`                                        | Publik                    | Panel Akses Demo 1-Klik (`demoKey`)                                                             |
-| **Auth**     | `GET /api/auth/me`                                                 | Auth                      | Profil akun, `role`, `noTelp`, `region` & label instansi                                        |
+| **Auth**     | `GET /api/auth/me`                                                 | Auth                      | Profil akun, `role`, `noTelp`, `region`, `team` (`assignedDistricts`), & label instansi         |
 | **Auth**     | `PATCH /api/auth/me`                                               | Auth                      | Perbarui `noTelp` (`no_telp`) profil akun sendiri                                               |
 | **Auth**     | `POST /api/auth/logout`                                            | Auth                      | Konfirmasi logout klien                                                                         |
 | **Publik**   | `GET /api/public/cities`                                           | Publik                    | Daftar kota aktif (`s-maxage=900`)                                                              |
 | **Publik**   | `GET /api/public/overview?city=`                                   | Publik                    | 4 KPI _real-time_ per kota (atau semua kota)                                                    |
-| **Publik**   | `GET /api/public/map?city=`                                        | Publik                    | Poligon zona + _hotspot_ (**tanpa foto**) + Lokasi Binaan                                       |
+| **Publik**   | `GET /api/public/map?city=`                                        | Publik                    | Poligon zona + _hotspot_ (**tanpa foto**) + Lokasi Binaan (+ metrik kapasitas)                  |
 | **Publik**   | `GET /api/public/audit-feed?city=&limit=20`                        | Publik                    | Linimasa Akuntabilitas per ruas jalan                                                           |
-| **CCTV**     | `GET /api/cctv`                                                    | `SATPOL_PP`               | Katalog metadata CCTV sesuai `req.user.city` (`s-maxage=900, SWR=60`)                           |
-| **CCTV**     | `GET /api/cctv/:id`                                                | `SATPOL_PP`               | Detail 1 kamera + `roiPolygon` + status tiket aktif (`403` jika beda kota)                      |
-| **CCTV**     | `PATCH /api/cctv/:id/roi`                                          | `SATPOL_PP`               | Simpan/update `roiPolygon` ternormalisasi `0..1` (opsional kalibrasi)                           |
-| **Zona**     | `GET /api/zones`                                                   | `SATPOL_PP`, `DINAS_UMKM` | Daftar Poligon Zona Terlarang kota akun                                                         |
-| **Zona**     | `POST /api/zones`, `PATCH /api/zones/:id`, `DELETE /api/zones/:id` | `SATPOL_PP`               | CRUD Poligon Zona (validasi Turf.js)                                                            |
-| **Laporan**  | `POST /api/reports/auto-detect`                                    | `SATPOL_PP`               | _Auto-Capture_ & _Manual Capture_ (_Incident Merging_ + _Peak Active Count_)                    |
-| **Laporan**  | `GET /api/reports`                                                 | `SATPOL_PP`, `DINAS_UMKM` | Daftar laporan kota akun (filter `status`, `relocationRequested`, `search`, `page`, `pageSize`) |
-| **Laporan**  | `GET /api/reports/:id`                                             | `SATPOL_PP`, `DINAS_UMKM` | Detail laporan + `auditLogs` + **3 `nearestRelocationSites`**                                   |
-| **Laporan**  | `POST /api/reports/:id/action`                                     | `SATPOL_PP`               | Submit foto _After_ + jenis tindakan + pengajuan relokasi (`409` guarded)                       |
-| **Validasi** | `POST /api/reports/:id/validate`                                   | `DINAS_UMKM`              | Setujui (`VALIDATED`) atau Tolak/Revisi (`NEEDS_REVISION`, wajib alasan)                        |
-| **Relokasi** | `POST /api/reports/:id/relocation`                                 | `DINAS_UMKM`              | Penetapan Lokasi Binaan 1-Klik pada laporan `VALIDATED`                                         |
-| **PDF**      | `GET /api/reports/:id/pdf`                                         | `DINAS_UMKM`, `SATPOL_PP` | Stream Berita Acara PDF 1 Halaman A4 (`?inline=1` untuk preview; hanya `VALIDATED`)             |
-| **Analitik** | `GET /api/dinas/analytics`                                         | `DINAS_UMKM`              | 4 KPI, tren 30 hari, _peak hours_ WIB, top 5 jalan, peta penataan (**tanpa pin CCTV**)          |
-| **Binaan**   | `GET /api/relocation-sites`                                        | `DINAS_UMKM`, `SATPOL_PP` | Daftar Lokasi Binaan aktif kota akun                                                            |
-| **Binaan**   | `POST /api/relocation-sites`, `PATCH /:id`, `DELETE /:id`          | `DINAS_UMKM`              | CRUD Lokasi Binaan (_click-to-pin_, tanpa kuota; delete = hard/soft-archive)                    |
+| **CCTV**     | `GET /api/cctv`                                                    | `SATPOL_PP`               | Katalog metadata CCTV sesuai `req.user.city` & `assignedDistricts` (`s-maxage=900, SWR=60`)     |
+| **CCTV**     | `GET /api/cctv/:id`                                                | `SATPOL_PP`               | Detail 1 kamera + `roiPolygon` + status tiket aktif (`403` jika beda kota/kecamatan)            |
+| **CCTV**     | `PATCH /api/cctv/:id/roi`                                          | `SATPOL_PP`               | Simpan/update `roiPolygon` ternormalisasi `0..1` (hard-lock kecamatan tim)                      |
+| **Zona**     | `GET /api/zones`                                                   | `SATPOL_PP`, `DINAS_UMKM` | Daftar Poligon Zona Terlarang kota akun (dengan `district`)                                     |
+| **Zona**     | `POST /api/zones`, `PATCH /api/zones/:id`, `DELETE /api/zones/:id` | `SATPOL_PP`               | CRUD Poligon Zona (validasi Turf.js + hard-lock kecamatan tim)                                  |
+| **Laporan**  | `POST /api/reports/auto-detect`                                    | `SATPOL_PP`               | _Auto/Manual Capture_ + _Incident Merging_ + _4-Tier Relocation Waterfall_ awal (hard-lock kec.)|
+| **Laporan**  | `GET /api/reports`                                                 | `SATPOL_PP`, `DINAS_UMKM` | Daftar laporan (SATPOL terkunci tim/kecamatan; DINAS dukung filter `teamId`, `district`)        |
+| **Laporan**  | `GET /api/reports/:id`                                             | `SATPOL_PP`, `DINAS_UMKM` | Detail laporan + `assignedTeam` + `relocationAllocations` + `nearestRelocationSites` (+kapasitas)|
+| **Laporan**  | `POST /api/reports/:id/action`                                     | `SATPOL_PP`               | Submit foto _After_ + tindakan + pengajuan relokasi (opsional `allocations`, `409` guarded)     |
+| **Validasi** | `POST /api/reports/:id/validate`                                   | `DINAS_UMKM`              | Setujui (`VALIDATED`, commit kapasitas atomik + opsional `overrideAllocations`) / Revisi        |
+| **Relokasi** | `POST /api/reports/:id/relocation`                                 | `DINAS_UMKM`              | Penetapan relokasi susulan atomik pada `VALIDATED` yang belum `relocationCapacityCommitted`    |
+| **PDF**      | `GET /api/reports/:id/pdf`                                         | `DINAS_UMKM`, `SATPOL_PP` | Stream Berita Acara PDF 1 Hal A4 (`?inline=1`; info tim & alokasi; SATPOL hard-lock kecamatan)  |
+| **Analitik** | `GET /api/dinas/analytics`                                         | `DINAS_UMKM`              | 4 KPI, tren 30 hari, _peak hours_, top 5 jalan, `capacityOverview`, `teamPerformance`, `planningMap`|
+| **Binaan**   | `GET /api/relocation-sites`                                        | `DINAS_UMKM`, `SATPOL_PP` | Daftar Lokasi Binaan aktif kota akun beserta kapasitas & sisa efektif                           |
+| **Binaan**   | `POST /api/relocation-sites`, `PATCH /:id`, `DELETE /:id`          | `DINAS_UMKM`              | CRUD Lokasi Binaan (_click-to-pin_ + `maxCapacity` & koreksi `occupiedCapacity`; soft-archive)  |
 
 ### 3.3 Contoh Payload Request / Response / Error Kritis
 
@@ -463,7 +561,7 @@ model AuditLog {
 ```json
 // Request
 {
-  "demoKey": "satpol-jkt-pusat"
+  "demoKey": "satpol-jkp-tanah-abang"
 }
 
 // Response 200 OK
@@ -472,11 +570,17 @@ model AuditLog {
   "data": {
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "user": {
-      "id": "u-satpol-jkp",
-      "email": "satpol.jakpus@patra.demo",
-      "fullName": "Petugas Piket Satpol PP Jakarta Pusat",
+      "id": "u-satpol-jkp-ta",
+      "email": "satpol.tanahabang@patra.demo",
+      "fullName": "Regu Patroli Alpha (Tanah Abang)",
       "role": "SATPOL_PP",
       "isDemo": true,
+      "team": {
+        "id": "team-jkp-ta",
+        "code": "jkp-tanah-abang",
+        "name": "Tim Alpha — Kec. Tanah Abang",
+        "assignedDistricts": ["Tanah Abang"]
+      },
       "region": {
         "id": "reg-jkp",
         "code": "jkt-pusat",
@@ -538,14 +642,21 @@ model AuditLog {
         "lat": -6.1944,
         "lng": 106.8195,
         "tradeCategories": ["Kuliner", "Minuman", "Pakaian"],
-        "facilities": ["Listrik", "Air Bersih", "Toilet", "Area Teduh"]
+        "facilities": ["Listrik", "Air Bersih", "Toilet", "Area Teduh"],
+        "maxCapacity": 25,
+        "occupiedCapacity": 25,
+        "pendingCapacity": 0,
+        "availableCapacity": 0,
+        "effectiveAvailableCapacity": 0,
+        "occupancyPercent": 100,
+        "capacityStatus": "FULL"
       }
     ]
   }
 }
 ```
 
-#### C. Auto-Detect & Manual Capture — _Incident-Based Merging_ (`POST /api/reports/auto-detect`)
+#### C. Auto-Detect & Manual Capture — _Incident Merging_ + _4-Tier Waterfall_ (`POST /api/reports/auto-detect`)
 
 Dikirim sebagai `multipart/form-data`:
 
@@ -562,7 +673,7 @@ Dikirim sebagai `multipart/form-data`:
 }
 ```
 
-- **Response Skenario 1 (`201 Created` — Incident Baru):**
+- **Response Skenario 1 (`201 Created` — Incident Baru + Rekomendasi Relokasi Awal):**
 
 ```json
 {
@@ -576,9 +687,21 @@ Dikirim sebagai `multipart/form-data`:
       "id": "rep-101",
       "reportCode": "PTR-202611-0015",
       "cameraId": "jkt_035_JKP_POLRI_UOB_PLAZA_C01",
+      "assignedTeamId": "team-jkp-ta",
       "status": "NEED_ACTION",
       "detectedCount": 3,
       "beforeImageUrl": "https://<project>.supabase.co/storage/v1/object/public/patra-evidence/before/uuid.jpg",
+      "recommendedRelocationSiteId": "site-jkp-2",
+      "relocationMatchStatus": "FALLBACK_AVAILABLE",
+      "unaccommodatedPklCount": 0,
+      "relocationAllocations": [
+        {
+          "relocationSiteId": "site-jkp-2",
+          "relocationSiteName": "Sentra Binaan Kebon Kacang Raya",
+          "allocatedCount": 3,
+          "rankOrder": 1
+        }
+      ],
       "createdAt": "2026-11-22T08:10:00.000Z"
     }
   }
@@ -586,19 +709,19 @@ Dikirim sebagai `multipart/form-data`:
 ```
 
 - **Response Skenario 2 (`200 OK` — Merged & Escalated karena `currentActiveViolators > activeReport.detectedCount`):**
-  `"outcome": "MERGED_ESCALATED", "merged": true, "escalated": true` (URL snapshot lama tersimpan di `AuditLog.metadata.previousBeforeImageUrl`).
+  `"outcome": "MERGED_ESCALATED", "merged": true, "escalated": true` (re-evaluasi otomatis alokasi relokasi bila jumlah bertambah; URL snapshot lama tersimpan di `AuditLog.metadata.previousBeforeImageUrl`).
 - **Response Skenario 3 (`200 OK` — Merged No-Op karena `currentActiveViolators <= activeReport.detectedCount`):**
   `"outcome": "MERGED_NOOP", "merged": true, "escalated": false` (tidak mengunggah file ke Storage & tidak menulis `AuditLog`).
 - **Response Skenario 4 (`200 OK` — Dalam Masa _Cooldown_ Pasca Penindakan):**
   `"outcome": "COOLDOWN_SUPPRESSED", "suppressedByCooldown": true, "cooldownRemainingSec": 21`.
-- **Error `403 Forbidden` (Kamera di Luar Kota Akun):**
+- **Error `403 Forbidden` (Kamera di Luar Kota atau Luar Kecamatan Tim):**
 
 ```json
 {
   "ok": false,
   "error": {
-    "code": "REGION_ACCESS_DENIED",
-    "message": "Anda tidak memiliki akses ke kamera CCTV di luar wilayah tugas Anda."
+    "code": "DISTRICT_ACCESS_DENIED",
+    "message": "Kamera ini berada di luar wilayah kecamatan tugas tim Anda."
   }
 }
 ```
@@ -608,18 +731,21 @@ Dikirim sebagai `multipart/form-data`:
 `multipart/form-data`:
 
 - Field `afterPhoto`: File JPEG/PNG/WebP (`≤ 4 MB`)
-- Field `payload`: JSON string:
+- Field `payload`: JSON string (field `allocations` bersifat opsional; jika dikosongkan saat `relocationRequested: true`, backend menyelaraskan dengan rekomendasi awal terhadap `actualPklCount`):
 
 ```json
 {
   "actionType": "RELOCATION_ASSISTANCE",
   "actualPklCount": 2,
   "educationNotes": "Pedagang telah diedukasi secara persuasif terkait larangan berjualan di trotoar dan bersedia pindah ke Lokasi Binaan terdekat.",
-  "relocationRequested": true
+  "relocationRequested": true,
+  "allocations": [
+    { "relocationSiteId": "site-jkp-2", "allocatedCount": 2 }
+  ]
 }
 ```
 
-- **Response `200 OK`:** Mengembalikan laporan terbaru dengan `status: "PENDING_VALIDATION"`, `afterImageUrl`, `actionSubmittedAt`, dan entri `AuditLog` (`ACTION_SUBMITTED` atau `REVISION_SUBMITTED`).
+- **Response `200 OK`:** Mengembalikan laporan terbaru dengan `status: "PENDING_VALIDATION"`, `afterImageUrl`, `actionSubmittedAt`, `relocationAllocations`, dan entri `AuditLog` (`ACTION_SUBMITTED` atau `REVISION_SUBMITTED` dengan `actorName: "Regu Patroli Alpha (Tim Alpha — Kec. Tanah Abang)"`).
 - **Error `409 Conflict`:** Jika status laporan saat ini bukan `NEED_ACTION` / `NEEDS_REVISION`:
 
 ```json
@@ -632,11 +758,20 @@ Dikirim sebagai `multipart/form-data`:
 }
 ```
 
-#### E. Validasi Dinas UMKM (`POST /api/reports/:id/validate`) & Penetapan Relokasi 1-Klik (`POST /api/reports/:id/relocation`)
+#### E. Controlling & Validasi Sudin (`POST /api/reports/:id/validate`) & Penetapan Susulan (`POST /api/reports/:id/relocation`)
 
 ```json
-// POST /api/reports/:id/validate (Approve)
+// POST /api/reports/:id/validate (Approve sesuai rekomendasi / pengajuan lapangan)
 { "decision": "APPROVE" }
+
+// POST /api/reports/:id/validate (Approve + Override alokasi relokasi oleh Sudin, termasuk Split Darurat)
+{
+  "decision": "APPROVE",
+  "overrideAllocations": [
+    { "relocationSiteId": "site-jkp-2", "allocatedCount": 2 },
+    { "relocationSiteId": "site-jkp-3", "allocatedCount": 1 }
+  ]
+}
 
 // POST /api/reports/:id/validate (Request Revision)
 {
@@ -644,13 +779,13 @@ Dikirim sebagai `multipart/form-data`:
   "revisionReason": "Foto bukti After terlalu gelap dan belum memperlihatkan area trotoar sudah bersih."
 }
 
-// POST /api/reports/:id/relocation (1-Klik pada laporan VALIDATED & relocationRequested=true)
+// POST /api/reports/:id/relocation (Khusus laporan VALIDATED yang belum relocationCapacityCommitted)
 {
-  "relocationSiteId": "site-jkp-1"
+  "relocationSiteId": "site-jkp-3"
 }
 ```
 
-#### F. Dashboard Analitik Dinas UMKM (`GET /api/dinas/analytics`)
+#### F. Dashboard Controlling & Monitoring Sudin (`GET /api/dinas/analytics`)
 
 ```json
 {
@@ -662,6 +797,32 @@ Dikirim sebagai `multipart/form-data`:
       "avgResponseSlaMinutes": 38,
       "totalRelocationDirected": 14
     },
+    "capacityOverview": {
+      "totalSites": 3,
+      "totalMaxCapacity": 95,
+      "totalOccupiedCapacity": 62,
+      "totalPendingCapacity": 5,
+      "totalAvailableCapacity": 33,
+      "nearFullSitesCount": 1,
+      "fullSitesCount": 1,
+      "splitRelocationReportsCount": 1,
+      "unaccommodatedPklTotal": 0
+    },
+    "teamPerformance": [
+      {
+        "teamId": "team-jkp-ta",
+        "teamCode": "jkp-tanah-abang",
+        "teamName": "Tim Alpha — Kec. Tanah Abang",
+        "assignedDistricts": ["Tanah Abang"],
+        "totalReports": 20,
+        "needActionCount": 3,
+        "pendingValidationCount": 2,
+        "needsRevisionCount": 1,
+        "validatedCount": 14,
+        "avgResponseSlaMinutes": 34,
+        "revisionRatePercent": 5.0
+      }
+    ],
     "dailyTrend": [
       { "date": "2026-11-20", "count": 4 },
       { "date": "2026-11-21", "count": 6 }
@@ -694,7 +855,14 @@ Dikirim sebagai `multipart/form-data`:
           "lat": -6.1944,
           "lng": 106.8195,
           "address": "...",
-          "facilities": ["Listrik", "Air Bersih"]
+          "facilities": ["Listrik", "Air Bersih"],
+          "maxCapacity": 25,
+          "occupiedCapacity": 25,
+          "pendingCapacity": 0,
+          "availableCapacity": 0,
+          "effectiveAvailableCapacity": 0,
+          "occupancyPercent": 100,
+          "capacityStatus": "FULL"
         }
       ]
     }
@@ -894,16 +1062,27 @@ Contoh data realistis yang akan diimplementasikan di `BE-Patra/prisma/seed.ts` (
 ]
 ```
 
-### 6.2 `User` (4 Akun Demo 1-Klik)
+### 6.2 `PatrolTeam` & `User` (Akun Demo Multi-Tim Kecamatan + Sudin/Dinas)
 
-| `demoKey`          | `role`       | `city`               | `email`                      | `fullName`                          |
-| :----------------- | :----------- | :------------------- | :--------------------------- | :---------------------------------- |
-| `satpol-jkt-pusat` | `SATPOL_PP`  | `Kota Jakarta Pusat` | `satpol.jakpus@patra.demo`   | Petugas Satpol PP Jakarta Pusat     |
-| `dinas-jkt-pusat`  | `DINAS_UMKM` | `Kota Jakarta Pusat` | `sudin.jakpus@patra.demo`    | Admin Sudin PPKUKM Jakarta Pusat    |
-| `satpol-semarang`  | `SATPOL_PP`  | `Kota Semarang`      | `satpol.semarang@patra.demo` | Petugas Satpol PP Kota Semarang     |
-| `dinas-semarang`   | `DINAS_UMKM` | `Kota Semarang`      | `dinas.semarang@patra.demo`  | Admin Dinas Koperasi & UKM Semarang |
+#### `PatrolTeam` Kota Pilot
+| `code` | `city` | `name` | `assignedDistricts` |
+| :--- | :--- | :--- | :--- |
+| `jkp-tanah-abang` | `Kota Jakarta Pusat` | `Tim Alpha — Kec. Tanah Abang` | `["Tanah Abang"]` |
+| `jkp-menteng-gambir` | `Kota Jakarta Pusat` | `Tim Bravo — Kec. Menteng & Gambir` | `["Menteng", "Gambir"]` |
+| `smg-tengah` | `Kota Semarang` | `Tim Tengah — Kec. Semarang Tengah` | `["Semarang Tengah"]` |
+| `smg-selatan-barat` | `Kota Semarang` | `Tim Selatan & Barat — Koridor Kota` | `["Semarang Selatan", "Semarang Barat", "Candisari", "Gajah Mungkur", "Banyumanik", "Semarang Utara", "Semarang Timur", "Pedurungan", "Ngaliyan", "Tugu"]` |
 
-_(Password demo di-hash saat seeding menggunakan `bcryptjs`, tidak pernah diekspos ke frontend.)_
+#### `User` Akun Demo
+| `demoKey`                   | `role`       | `city`               | `teamCode`            | `email`                            | `fullName`                            |
+| :-------------------------- | :----------- | :------------------- | :-------------------- | :--------------------------------- | :------------------------------------ |
+| `satpol-jkp-tanah-abang`    | `SATPOL_PP`  | `Kota Jakarta Pusat` | `jkp-tanah-abang`     | `satpol.tanahabang@patra.demo`     | Regu Patroli Alpha (Tanah Abang)      |
+| `satpol-jkp-menteng-gambir` | `SATPOL_PP`  | `Kota Jakarta Pusat` | `jkp-menteng-gambir`  | `satpol.mentenggambir@patra.demo`  | Regu Patroli Bravo (Menteng & Gambir) |
+| `dinas-jkt-pusat`           | `DINAS_UMKM` | `Kota Jakarta Pusat` | `null` (City-Wide)    | `sudin.jakpus@patra.demo`          | Admin Sudin PPKUKM Jakarta Pusat      |
+| `satpol-smg-tengah`         | `SATPOL_PP`  | `Kota Semarang`      | `smg-tengah`          | `satpol.smgtengah@patra.demo`      | Regu Patroli Tengah (Semarang Tengah) |
+| `satpol-smg-selatan-barat`  | `SATPOL_PP`  | `Kota Semarang`      | `smg-selatan-barat`   | `satpol.smgselbar@patra.demo`      | Regu Patroli Selatan & Barat Semarang |
+| `dinas-semarang`            | `DINAS_UMKM` | `Kota Semarang`      | `null` (City-Wide)    | `dinas.semarang@patra.demo`        | Admin Dinas Koperasi & UKM Semarang   |
+
+_(Password demo di-hash saat seeding menggunakan `bcryptjs`, tidak pernah diekspos ke frontend. Akun demo 19 kota ekstra tetap menggunakan `teamId = null` dengan Region-Lock tingkat kota.)_
 
 ### 6.3 `CctvCamera` (Contoh Multi-Kota dari Katalog Publik)
 
@@ -915,18 +1094,18 @@ _(Password demo di-hash saat seeding menggunakan `bcryptjs`, tidak pernah dieksp
   1. `smg_001_SIMPANG_LIMA_UTARA` — _SIMPANG LIMA SISI UTARA_ (`Semarang Tengah`, `Ruang Publik`, `needs_cors_proxy: false`, `roiPolygon` area pedestrian, `fallbackVideoUrl: "/videos/demo-semarang.mp4"`).
   2. `smg_008_PASAR_JOHAR_TIMUR` — _KORIDOR PASAR JOHAR TIMUR_ (`Semarang Tengah`, `Pasar & Pusat Belanja`, `roiPolygon` trotoar pasar, `fallbackVideoUrl: "/videos/demo-semarang.mp4"`).
   3. `smg_014_KOTA_LAMA_LETJEN_SUPRAPTO` — _KOTA LAMA JL. LETJEN SUPRAPTO_ (`Semarang Utara`, `Kawasan Wisata`, `roiPolygon: null`).
-     _(Pada saat implementasi, seluruh katalog aktual dari `cctv_snapshot.json` hasil `indonesia_sources.py` akan di-upsert otomatis oleh skrip seed/sync)._
+     _(Pada saat implementasi, seluruh katalog aktual dari `cctv_snapshot.json` hasil `indonesia_sources.py` akan di-upsert otomatis oleh skrip seed/sync, termasuk pemetaan `district` untuk 8 kamera Semarang yang bernilai `null`.)_
 
-### 6.4 `RelocationSite` (3 Lokasi Binaan per Kota — Tanpa Kuota)
+### 6.4 `RelocationSite` (3 Lokasi Binaan per Kota Pilot — Dengan Kapasitas Demo)
 
 - **Kota Jakarta Pusat:**
-  1. _Lokasi Binaan JP 37 Thamrin City_ (`-6.1944, 106.8195`, Kuliner/Minuman/Pakaian; Listrik, Air Bersih, Toilet, Area Teduh).
-  2. _Sentra Binaan Kebon Kacang Raya_ (`-6.1912, 106.8178`, Kuliner/Jajanan; Listrik, Parkir, Kebersihan).
-  3. _Lokasi Binaan JP 28 Pasar Baru_ (`-6.1652, 106.8342`, Kuliner/Kerajinan/Aksesori; Listrik, Air Bersih, Toilet).
+  1. _Lokasi Binaan JP 37 Thamrin City_ (`-6.1944, 106.8195`, `maxCapacity: 25`, `occupiedCapacity: 25` [FULL untuk demo *fallback*], Kuliner/Minuman/Pakaian; Listrik, Air Bersih, Toilet, Area Teduh).
+  2. _Sentra Binaan Kebon Kacang Raya_ (`-6.1912, 106.8178`, `maxCapacity: 30`, `occupiedCapacity: 22` [AVAILABLE: sisa 8], Kuliner/Jajanan; Listrik, Parkir, Kebersihan).
+  3. _Lokasi Binaan JP 28 Pasar Baru_ (`-6.1652, 106.8342`, `maxCapacity: 40`, `occupiedCapacity: 15` [AVAILABLE: sisa 25], Kuliner/Kerajinan/Aksesori; Listrik, Air Bersih, Toilet).
 - **Kota Semarang:**
-  1. _Sentra Kuliner PKL Simpang Lima (Pujasera)_ (`-6.9905, 110.4234`, Kuliner/Minuman; Listrik, Air Bersih, Toilet, Parkir).
-  2. _Selter PKL Kawasan Johar Baru_ (`-6.9721, 110.4258`, Kuliner/Sembako/Kerajinan; Listrik, Area Teduh, Kebersihan).
-  3. _Selter PKL Taman Menteri Supeno_ (`-6.9936, 110.4198`, Kuliner/Jajanan; Listrik, Toilet, Lampu Penerangan).
+  1. _Sentra Kuliner PKL Simpang Lima (Pujasera)_ (`-6.9905, 110.4234`, `maxCapacity: 30`, `occupiedCapacity: 30` [FULL untuk demo *fallback*], Kuliner/Minuman; Listrik, Air Bersih, Toilet, Parkir).
+  2. _Selter PKL Kawasan Johar Baru_ (`-6.9721, 110.4258`, `maxCapacity: 35`, `occupiedCapacity: 28` [NEAR_FULL: sisa 7], Kuliner/Sembako/Kerajinan; Listrik, Area Teduh, Kebersihan).
+  3. _Selter PKL Taman Menteri Supeno_ (`-6.9936, 110.4198`, `maxCapacity: 25`, `occupiedCapacity: 10` [AVAILABLE: sisa 15], Kuliner/Jajanan; Listrik, Toilet, Lampu Penerangan).
 
 ### 6.5 `RestrictedZone`, `ViolationReport` & `AuditLog` (Seed Demo End-to-End)
 

@@ -39,6 +39,21 @@ const SATPOL_JKT_TOKEN = signAuthToken(
   TEST_JWT_SECRET,
 );
 
+const SATPOL_TANAH_ABANG_TOKEN = signAuthToken(
+  {
+    sub: 'u-satpol-jkp-ta',
+    role: 'SATPOL_PP',
+    regionId: 'reg-jkp',
+    city: 'Kota Jakarta Pusat',
+    email: 'satpol.ta@patra.demo',
+    fullName: 'Regu Tanah Abang',
+    teamId: 'team-jkp-1',
+    teamName: 'Tim Alpha — Kec. Tanah Abang',
+    assignedDistricts: ['Tanah Abang'],
+  },
+  TEST_JWT_SECRET,
+);
+
 const DINAS_JKT_TOKEN = signAuthToken(
   {
     sub: 'u-dinas-jkp',
@@ -84,6 +99,7 @@ function makeTestHarness(opts: { cooldownSec?: number; nowMs?: number } = {}) {
       regionId: 'reg-jkp',
       name: 'JKP POLRI UOB PLAZA C01',
       regionLabel: 'Jl. M.H. Thamrin, Kebon Melati, Jakarta Pusat',
+      district: 'Tanah Abang',
       lat: -6.2005,
       lng: 106.8229,
       isActive: true,
@@ -93,6 +109,7 @@ function makeTestHarness(opts: { cooldownSec?: number; nowMs?: number } = {}) {
       regionId: 'reg-jkp',
       name: 'JKP STASIUN GAMBIR',
       regionLabel: 'Gambir, Jakarta Pusat',
+      district: 'Gambir',
       lat: -6.1766,
       lng: 106.8305,
       isActive: true,
@@ -102,6 +119,7 @@ function makeTestHarness(opts: { cooldownSec?: number; nowMs?: number } = {}) {
       regionId: 'reg-smg',
       name: 'SIMPANG LIMA UTARA',
       regionLabel: 'Simpang Lima, Kota Semarang',
+      district: 'Semarang Tengah',
       lat: -6.9901,
       lng: 110.4229,
       isActive: true,
@@ -131,6 +149,9 @@ function makeTestHarness(opts: { cooldownSec?: number; nowMs?: number } = {}) {
       lng: 106.8342,
       tradeCategories: ['Kuliner'],
       facilities: ['Listrik'],
+      maxCapacity: 25,
+      occupiedCapacity: 5,
+      pendingCapacity: 0,
     },
     {
       id: 'site-near',
@@ -141,6 +162,9 @@ function makeTestHarness(opts: { cooldownSec?: number; nowMs?: number } = {}) {
       lng: 106.8195,
       tradeCategories: ['Kuliner'],
       facilities: ['Listrik', 'Toilet'],
+      maxCapacity: 30,
+      occupiedCapacity: 10,
+      pendingCapacity: 2,
     },
     {
       id: 'site-mid',
@@ -151,6 +175,9 @@ function makeTestHarness(opts: { cooldownSec?: number; nowMs?: number } = {}) {
       lng: 106.8178,
       tradeCategories: ['Jajanan'],
       facilities: ['Parkir'],
+      maxCapacity: 20,
+      occupiedCapacity: 4,
+      pendingCapacity: 0,
     },
     {
       id: 'site-extra',
@@ -161,6 +188,9 @@ function makeTestHarness(opts: { cooldownSec?: number; nowMs?: number } = {}) {
       lng: 106.855,
       tradeCategories: ['Kuliner'],
       facilities: ['Listrik'],
+      maxCapacity: 20,
+      occupiedCapacity: 0,
+      pendingCapacity: 0,
     },
   ];
 
@@ -186,6 +216,9 @@ function makeTestHarness(opts: { cooldownSec?: number; nowMs?: number } = {}) {
       lng: 106.82,
       tradeCategories: ['Kuliner'],
       facilities: ['Listrik'],
+      maxCapacity: 10,
+      occupiedCapacity: 0,
+      pendingCapacity: 0,
     });
     const inactiveSiteIds = new Set<string>(['site-inactive']);
 
@@ -239,7 +272,11 @@ function makeTestHarness(opts: { cooldownSec?: number; nowMs?: number } = {}) {
         validatedByUserId: null,
         validatedAt: null,
         revisionReason: null,
+        recommendedRelocationSiteId: reportData.recommendedRelocationSiteId ?? null,
         relocationSiteId: null,
+        relocationMatchStatus: reportData.relocationMatchStatus ?? null,
+        unaccommodatedPklCount: reportData.unaccommodatedPklCount ?? 0,
+        relocationCapacityCommitted: false,
         relocationAssignedAt: null,
         createdAt: now,
         updatedAt: now,
@@ -267,9 +304,25 @@ function makeTestHarness(opts: { cooldownSec?: number; nowMs?: number } = {}) {
       });
       return rec;
     },
-    async findManyByRegion(regionId: string, query: ListReportsQuery) {
+    async findManyByRegion(regionId: string, query: ListReportsQuery, scope = {}) {
       const filtered = reports.filter((r) => {
         if (r.regionId !== regionId) return false;
+        const camDistrict = cameras.find((c) => c.id === r.cameraId)?.district ?? null;
+        if (scope.allowedDistricts && scope.allowedDistricts.length > 0) {
+          const norm = (camDistrict || '').trim().toLowerCase();
+          const matchedDistrict =
+            Boolean(norm) &&
+            scope.allowedDistricts.some((d) => d.trim().toLowerCase() === norm);
+          const matchedTeam = Boolean(scope.teamId && r.assignedTeamId === scope.teamId);
+          if (!matchedDistrict && !matchedTeam) return false;
+        }
+        if (query.teamId && r.assignedTeamId !== query.teamId) return false;
+        if (
+          query.district &&
+          (camDistrict || '').trim().toLowerCase() !== query.district.trim().toLowerCase()
+        ) {
+          return false;
+        }
         if (query.status && !query.status.includes(r.status)) return false;
         if (
           query.relocationRequested !== undefined &&
@@ -300,11 +353,16 @@ function makeTestHarness(opts: { cooldownSec?: number; nowMs?: number } = {}) {
     async findDetailById(id: string): Promise<ReportDetailRecord | null> {
       const rec = reports.find((r) => r.id === id);
       if (!rec) return null;
+      const cam = cameras.find((c) => c.id === rec.cameraId);
       return {
         ...rec,
-        cameraName: cameras.find((c) => c.id === rec.cameraId)?.name,
+        cameraName: cam?.name,
+        cameraDistrict: cam?.district ?? null,
         zoneName: zones.find((z) => z.id === rec.zoneId)?.id ?? null,
+        assignedTeam: null,
+        recommendedRelocationSiteName: null,
         relocationSiteName: null,
+        relocationAllocations: [],
         auditLogs: auditLogs.filter((l) => l.reportId === id),
       };
     },
@@ -1076,6 +1134,123 @@ test('POST /api/reports/:id/validate, /relocation, and GET /:id/pdf enforce RBAC
     });
     assert.equal(pdfInline.status, 200);
     assert.match(pdfInline.headers.get('content-disposition') ?? '', /^inline; filename="Berita-Acara-PTR-/);
+  } finally {
+    await new Promise<void>((resolve, reject) => server.close((e) => (e ? reject(e) : resolve())));
+  }
+});
+
+test('District hard-lock isolates reports per Satpol PP team and AuditLog actorName uses fullName (teamName) instead of email', async () => {
+  const { app, auditLogs } = makeTestHarness();
+  const server = app.listen(0);
+  const baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+
+  try {
+    // 1. Tim Tanah Abang tidak boleh membuat laporan dari kamera Gambir -> 403 DISTRICT_ACCESS_DENIED
+    const deniedDetectRes = await fetch(`${baseUrl}/api/reports/auto-detect`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${SATPOL_TANAH_ABANG_TOKEN}` },
+      body: makeSnapshotForm({
+        cameraId: 'cam-jkp-outside',
+        source: 'MANUAL',
+        currentActiveViolators: 2,
+        maxConfidence: 0.9,
+        isSimulationMode: false,
+      }),
+    });
+    assert.equal(deniedDetectRes.status, 403);
+    assert.equal(((await deniedDetectRes.json()) as any).error.code, 'DISTRICT_ACCESS_DENIED');
+
+    // 2. Tim Tanah Abang sukses membuat laporan di Tanah Abang -> AuditLog actorName = "Regu Tanah Abang (Tim Alpha — Kec. Tanah Abang)" (bukan email!)
+    const taDetectRes = await fetch(`${baseUrl}/api/reports/auto-detect`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${SATPOL_TANAH_ABANG_TOKEN}` },
+      body: makeSnapshotForm({
+        cameraId: 'cam-jkp-1',
+        source: 'MANUAL',
+        currentActiveViolators: 2,
+        maxConfidence: 0.92,
+        isSimulationMode: false,
+      }),
+    });
+    assert.equal(taDetectRes.status, 201);
+    const taReport = ((await taDetectRes.json()) as any).data.report;
+    assert.equal(taReport.assignedTeamId, 'team-jkp-1');
+    const createdAudit = auditLogs.find((l) => l.reportId === taReport.id);
+    assert.ok(createdAudit);
+    assert.equal(
+      createdAudit.actorName,
+      'Regu Tanah Abang (Tim Alpha — Kec. Tanah Abang)',
+    );
+    assert.equal(createdAudit.actorName.includes('@'), false);
+
+    // 3. Buat laporan Gambir via token kota-penuh untuk menguji isolasi daftar, detail, action, dan PDF
+    const gambirDetectRes = await fetch(`${baseUrl}/api/reports/auto-detect`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${SATPOL_JKT_TOKEN}` },
+      body: makeSnapshotForm({
+        cameraId: 'cam-jkp-outside',
+        source: 'MANUAL',
+        currentActiveViolators: 1,
+        maxConfidence: 0.85,
+        isSimulationMode: false,
+      }),
+    });
+    assert.equal(gambirDetectRes.status, 201);
+    const gambirReportId = ((await gambirDetectRes.json()) as any).data.report.id as string;
+
+    // Tim Tanah Abang hanya melihat 1 laporan Tanah Abang di daftar
+    const taListRes = await fetch(`${baseUrl}/api/reports`, {
+      headers: { Authorization: `Bearer ${SATPOL_TANAH_ABANG_TOKEN}` },
+    });
+    assert.equal(taListRes.status, 200);
+    const taListJson = (await taListRes.json()) as any;
+    assert.equal(taListJson.data.reports.length, 1);
+    assert.equal(taListJson.data.reports[0].id, taReport.id);
+
+    // Akses GET detail, POST action, dan GET PDF laporan Gambir ditolak -> 403 DISTRICT_ACCESS_DENIED
+    const gambirDetailDenied = await fetch(`${baseUrl}/api/reports/${gambirReportId}`, {
+      headers: { Authorization: `Bearer ${SATPOL_TANAH_ABANG_TOKEN}` },
+    });
+    assert.equal(gambirDetailDenied.status, 403);
+    assert.equal(((await gambirDetailDenied.json()) as any).error.code, 'DISTRICT_ACCESS_DENIED');
+
+    const gambirActionDenied = await fetch(`${baseUrl}/api/reports/${gambirReportId}/action`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${SATPOL_TANAH_ABANG_TOKEN}` },
+      body: makeActionForm({
+        actionType: 'EDUCATION_WARNING',
+        actualPklCount: 1,
+        educationNotes: 'Percobaan penindakan lintas kecamatan harus ditolak.',
+        relocationRequested: false,
+      }),
+    });
+    assert.equal(gambirActionDenied.status, 403);
+    assert.equal(((await gambirActionDenied.json()) as any).error.code, 'DISTRICT_ACCESS_DENIED');
+
+    const gambirPdfDenied = await fetch(`${baseUrl}/api/reports/${gambirReportId}/pdf`, {
+      headers: { Authorization: `Bearer ${SATPOL_TANAH_ABANG_TOKEN}` },
+    });
+    assert.equal(gambirPdfDenied.status, 403);
+    assert.equal(((await gambirPdfDenied.json()) as any).error.code, 'DISTRICT_ACCESS_DENIED');
+
+    // 4. Penindakan pada laporan Tanah Abang mencatat actorName format baru pada AuditLog
+    const taActionRes = await fetch(`${baseUrl}/api/reports/${taReport.id}/action`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${SATPOL_TANAH_ABANG_TOKEN}` },
+      body: makeActionForm({
+        actionType: 'RELOCATION_ASSISTANCE',
+        actualPklCount: 2,
+        educationNotes: 'Pedagang dibantu relokasi oleh Tim Alpha Tanah Abang.',
+        relocationRequested: true,
+      }),
+    });
+    assert.equal(taActionRes.status, 200);
+    const taActionReport = ((await taActionRes.json()) as any).data.report;
+    assert.equal(
+      taActionReport.auditLogs.at(-1).actorName,
+      'Regu Tanah Abang (Tim Alpha — Kec. Tanah Abang)',
+    );
+    assert.equal(taActionReport.auditLogs.at(-1).actorName.includes('@'), false);
   } finally {
     await new Promise<void>((resolve, reject) => server.close((e) => (e ? reject(e) : resolve())));
   }

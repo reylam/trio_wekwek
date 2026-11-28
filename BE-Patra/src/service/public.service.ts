@@ -10,6 +10,7 @@ import PublicRepository, {
   type PublicRegionRecord,
   type PublicRepositoryPort,
 } from '../repository/public.repository.js';
+import { computeSiteCapacityMetrics } from './geo.service.js';
 
 const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
 const pad2 = (n: number) => String(n).padStart(2, '0');
@@ -154,6 +155,11 @@ export function createPublicService(deps: PublicServiceDeps = {}) {
           lng: s.lng,
           tradeCategories: s.tradeCategories,
           facilities: s.facilities,
+          ...computeSiteCapacityMetrics(
+            s.maxCapacity,
+            s.occupiedCapacity,
+            s.pendingCapacity,
+          ),
         })),
       };
     },

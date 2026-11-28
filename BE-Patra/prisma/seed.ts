@@ -8,6 +8,7 @@ import {
   EXTRA_PUBLIC_RELOCATION_SITES,
   parseCctvSnapshotItems,
   SEED_CAMERAS,
+  SEED_PATROL_TEAMS,
   SEED_REGIONS,
   SEED_RELOCATION_SITES,
   SEED_REPORTS,
@@ -312,12 +313,37 @@ async function main() {
     regionByCity.set(row.city.trim().toLowerCase(), row.id);
   }
 
-  // 2. Upsert 4 User demo pilot + 15 User demo Satpol PP kota publik (bcrypt hash)
+  // 1b. Upsert PatrolTeam per wilayah kecamatan (kota pilot)
+  const teamByCode = new Map<string, string>();
+  for (const team of SEED_PATROL_TEAMS) {
+    const region = regionByCode.get(team.regionCode);
+    if (!region) continue;
+    const row = await prisma.patrolTeam.upsert({
+      where: { code: team.code },
+      update: {
+        regionId: region.id,
+        name: team.name,
+        assignedDistricts: team.assignedDistricts,
+        isActive: true,
+      },
+      create: {
+        regionId: region.id,
+        code: team.code,
+        name: team.name,
+        assignedDistricts: team.assignedDistricts,
+        isActive: true,
+      },
+    });
+    teamByCode.set(team.code, row.id);
+  }
+
+  // 2. Upsert 6 User demo pilot (multi-tim + Sudin) + User demo Satpol PP kota publik (bcrypt hash)
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
   const allDemoUsers = [
     ...SEED_USERS,
     ...EXTRA_PUBLIC_REGIONS.map((r) => ({
       regionCode: r.code,
+      teamCode: null,
       email: `satpol.${r.code}@patra.demo`,
       fullName: `Petugas ${r.satpolAgencyName}`,
       role: 'SATPOL_PP' as const,
@@ -329,10 +355,12 @@ async function main() {
   for (const u of allDemoUsers) {
     const region = regionByCode.get(u.regionCode);
     if (!region) continue;
+    const teamId = u.teamCode ? (teamByCode.get(u.teamCode) ?? null) : null;
     const row = await prisma.user.upsert({
       where: { email: u.email },
       update: {
         regionId: region.id,
+        teamId,
         fullName: u.fullName,
         role: u.role,
         isDemo: u.isDemo,
@@ -340,6 +368,7 @@ async function main() {
       },
       create: {
         regionId: region.id,
+        teamId,
         email: u.email,
         passwordHash,
         fullName: u.fullName,
@@ -452,11 +481,17 @@ async function main() {
     const row = existing
       ? await prisma.restrictedZone.update({
           where: { id: existing.id },
-          data: { description: z.description, points: z.points, isActive: true },
+          data: {
+            district: z.district,
+            description: z.description,
+            points: z.points,
+            isActive: true,
+          },
         })
       : await prisma.restrictedZone.create({
           data: {
             regionId: region.id,
+            district: z.district,
             name: z.name,
             description: z.description,
             points: z.points,
@@ -466,7 +501,7 @@ async function main() {
     zoneByKey.set(`${z.regionCode}::${z.name}`, row.id);
   }
 
-  // 5. Upsert RelocationSite (idempoten berdasarkan regionId + name, TANPA KUOTA, mencakup seluruh 17 kota)
+  // 5. Upsert RelocationSite (idempoten berdasarkan regionId + name, dengan kapasitas)
   const allRelocationSites = [...SEED_RELOCATION_SITES, ...EXTRA_PUBLIC_RELOCATION_SITES];
   const siteByKey = new Map<string, string>();
   for (const s of allRelocationSites) {
@@ -484,6 +519,8 @@ async function main() {
             lng: s.lng,
             tradeCategories: s.tradeCategories,
             facilities: s.facilities,
+            maxCapacity: s.maxCapacity,
+            occupiedCapacity: s.occupiedCapacity,
             isActive: true,
           },
         })
@@ -496,13 +533,15 @@ async function main() {
             lng: s.lng,
             tradeCategories: s.tradeCategories,
             facilities: s.facilities,
+            maxCapacity: s.maxCapacity,
+            occupiedCapacity: s.occupiedCapacity,
             isActive: true,
           },
         });
     siteByKey.set(`${s.regionCode}::${s.name}`, row.id);
   }
 
-  // 6. Seed 8 ViolationReport + AuditLog (hanya insert jika reportCode belum ada agar AuditLog tetap append-only)
+  // 6. Seed 8 ViolationReport + ReportRelocationAllocation + AuditLog
   let createdReports = 0;
   const nowMs = Date.now();
   for (const rep of SEED_REPORTS) {
@@ -530,9 +569,17 @@ async function main() {
         : null;
 
     const zoneId = zoneByKey.get(`${rep.regionCode}::${rep.zoneName}`) ?? null;
+    const assignedTeamId = rep.assignedTeamCode
+      ? (teamByCode.get(rep.assignedTeamCode) ?? null)
+      : null;
+    const recommendedRelocationSiteId = rep.recommendedSiteName
+      ? (siteByKey.get(`${rep.regionCode}::${rep.recommendedSiteName}`) ?? null)
+      : null;
     const relocationSiteId = rep.relocationSiteName
       ? (siteByKey.get(`${rep.regionCode}::${rep.relocationSiteName}`) ?? null)
       : null;
+    const allocationSiteId = relocationSiteId ?? recommendedRelocationSiteId;
+    const allocationCount = Math.max(1, rep.actualPklCount ?? rep.detectedCount);
 
     await prisma.violationReport.create({
       data: {
@@ -540,6 +587,7 @@ async function main() {
         regionId: region.id,
         cameraId: rep.cameraId,
         zoneId,
+        assignedTeamId,
         source: rep.source,
         status: rep.status,
         address: rep.address,
@@ -559,9 +607,26 @@ async function main() {
         validatedByUserId: rep.validatedByDemoKey ? (userByDemoKey.get(rep.validatedByDemoKey) ?? null) : null,
         validatedAt,
         revisionReason: rep.revisionReason ?? null,
+        recommendedRelocationSiteId,
         relocationSiteId,
+        relocationMatchStatus: rep.relocationMatchStatus ?? null,
+        relocationCapacityCommitted: rep.relocationCapacityCommitted ?? false,
         relocationAssignedAt,
         createdAt,
+        ...(allocationSiteId
+          ? {
+              relocationAllocations: {
+                create: [
+                  {
+                    relocationSiteId: allocationSiteId,
+                    allocatedCount: allocationCount,
+                    rankOrder: 1,
+                    isRecommended: true,
+                  },
+                ],
+              },
+            }
+          : {}),
         auditLogs: {
           create: rep.auditLogs.map((log) => ({
             actorId: log.actorDemoKey ? (userByDemoKey.get(log.actorDemoKey) ?? null) : null,

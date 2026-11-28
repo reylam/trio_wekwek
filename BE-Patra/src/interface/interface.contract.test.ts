@@ -11,6 +11,7 @@ import {
   submitReportActionSchema,
   updateCctvRoiSchema,
   updateProfilePhoneSchema,
+  updateRelocationSiteSchema,
   updateZoneSchema,
   validateReportSchema,
 } from './index.js';
@@ -121,10 +122,76 @@ test('zone & relocation schemas validate polygon points, coordinates, and disall
     lng: 106.8195,
     tradeCategories: ['Kuliner', 'Minuman'],
     facilities: ['Listrik', 'Air Bersih'],
+    maxCapacity: 25,
+    occupiedCapacity: 10,
   });
   assert.equal(validSite.success, true);
 
-  // Failure 3: latitude out of range & empty facilities
+  const defaultCapSite = createRelocationSiteSchema.safeParse({
+    name: 'Lokasi Binaan Default Kapasitas',
+    address: 'Jl. Kebon Kacang Raya No. 1',
+    lat: -6.1912,
+    lng: 106.8178,
+    tradeCategories: ['Kuliner'],
+    facilities: ['Parkir'],
+  });
+  assert.equal(defaultCapSite.success, true);
+  if (defaultCapSite.success) {
+    assert.equal(defaultCapSite.data.maxCapacity, 20);
+    assert.equal(defaultCapSite.data.occupiedCapacity, 0);
+  }
+
+  // Failure 3: occupiedCapacity > maxCapacity and maxCapacity < 1
+  assert.equal(
+    createRelocationSiteSchema.safeParse({
+      name: 'Over Capacity Site',
+      address: 'Jl. Contoh 123',
+      lat: -6.19,
+      lng: 106.82,
+      tradeCategories: ['Kuliner'],
+      facilities: ['Listrik'],
+      maxCapacity: 10,
+      occupiedCapacity: 12,
+    }).success,
+    false,
+  );
+  assert.equal(
+    createRelocationSiteSchema.safeParse({
+      name: 'Zero Capacity Site',
+      address: 'Jl. Contoh 123',
+      lat: -6.19,
+      lng: 106.82,
+      tradeCategories: ['Kuliner'],
+      facilities: ['Listrik'],
+      maxCapacity: 0,
+      occupiedCapacity: 0,
+    }).success,
+    false,
+  );
+
+  // Update relocation site capacity rules
+  assert.equal(updateRelocationSiteSchema.safeParse({ maxCapacity: 30 }).success, true);
+  assert.equal(updateRelocationSiteSchema.safeParse({}).success, false);
+  assert.equal(
+    updateRelocationSiteSchema.safeParse({ maxCapacity: 5, occupiedCapacity: 6 }).success,
+    false,
+  );
+
+  // Zone district optional field
+  assert.equal(
+    createZoneSchema.safeParse({
+      name: 'Zona Tanah Abang',
+      district: 'Tanah Abang',
+      points: [
+        [106.81, -6.18],
+        [106.82, -6.18],
+        [106.82, -6.19],
+      ],
+    }).success,
+    true,
+  );
+
+  // Failure 4: latitude out of range & empty facilities
   assert.equal(
     createRelocationSiteSchema.safeParse({
       name: 'Bad Site',
@@ -160,10 +227,12 @@ test('report schemas handle auto-detect, multi-status filtering, action submit, 
     false,
   );
 
-  // Multi-status comma-separated query (Layer 3 Satpol PP map)
+  // Multi-status comma-separated query + teamId/district filters
   const multiStatus = listReportsQuerySchema.safeParse({
     status: 'NEED_ACTION,NEEDS_REVISION',
     relocationRequested: 'true',
+    teamId: 'team-jkp-1',
+    district: 'Tanah Abang',
     page: '2',
     pageSize: '20',
   });
@@ -171,6 +240,8 @@ test('report schemas handle auto-detect, multi-status filtering, action submit, 
   if (multiStatus.success) {
     assert.deepEqual(multiStatus.data.status, ['NEED_ACTION', 'NEEDS_REVISION']);
     assert.equal(multiStatus.data.relocationRequested, true);
+    assert.equal(multiStatus.data.teamId, 'team-jkp-1');
+    assert.equal(multiStatus.data.district, 'Tanah Abang');
     assert.equal(multiStatus.data.page, 2);
   }
 
@@ -180,15 +251,26 @@ test('report schemas handle auto-detect, multi-status filtering, action submit, 
     false,
   );
 
-  // Action submit valid & negative count failure
+  // Action submit valid (with and without allocations) & negative/zero failure
   assert.equal(
     submitReportActionSchema.safeParse({
       actionType: 'RELOCATION_ASSISTANCE',
       actualPklCount: 2,
       educationNotes: 'Pedagang diedukasi dan bersedia pindah.',
       relocationRequested: true,
+      allocations: [{ relocationSiteId: 'site-1', allocatedCount: 2 }],
     }).success,
     true,
+  );
+  assert.equal(
+    submitReportActionSchema.safeParse({
+      actionType: 'RELOCATION_ASSISTANCE',
+      actualPklCount: 2,
+      educationNotes: 'Pedagang diedukasi dan bersedia pindah.',
+      relocationRequested: true,
+      allocations: [{ relocationSiteId: 'site-1', allocatedCount: 0 }],
+    }).success,
+    false,
   );
   assert.equal(
     submitReportActionSchema.safeParse({
@@ -200,8 +282,15 @@ test('report schemas handle auto-detect, multi-status filtering, action submit, 
     false,
   );
 
-  // Validate report: APPROVE succeeds, REQUEST_REVISION requires >= 10 chars reason
+  // Validate report: APPROVE (with optional overrideAllocations) succeeds, REQUEST_REVISION requires >= 10 chars reason
   assert.equal(validateReportSchema.safeParse({ decision: 'APPROVE' }).success, true);
+  assert.equal(
+    validateReportSchema.safeParse({
+      decision: 'APPROVE',
+      overrideAllocations: [{ relocationSiteId: 'site-2', allocatedCount: 3 }],
+    }).success,
+    true,
+  );
   assert.equal(
     validateReportSchema.safeParse({
       decision: 'REQUEST_REVISION',

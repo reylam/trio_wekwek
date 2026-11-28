@@ -1,9 +1,12 @@
 # PHASE 3A — SYSTEM ARCHITECTURE & ENGINEERING BLUEPRINT (`PATRA`)
 
 > **Produk:** `PATRA (Pantauan Transparan Ruang Publik)`  
-> **Dokumen Pendamping:** [.agent/rules/data_contract.md](../.agent/rules/data_contract.md) (Phase 3B — *Single Source of Truth* DB, API, JSON CCTV & AI Component)  
+> **Dokumen Pendamping:** [.agent/rules/data_contract.md](../.agent/rules/data_contract.md) (Phase 3B — *Single Source of Truth* DB, API, JSON CCTV & AI Component) | [system_flow_redesign.md](./system_flow_redesign.md) (Phase 5 Revision)  
 > **Prasyarat:** [legacy_audit.md](./legacy_audit.md) (Phase 1) & [requirement.md](./requirement.md) (Phase 2)  
-> **Status Dokumen:** Draft Phase 3 — Menunggu Tinjauan & Persetujuan (*Stop-Gate*)
+> **Status Dokumen:** Phase 5 Revised — Lihat [system_flow_redesign.md](./system_flow_redesign.md) untuk Arsitektur Terbaru
+
+> [!NOTE]
+> **Revisi Phase 5 (Disetujui User):** Arsitektur sistem diperbarui tanpa mengubah struktur monorepo (`FE-Patra/`, `BE-Patra/`, `AI-Patra/`) maupun batasan PgBouncer/Vercel: (1) penambahan entitas `PatrolTeam` dengan *hard-lock* per kecamatan untuk `SATPOL_PP`, (2) kapasitas Lokasi Binaan + konsep *effective available capacity* (`maxCapacity - occupiedCapacity - pendingCapacity`), (3) algoritma relokasi otomatis **4 Tingkat Waterfall** (dengan *Split Darurat* sebagai cara terakhir melalui `ReportRelocationAllocation` dan commit kapasitas atomik via batch `prisma.$transaction([...])`), serta (4) perluasan endpoint analitik Sudin untuk monitoring tim dan okupansi selter. Rincian lengkap merujuk pada [system_flow_redesign.md](./system_flow_redesign.md) dan [data_contract.md](../.agent/rules/data_contract.md).
 
 ---
 

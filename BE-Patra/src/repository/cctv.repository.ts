@@ -78,28 +78,58 @@ export const CctvRepository = {
   async findManyByRegion(
     regionId: string,
     filters: CctvQueryParams = {},
+    allowedDistricts?: string[],
   ): Promise<CctvCameraRecord[]> {
     const prisma = getPrisma();
+    const andConditions: Prisma.CctvCameraWhereInput[] = [];
+
+    if (allowedDistricts && allowedDistricts.length > 0) {
+      if (filters.district) {
+        const requested = filters.district.trim().toLowerCase();
+        const permitted = allowedDistricts.some(
+          (d) => d.trim().toLowerCase() === requested,
+        );
+        if (!permitted) {
+          return [];
+        }
+        andConditions.push({
+          district: { equals: filters.district, mode: 'insensitive' },
+        });
+      } else {
+        andConditions.push({
+          OR: allowedDistricts.map((d) => ({
+            district: { equals: d, mode: 'insensitive' },
+          })),
+        });
+      }
+    } else if (filters.district) {
+      andConditions.push({
+        district: { equals: filters.district, mode: 'insensitive' },
+      });
+    }
+
+    if (filters.category) {
+      andConditions.push({
+        facilityCategory: { equals: filters.category, mode: 'insensitive' },
+      });
+    }
+    if (filters.search) {
+      andConditions.push({
+        OR: [
+          { name: { contains: filters.search, mode: 'insensitive' } },
+          { regionLabel: { contains: filters.search, mode: 'insensitive' } },
+          { district: { contains: filters.search, mode: 'insensitive' } },
+          { subdistrict: { contains: filters.search, mode: 'insensitive' } },
+          { facilityCategory: { contains: filters.search, mode: 'insensitive' } },
+        ],
+      });
+    }
+
     const where: Prisma.CctvCameraWhereInput = {
       regionId,
       isActive: true,
+      ...(andConditions.length > 0 ? { AND: andConditions } : {}),
     };
-
-    if (filters.district) {
-      where.district = { equals: filters.district, mode: 'insensitive' };
-    }
-    if (filters.category) {
-      where.facilityCategory = { equals: filters.category, mode: 'insensitive' };
-    }
-    if (filters.search) {
-      where.OR = [
-        { name: { contains: filters.search, mode: 'insensitive' } },
-        { regionLabel: { contains: filters.search, mode: 'insensitive' } },
-        { district: { contains: filters.search, mode: 'insensitive' } },
-        { subdistrict: { contains: filters.search, mode: 'insensitive' } },
-        { facilityCategory: { contains: filters.search, mode: 'insensitive' } },
-      ];
-    }
 
     const rows = await prisma.cctvCamera.findMany({
       where,

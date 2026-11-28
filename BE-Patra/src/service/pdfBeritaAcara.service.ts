@@ -10,7 +10,7 @@ import type {
   EnforcementActionType,
   JwtUserPayload,
 } from '../interface/index.js';
-import { assertRegionAccess } from '../middlewares/auth.js';
+import { assertDistrictAccess, assertRegionAccess } from '../middlewares/auth.js';
 import { AppError } from '../middlewares/errorHandler.js';
 import ReportRepository, {
   type ReportPdfContextRecord,
@@ -55,6 +55,7 @@ const AUDIT_ACTION_LABEL: Record<AuditAction, string> = {
   REVISION_SUBMITTED: 'Revisi Dikirim',
   REPORT_VALIDATED: 'Laporan Divalidasi',
   RELOCATION_ASSIGNED: 'Relokasi Ditetapkan',
+  RELOCATION_OVERRIDDEN: 'Alokasi Relokasi Disesuaikan Sudin',
 };
 
 // ---------------------------------------------------------------------------
@@ -592,6 +593,7 @@ export function createPdfBeritaAcaraService(deps: PdfServiceDeps = {}) {
         throw new AppError(404, 'REPORT_NOT_FOUND', 'Laporan pelanggaran tidak ditemukan.');
       }
       assertRegionAccess(user, record.regionId);
+      assertDistrictAccess(user, record.cameraDistrict, 'laporan pelanggaran');
       if (record.status !== 'VALIDATED') {
         throw new AppError(
           409,

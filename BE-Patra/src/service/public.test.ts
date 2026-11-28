@@ -150,6 +150,9 @@ const MOCK_SITES: Array<PublicRelocationSiteRecord & { regionId: string }> = [
     lng: 106.8195,
     tradeCategories: ['Kuliner'],
     facilities: ['Listrik', 'Toilet'],
+    maxCapacity: 30,
+    occupiedCapacity: 18,
+    pendingCapacity: 2,
   },
 ];
 
@@ -264,7 +267,7 @@ test('Public portal endpoints return KPIs, map without raw photos, and audit fee
     assert.equal(ovAllJson.data.city, 'Semua Kota');
     assert.equal(ovAllJson.data.kpi.totalViolationsThisMonth, 3);
 
-    // 4. GET /api/public/map -> strictly NO beforeImageUrl, afterImageUrl, quota, or capacity
+    // 4. GET /api/public/map -> strictly NO beforeImageUrl, afterImageUrl, or quota; exposes capacity metrics
     const mapRes = await fetch(
       `${baseUrl}/api/public/map?city=${encodeURIComponent('Kota Jakarta Pusat')}`,
     );
@@ -273,11 +276,17 @@ test('Public portal endpoints return KPIs, map without raw photos, and audit fee
     assert.equal(mapText.includes('beforeImageUrl'), false);
     assert.equal(mapText.includes('afterImageUrl'), false);
     assert.equal(mapText.includes('quota'), false);
-    assert.equal(mapText.includes('capacity'), false);
     const mapJson = JSON.parse(mapText) as any;
     assert.equal(mapJson.data.zones.length, 1);
     assert.equal(mapJson.data.hotspots.length, 1);
     assert.equal(mapJson.data.relocationSites.length, 1);
+    assert.equal(mapJson.data.relocationSites[0].maxCapacity, 30);
+    assert.equal(mapJson.data.relocationSites[0].occupiedCapacity, 18);
+    assert.equal(mapJson.data.relocationSites[0].pendingCapacity, 2);
+    assert.equal(mapJson.data.relocationSites[0].availableCapacity, 12);
+    assert.equal(mapJson.data.relocationSites[0].effectiveAvailableCapacity, 10);
+    assert.equal(mapJson.data.relocationSites[0].occupancyPercent, 60);
+    assert.equal(mapJson.data.relocationSites[0].capacityStatus, 'AVAILABLE');
 
     // 5. GET /api/public/audit-feed
     const feedRes = await fetch(

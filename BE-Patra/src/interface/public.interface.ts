@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import type { GeoLngLat, ReportStatus } from './common.interface.js';
+import type {
+  GeoLngLat,
+  ReportStatus,
+  SiteCapacityMetrics,
+} from './common.interface.js';
 
 export const publicCityQuerySchema = z.object({
   city: z.string().trim().max(120).optional(),
@@ -52,7 +56,7 @@ export interface PublicMapHotspotDto {
   createdAt: string;
 }
 
-export interface PublicMapRelocationSiteDto {
+export interface PublicMapRelocationSiteDto extends SiteCapacityMetrics {
   id: string;
   name: string;
   address: string;

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { RegionDto, UserRole } from './common.interface.js';
+import type { PatrolTeamDto, RegionDto, UserRole } from './common.interface.js';
 
 export const loginSchema = z.object({
   email: z.string().trim().email('Format email tidak valid.'),
@@ -39,6 +39,10 @@ export interface JwtUserPayload {
   regionId: string;
   city: string;
   email: string;
+  fullName: string;
+  teamId: string | null;
+  teamName: string | null;
+  assignedDistricts: string[];
 }
 
 export interface AuthUserDto {
@@ -48,6 +52,7 @@ export interface AuthUserDto {
   noTelp: string | null;
   role: UserRole;
   isDemo: boolean;
+  team: PatrolTeamDto | null;
   region: RegionDto;
 }
 

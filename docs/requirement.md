@@ -3,8 +3,11 @@
 > **Produk:** `PATRA (Pantauan Transparan Ruang Publik)`  
 > **Target Kompetisi:** Web Application Competition — Techcomfest 2027 (Deadline: 18 Desember 2026)  
 > **Sub-Tema & SDG:** Sub-Tema 1 — *Smart Governance & Public Service* | **SDG 16 — Peace, Justice, and Strong Institutions**  
-> **Dokumen Terkait:** [legacy_audit.md](./legacy_audit.md) (Phase 1)  
-> **Status Dokumen:** Draft Phase 2 — Menunggu Tinjauan & Persetujuan (*Stop-Gate*)
+> **Dokumen Terkait:** [legacy_audit.md](./legacy_audit.md) (Phase 1) | [system_flow_redesign.md](./system_flow_redesign.md) (Phase 5 Revision) | [data_contract.md](../.agent/rules/data_contract.md)  
+> **Status Dokumen:** Phase 5 Revised — Kontrak Kapasitas, Tim Kecamatan (`PatrolTeam`), & 4-Tier Relocation Disetujui
+
+> [!NOTE]
+> **Revisi Phase 5 (Disetujui User):** Menindaklanjuti masukan bimbingan dosen, kebutuhan fungsional diperluas dengan: (1) pemecahan akun `SATPOL_PP` per Tim & Kecamatan (*Hard-Lock* kecamatan via `PatrolTeam`), (2) penambahan kapasitas agregat Lokasi Binaan (`maxCapacity`, `occupiedCapacity`, *effective available capacity*) dengan mencabut larangan kuota lama, (3) penentuan relokasi otomatis sejak awal berbasis **4 Tingkat Waterfall** (*Nearest -> Whole-Group Fallback -> Split Fallback -> Unaccommodated Escalation*) melalui tabel `ReportRelocationAllocation`, serta (4) penguatan fungsi **Controlling & Monitoring** pada portal Dinas UMKM / Sudin PPKUKM. Rincian arsitektur dan kontrak berada di [system_flow_redesign.md](./system_flow_redesign.md) dan [data_contract.md](../.agent/rules/data_contract.md).
 
 ---
 
@@ -46,7 +49,7 @@ Penertiban PKL di ruang publik Indonesia (trotoar, bahu jalan, zona terlarang) m
 
 **Strict Out-of-Scope (DILARANG KERAS DIMASUKKAN KE DESAIN/KODE):**
 1. **TIDAK ADA** fitur blur wajah pada antarmuka internal pemerintah (Satpol PP & Dinas).
-2. **TIDAK ADA** fitur tracking kuota/kapasitas sisa lapak pada Lokasi Binaan.
+2. ~~**TIDAK ADA** fitur tracking kuota/kapasitas sisa lapak pada Lokasi Binaan.~~ *(DICABUT pada Revisi Phase 5 — digantikan tracking kapasitas agregat `maxCapacity` & `occupiedCapacity` per Lokasi Binaan; namun **TETAP DILARANG** membuat sistem manajemen kios/nomor lapak individual, booking mandiri PKL, atau penagihan retribusi harian).*
 3. **TIDAK ADA** menu "Antrean Tiket Aktif" terpisah di Satpol PP.
 4. **TIDAK ADA** panel "Live Alert" di sisi kanan halaman pemutar video CCTV.
 5. **TIDAK ADA** server AI Python terpisah, GPU server, FFmpeg *ingestion worker*, atau *Message Queue* (Redis/RabbitMQ/Kafka).

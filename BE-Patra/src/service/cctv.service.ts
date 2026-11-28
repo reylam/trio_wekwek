@@ -4,7 +4,11 @@ import type {
   JwtUserPayload,
   UpdateCctvRoiInput,
 } from '../interface/index.js';
-import { assertRegionAccess } from '../middlewares/auth.js';
+import {
+  assertDistrictAccess,
+  assertRegionAccess,
+  hasDistrictLock,
+} from '../middlewares/auth.js';
 import { AppError } from '../middlewares/errorHandler.js';
 import CctvRepository, {
   type CctvCameraRecord,
@@ -46,7 +50,14 @@ export function createCctvService(repo: CctvRepositoryPort = CctvRepository) {
       cameras: CctvCameraDto[];
       meta: { total: number; city: string };
     }> {
-      const records = await repo.findManyByRegion(user.regionId, query);
+      const allowedDistricts = hasDistrictLock(user)
+        ? user.assignedDistricts
+        : undefined;
+      const records = await repo.findManyByRegion(
+        user.regionId,
+        query,
+        allowedDistricts,
+      );
       const cameras = records.map(mapCameraToDto);
       return {
         cameras,
@@ -63,6 +74,7 @@ export function createCctvService(repo: CctvRepositoryPort = CctvRepository) {
         throw new AppError(404, 'CCTV_NOT_FOUND', 'Kamera CCTV tidak ditemukan.');
       }
       assertRegionAccess(user, record.regionId);
+      assertDistrictAccess(user, record.district, 'kamera CCTV');
       return mapCameraToDto(record);
     },
 
@@ -76,6 +88,7 @@ export function createCctvService(repo: CctvRepositoryPort = CctvRepository) {
         throw new AppError(404, 'CCTV_NOT_FOUND', 'Kamera CCTV tidak ditemukan.');
       }
       assertRegionAccess(user, record.regionId);
+      assertDistrictAccess(user, record.district, 'kamera CCTV');
       const updated = await repo.updateRoiPolygon(id, input.roiPolygon);
       return mapCameraToDto(updated);
     },

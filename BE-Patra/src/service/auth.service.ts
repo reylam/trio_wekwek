@@ -14,6 +14,11 @@ import AuthRepository, {
   type UserWithRegionRecord,
 } from '../repository/auth.repository.js';
 
+const DEMO_KEY_ALIASES: Record<string, string> = {
+  'satpol-jkt-pusat': 'satpol-jkp-tanah-abang',
+  'satpol-semarang': 'satpol-smg-tengah',
+};
+
 export function mapUserToAuthDto(record: UserWithRegionRecord): AuthUserDto {
   return {
     id: record.id,
@@ -22,6 +27,7 @@ export function mapUserToAuthDto(record: UserWithRegionRecord): AuthUserDto {
     noTelp: record.noTelp ?? null,
     role: record.role,
     isDemo: record.isDemo,
+    team: record.team,
     region: {
       id: record.region.id,
       code: record.region.code,
@@ -48,6 +54,10 @@ function buildLoginResult(
       regionId: user.region.id,
       city: user.region.city,
       email: user.email,
+      fullName: user.fullName,
+      teamId: user.team?.id ?? null,
+      teamName: user.team?.name ?? null,
+      assignedDistricts: user.team?.assignedDistricts ?? [],
     },
     jwtSecretOverride,
   );
@@ -90,7 +100,13 @@ export function createAuthService(
         );
       }
 
-      const record = await repo.findDemoByKeyWithRegion(input.demoKey);
+      let record = await repo.findDemoByKeyWithRegion(input.demoKey);
+      if (!record) {
+        const aliasKey = DEMO_KEY_ALIASES[input.demoKey.trim()];
+        if (aliasKey) {
+          record = await repo.findDemoByKeyWithRegion(aliasKey);
+        }
+      }
       if (!record) {
         throw new AppError(
           404,

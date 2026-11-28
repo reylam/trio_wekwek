@@ -1,5 +1,6 @@
 import { Prisma } from '../../generated/prisma/client.js';
 import { getPrisma } from '../config/prisma.js';
+import { aggregatePendingCapacity } from '../service/geo.service.js';
 
 export interface RelocationSiteRecord {
   id: string;
@@ -10,6 +11,8 @@ export interface RelocationSiteRecord {
   lng: number;
   tradeCategories: string[];
   facilities: string[];
+  maxCapacity: number;
+  occupiedCapacity: number;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -33,6 +36,8 @@ function mapPrismaRelocationSite(
     lng: row.lng,
     tradeCategories: toStringArray(row.tradeCategories),
     facilities: toStringArray(row.facilities),
+    maxCapacity: row.maxCapacity,
+    occupiedCapacity: row.occupiedCapacity,
     isActive: row.isActive,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -49,6 +54,25 @@ export const RelocationSiteRepository = {
     return rows.map(mapPrismaRelocationSite);
   },
 
+  async findPendingCapacityMapByRegion(regionId: string): Promise<Map<string, number>> {
+    const prisma = getPrisma();
+    const rows = await prisma.reportRelocationAllocation.findMany({
+      where: {
+        report: {
+          regionId,
+          status: 'PENDING_VALIDATION',
+          relocationRequested: true,
+          relocationCapacityCommitted: false,
+        },
+      },
+      select: {
+        relocationSiteId: true,
+        allocatedCount: true,
+      },
+    });
+    return aggregatePendingCapacity(rows);
+  },
+
   async findById(id: string): Promise<RelocationSiteRecord | null> {
     const prisma = getPrisma();
     const row = await prisma.relocationSite.findUnique({ where: { id } });
@@ -63,6 +87,8 @@ export const RelocationSiteRepository = {
     lng: number;
     tradeCategories: string[];
     facilities: string[];
+    maxCapacity: number;
+    occupiedCapacity: number;
   }): Promise<RelocationSiteRecord> {
     const prisma = getPrisma();
     const row = await prisma.relocationSite.create({
@@ -74,6 +100,8 @@ export const RelocationSiteRepository = {
         lng: data.lng,
         tradeCategories: data.tradeCategories as unknown as Prisma.InputJsonValue,
         facilities: data.facilities as unknown as Prisma.InputJsonValue,
+        maxCapacity: data.maxCapacity,
+        occupiedCapacity: data.occupiedCapacity,
         isActive: true,
       },
     });
@@ -89,6 +117,8 @@ export const RelocationSiteRepository = {
       lng?: number;
       tradeCategories?: string[];
       facilities?: string[];
+      maxCapacity?: number;
+      occupiedCapacity?: number;
     },
   ): Promise<RelocationSiteRecord> {
     const prisma = getPrisma();
@@ -104,6 +134,12 @@ export const RelocationSiteRepository = {
     if (data.facilities !== undefined) {
       updateData.facilities = data.facilities as unknown as Prisma.InputJsonValue;
     }
+    if (data.maxCapacity !== undefined) {
+      updateData.maxCapacity = data.maxCapacity;
+    }
+    if (data.occupiedCapacity !== undefined) {
+      updateData.occupiedCapacity = data.occupiedCapacity;
+    }
 
     const row = await prisma.relocationSite.update({
       where: { id },
@@ -114,9 +150,17 @@ export const RelocationSiteRepository = {
 
   async countReferencingReports(id: string): Promise<number> {
     const prisma = getPrisma();
-    return prisma.violationReport.count({
-      where: { relocationSiteId: id },
-    });
+    const [reportRefs, allocationRefs] = await prisma.$transaction([
+      prisma.violationReport.count({
+        where: {
+          OR: [{ relocationSiteId: id }, { recommendedRelocationSiteId: id }],
+        },
+      }),
+      prisma.reportRelocationAllocation.count({
+        where: { relocationSiteId: id },
+      }),
+    ]);
+    return reportRefs + allocationRefs;
   },
 
   async softArchive(id: string): Promise<RelocationSiteRecord> {
